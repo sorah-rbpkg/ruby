@@ -11,6 +11,5 @@ Ensure-Integer-GMP_VERSION-exists.patch
 gc-mmtk-keep-using-std-panic-PanicInfo-for-MSRV-1.74.patch
 rbinstall-Disable-arch-dependent-file-isolation.patch
 gc-mmtk-avoid-fn_addr_eq-for-MSRV-1.74.patch
-use-mmtk-core-checked-out-by-d-rules.patch
 test-ruby-test_process.rb-simplify-testing-spawn-with-lon.patch
 test_gem_credential_store_-run-fake-backends-with-Gem.rub.patch

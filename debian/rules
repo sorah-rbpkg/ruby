@@ -108,7 +108,14 @@ export LC_ALL := $(LANG)
 override_dh_auto_configure:
 	cp /usr/share/misc/config.guess tool
 	cp /usr/share/misc/config.sub tool
-	( mkdir mmtk-core && curl -L https://github.com/mmtk/mmtk-core/archive/9a2c7336dd2d9930549c78cf062c84b619468c7a.tar.gz | tar xz --strip-components=1 -C mmtk-core )
+	# Points gc/mmtk at a local checkout of the mmtk-core rev its Cargo.toml pins.
+	[ -e gc/mmtk/Cargo.toml.orig ] || cp gc/mmtk/Cargo.toml gc/mmtk/Cargo.toml.orig
+	rev=$$(sed -n -e 's/^rev = "\([0-9a-f]\{40\}\)"$$/\1/p' gc/mmtk/Cargo.toml.orig) && test -n "$$rev" && \
+		mkdir mmtk-core && curl -fL https://github.com/mmtk/mmtk-core/archive/$$rev.tar.gz | tar xz --strip-components=1 -C mmtk-core
+	sed -e 's|^\(git = "https://github.com/mmtk/mmtk-core.git"\)$$|# \1|' \
+		-e 's|^\(rev = "[0-9a-f]\{40\}"\)$$|# \1|' \
+		-e 's|^# path = ".*/mmtk-core"$$|path = "../../mmtk-core"|' \
+		gc/mmtk/Cargo.toml.orig > gc/mmtk/Cargo.toml
 	./configure $(configure_options)
 
 override_dh_auto_clean:
@@ -118,6 +125,8 @@ override_dh_auto_clean:
 	$(RM) test/excludes/$(DEB_HOST_ARCH)
 	$(RM) -r .ext
 	$(RM) -r doc/capi
+	$(RM) -r mmtk-core
+	[ ! -e gc/mmtk/Cargo.toml.orig ] || mv gc/mmtk/Cargo.toml.orig gc/mmtk/Cargo.toml
 	$(RM) .installed.list GNUmakefile Makefile builtin_binary.inc \
 		config.status enc.mk uncommon.mk verconf.h config.log
 
