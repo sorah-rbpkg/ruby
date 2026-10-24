@@ -5,6 +5,11 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+#endif
+
 #include <math.h>
 #include <time.h>
 #if defined(HAVE_SYS_TIME_H)
@@ -27,7 +32,7 @@ static VALUE eDateError;
 static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
-// used by deconstruct_keys
+/* used by deconstruct_keys */
 static VALUE sym_year, sym_month, sym_day, sym_yday, sym_wday;
 static VALUE sym_hour, sym_min, sym_sec, sym_sec_fraction, sym_zone;
 
@@ -452,11 +457,43 @@ do {\
 static int c_valid_civil_p(int, int, int, double,
 			   int *, int *, int *, int *);
 
+/* Check if using pure Gregorian calendar (sg == -Infinity) */
+#define c_gregorian_only_p(sg) (isinf(sg) && (sg) < 0)
+
+/*
+ * Fast path macros for pure Gregorian calendar.
+ * Sets *rjd to the JD value, *ns to 1 (new style), and returns.
+ */
+#define GREGORIAN_JD_FAST_PATH_RET(sg, jd_expr, rjd, ns) \
+    if (c_gregorian_only_p(sg)) { \
+	*(rjd) = (jd_expr); \
+	*(ns) = 1; \
+	return 1; \
+    }
+
+#define GREGORIAN_JD_FAST_PATH(sg, jd_expr, rjd, ns) \
+    if (c_gregorian_only_p(sg)) { \
+	*(rjd) = (jd_expr); \
+	*(ns) = 1; \
+	return; \
+    }
+
+/* Forward declarations for Neri-Schneider optimized functions */
+static int c_gregorian_civil_to_jd(int y, int m, int d);
+static void c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd);
+static int c_gregorian_fdoy(int y);
+static int c_gregorian_ldoy(int y);
+static int c_gregorian_ldom_jd(int y, int m);
+static int ns_jd_in_range(int jd);
+
 static int
 c_find_fdoy(int y, double sg, int *rjd, int *ns)
 {
     int d, rm, rd;
 
+    GREGORIAN_JD_FAST_PATH_RET(sg, c_gregorian_fdoy(y), rjd, ns);
+
+    /* Keep existing loop for Julian/reform period */
     for (d = 1; d < 31; d++)
 	if (c_valid_civil_p(y, 1, d, sg, &rm, &rd, rjd, ns))
 	    return 1;
@@ -468,6 +505,9 @@ c_find_ldoy(int y, double sg, int *rjd, int *ns)
 {
     int i, rm, rd;
 
+    GREGORIAN_JD_FAST_PATH_RET(sg, c_gregorian_ldoy(y), rjd, ns);
+
+    /* Keep existing loop for Julian/reform period */
     for (i = 0; i < 30; i++)
 	if (c_valid_civil_p(y, 12, 31 - i, sg, &rm, &rd, rjd, ns))
 	    return 1;
@@ -493,6 +533,9 @@ c_find_ldom(int y, int m, double sg, int *rjd, int *ns)
 {
     int i, rm, rd;
 
+    GREGORIAN_JD_FAST_PATH_RET(sg, c_gregorian_ldom_jd(y, m), rjd, ns);
+
+    /* Keep existing loop for Julian/reform period */
     for (i = 0; i < 30; i++)
 	if (c_valid_civil_p(y, m, 31 - i, sg, &rm, &rd, rjd, ns))
 	    return 1;
@@ -502,55 +545,69 @@ c_find_ldom(int y, int m, double sg, int *rjd, int *ns)
 static void
 c_civil_to_jd(int y, int m, int d, double sg, int *rjd, int *ns)
 {
-    double a, b, jd;
+    int jd;
 
-    if (m <= 2) {
-	y -= 1;
-	m += 12;
-    }
-    a = floor(y / 100.0);
-    b = 2 - a + floor(a / 4.0);
-    jd = floor(365.25 * (y + 4716)) +
-	floor(30.6001 * (m + 1)) +
-	d + b - 1524;
+    GREGORIAN_JD_FAST_PATH(sg, c_gregorian_civil_to_jd(y, m, d), rjd, ns);
+
+    /* Calculate Gregorian JD using optimized algorithm */
+    jd = c_gregorian_civil_to_jd(y, m, d);
+
     if (jd < sg) {
-	jd -= b;
+	/* Before Gregorian switchover - use Julian calendar */
+	int y2 = y, m2 = m;
+	if (m2 <= 2) {
+	    y2 -= 1;
+	    m2 += 12;
+	}
+	jd = (int)(floor(365.25 * (y2 + 4716)) +
+		   floor(30.6001 * (m2 + 1)) +
+		   d - 1524);
 	*ns = 0;
     }
-    else
+    else {
 	*ns = 1;
+    }
 
-    *rjd = (int)jd;
+    *rjd = jd;
 }
 
 static void
 c_jd_to_civil(int jd, double sg, int *ry, int *rm, int *rdom)
 {
-    double x, a, b, c, d, e, y, m, dom;
-
-    if (jd < sg)
-	a = jd;
-    else {
-	x = floor((jd - 1867216.25) / 36524.25);
-	a = jd + 1 + x - floor(x / 4.0);
-    }
-    b = a + 1524;
-    c = floor((b - 122.1) / 365.25);
-    d = floor(365.25 * c);
-    e = floor((b - d) / 30.6001);
-    dom = b - d - floor(30.6001 * e);
-    if (e <= 13) {
-	m = e - 1;
-	y = c - 4716;
-    }
-    else {
-	m = e - 13;
-	y = c - 4715;
+    /* Fast path: pure Gregorian or date after switchover, within safe range */
+    if ((c_gregorian_only_p(sg) || jd >= sg) && ns_jd_in_range(jd)) {
+	c_gregorian_jd_to_civil(jd, ry, rm, rdom);
+	return;
     }
 
-    *ry = (int)y;
-    *rm = (int)m;
-    *rdom = (int)dom;
+    /* Original algorithm for Julian calendar or extreme dates */
+    {
+	double x, a, b, c, d, e, y, m, dom;
+
+	if (jd < sg)
+	    a = jd;
+	else {
+	    x = floor((jd - 1867216.25) / 36524.25);
+	    a = jd + 1 + x - floor(x / 4.0);
+	}
+	b = a + 1524;
+	c = floor((b - 122.1) / 365.25);
+	d = floor(365.25 * c);
+	e = floor((b - d) / 30.6001);
+	dom = b - d - floor(30.6001 * e);
+	if (e <= 13) {
+	    m = e - 1;
+	    y = c - 4716;
+	}
+	else {
+	    m = e - 13;
+	    y = c - 4715;
+	}
+
+	*ry = (int)y;
+	*rm = (int)m;
+	*rdom = (int)dom;
+    }
 }
 
 static void
@@ -725,6 +782,147 @@ c_gregorian_last_day_of_month(int y, int m)
     return monthtab[c_gregorian_leap_p(y) ? 1 : 0][m];
 }
 
+/*
+ * Neri-Schneider algorithm for optimized Gregorian date conversion.
+ * Reference: Neri & Schneider, "Euclidean Affine Functions and Applications
+ *            to Calendar Algorithms", Software: Practice and Experience, 2023.
+ *            https://arxiv.org/abs/2102.06959
+ *
+ * This algorithm provides ~2-3x speedup over traditional floating-point
+ * implementations by using pure integer arithmetic with multiplication
+ * and bit-shifts instead of expensive division operations.
+ */
+
+/* JDN of March 1, Year 0 in proleptic Gregorian calendar */
+#define NS_EPOCH 1721120
+
+/* Days in a 4-year cycle (3 normal years + 1 leap year) */
+#define NS_DAYS_IN_4_YEARS 1461
+
+/* Days in a 400-year Gregorian cycle (97 leap years in 400 years) */
+#define NS_DAYS_IN_400_YEARS 146097
+
+/* Years per century */
+#define NS_YEARS_PER_CENTURY 100
+
+/*
+ * Multiplier for extracting year within century using fixed-point arithmetic.
+ * This is ceil(2^32 / NS_DAYS_IN_4_YEARS) for the Euclidean affine function.
+ */
+#define NS_YEAR_MULTIPLIER 2939745
+
+/*
+ * Coefficients for month calculation from day-of-year.
+ * Maps day-of-year to month using: month = (NS_MONTH_COEFF * doy + NS_MONTH_OFFSET) >> 16
+ */
+#define NS_MONTH_COEFF 2141
+#define NS_MONTH_OFFSET 197913
+
+/*
+ * Coefficients for civil date to JDN month contribution.
+ * Maps month to accumulated days: days = (NS_CIVIL_MONTH_COEFF * m - NS_CIVIL_MONTH_OFFSET) / 32
+ */
+#define NS_CIVIL_MONTH_COEFF 979
+#define NS_CIVIL_MONTH_OFFSET 2919
+#define NS_CIVIL_MONTH_DIVISOR 32
+
+/* Days from March 1 to December 31 (for Jan/Feb year adjustment) */
+#define NS_DAYS_BEFORE_NEW_YEAR 306
+
+/*
+ * Safe bounds for Neri-Schneider algorithm to avoid integer overflow.
+ * These correspond to approximately years -1,000,000 to +1,000,000.
+ */
+#define NS_JD_MIN -364000000
+#define NS_JD_MAX  538000000
+
+inline static int
+ns_jd_in_range(int jd)
+{
+    return jd >= NS_JD_MIN && jd <= NS_JD_MAX;
+}
+
+/* Optimized: Gregorian date -> Julian Day Number */
+static int
+c_gregorian_civil_to_jd(int y, int m, int d)
+{
+    /* Shift epoch to March 1 of year 0 (Jan/Feb belong to previous year) */
+    int j = (m < 3) ? 1 : 0;
+    int y0 = y - j;
+    int m0 = j ? m + 12 : m;
+    int d0 = d - 1;
+
+    /* Calculate year contribution with leap year correction */
+    int q1 = DIV(y0, NS_YEARS_PER_CENTURY);
+    int yc = DIV(NS_DAYS_IN_4_YEARS * y0, 4) - q1 + DIV(q1, 4);
+
+    /* Calculate month contribution using integer arithmetic */
+    int mc = (NS_CIVIL_MONTH_COEFF * m0 - NS_CIVIL_MONTH_OFFSET) / NS_CIVIL_MONTH_DIVISOR;
+
+    /* Combine and add epoch offset to get JDN */
+    return yc + mc + d0 + NS_EPOCH;
+}
+
+/* Optimized: Julian Day Number -> Gregorian date */
+static void
+c_gregorian_jd_to_civil(int jd, int *ry, int *rm, int *rd)
+{
+    int r0, n1, q1, r1, n2, q2, r2, n3, q3, r3, y0, j;
+    uint64_t u2;
+
+    /* Convert JDN to rata die (March 1, Year 0 epoch) */
+    r0 = jd - NS_EPOCH;
+
+    /* Extract century and day within 400-year cycle */
+    /* Use Euclidean (floor) division for negative values */
+    n1 = 4 * r0 + 3;
+    q1 = DIV(n1, NS_DAYS_IN_400_YEARS);
+    r1 = MOD(n1, NS_DAYS_IN_400_YEARS) / 4;
+
+    /* Calculate year within century and day of year */
+    n2 = 4 * r1 + 3;
+    /* Use 64-bit arithmetic to avoid overflow */
+    u2 = (uint64_t)NS_YEAR_MULTIPLIER * (uint64_t)n2;
+    q2 = (int)(u2 >> 32);
+    r2 = (int)((uint32_t)u2 / NS_YEAR_MULTIPLIER / 4);
+
+    /* Calculate month and day using integer arithmetic */
+    n3 = NS_MONTH_COEFF * r2 + NS_MONTH_OFFSET;
+    q3 = n3 >> 16;
+    r3 = (n3 & 0xFFFF) / NS_MONTH_COEFF;
+
+    /* Combine century and year */
+    y0 = NS_YEARS_PER_CENTURY * q1 + q2;
+
+    /* Adjust for January/February (shift from fiscal year) */
+    j = (r2 >= NS_DAYS_BEFORE_NEW_YEAR) ? 1 : 0;
+
+    *ry = y0 + j;
+    *rm = j ? q3 - 12 : q3;
+    *rd = r3 + 1;
+}
+
+/* O(1) first day of year for Gregorian calendar */
+inline static int
+c_gregorian_fdoy(int y)
+{
+    return c_gregorian_civil_to_jd(y, 1, 1);
+}
+
+/* O(1) last day of year for Gregorian calendar */
+inline static int
+c_gregorian_ldoy(int y)
+{
+    return c_gregorian_civil_to_jd(y, 12, 31);
+}
+
+/* O(1) last day of month (JDN) for Gregorian calendar */
+inline static int
+c_gregorian_ldom_jd(int y, int m)
+{
+    return c_gregorian_civil_to_jd(y, m, c_gregorian_last_day_of_month(y, m));
+}
+
 static int
 c_valid_julian_p(int y, int m, int d, int *rm, int *rd)
 {
@@ -799,11 +997,15 @@ c_valid_commercial_p(int y, int w, int d, double sg,
     if (w < 0) {
 	int rjd2;
 
+	if (w < -53) return 0;
 	c_commercial_to_jd(y + 1, 1, 1, sg, &rjd2, &ns2);
 	c_jd_to_commercial(rjd2 + w * 7, sg, &ry2, &rw2, &rd2);
 	if (ry2 != y)
 	    return 0;
 	w = rw2;
+    }
+    else {
+	if (w < 1 || 53 < w) return 0;
     }
     c_commercial_to_jd(y, w, d, sg, rjd, ns);
     c_jd_to_commercial(*rjd, sg, &ry2, rw, rd);
@@ -2428,9 +2630,9 @@ offset_to_sec(VALUE vof, int *rof)
 		if (!FIXNUM_P(vn))
 		    return 0;
 		n = FIX2LONG(vn);
-		if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-		    return 0;
 	    }
+	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		return 0;
 	    *rof = (int)n;
 	    return 1;
 	}
@@ -3002,34 +3204,66 @@ date_s_gregorian_leap_p(VALUE klass, VALUE y)
     return f_boolcast(c_gregorian_leap_p(ry));
 }
 
+#ifndef HAVE_RB_GC_MARK_MOVABLE
+#define rb_gc_mark_movable rb_gc_mark
+#else
+static void
+d_lite_gc_compact(void *ptr)
+{
+    union DateData *dat = ptr;
+    if (simple_dat_p(dat))
+        dat->s.nth = rb_gc_location(dat->s.nth);
+    else {
+        dat->c.nth = rb_gc_location(dat->c.nth);
+        dat->c.sf = rb_gc_location(dat->c.sf);
+    }
+}
+#endif
+
 static void
 d_lite_gc_mark(void *ptr)
 {
     union DateData *dat = ptr;
     if (simple_dat_p(dat))
-	rb_gc_mark(dat->s.nth);
+        rb_gc_mark_movable(dat->s.nth);
     else {
-	rb_gc_mark(dat->c.nth);
-	rb_gc_mark(dat->c.sf);
+        rb_gc_mark_movable(dat->c.nth);
+        rb_gc_mark_movable(dat->c.sf);
     }
-}
-
-static size_t
-d_lite_memsize(const void *ptr)
-{
-    const union DateData *dat = ptr;
-    return complex_dat_p(dat) ? sizeof(struct ComplexDateData) : sizeof(struct SimpleDateData);
 }
 
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
 #   define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
 
+#if defined(RUBY_TYPED_EMBEDDABLE) || defined(HAVE_CONST_RUBY_TYPED_EMBEDDABLE)
+# define HAVE_RUBY_TYPED_EMBEDDABLE 1
+#else
+# define RUBY_TYPED_EMBEDDABLE 0
+#endif
+
+static size_t
+d_lite_memsize(const void *ptr)
+{
+#ifdef HAVE_RUBY_TYPED_EMBEDDABLE
+    return 0;
+#else
+    return sizeof(union DateData);
+#endif
+}
+
 static const rb_data_type_t d_lite_type = {
     "Date",
-    {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
+    {
+        d_lite_gc_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        d_lite_memsize,
+#ifdef HAVE_RB_GC_MARK_MOVABLE
+        d_lite_gc_compact,
+#endif
+    },
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_FROZEN_SHAREABLE,
+    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_EMBEDDABLE|RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 inline static VALUE
@@ -3040,10 +3274,11 @@ d_simple_new_internal(VALUE klass,
 		      unsigned flags)
 {
     struct SimpleDateData *dat;
+    union DateData *u_dat;
     VALUE obj;
 
-    obj = TypedData_Make_Struct(klass, struct SimpleDateData,
-				&d_lite_type, dat);
+    obj = TypedData_Make_Struct(klass, union DateData, &d_lite_type, u_dat);
+    dat = &u_dat->s;
     set_to_simple(obj, dat, nth, jd, sg, y, m, d, flags);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
@@ -3061,10 +3296,11 @@ d_complex_new_internal(VALUE klass,
 		       unsigned flags)
 {
     struct ComplexDateData *dat;
+    union DateData *u_dat;
     VALUE obj;
 
-    obj = TypedData_Make_Struct(klass, struct ComplexDateData,
-				&d_lite_type, dat);
+    obj = TypedData_Make_Struct(klass, union DateData, &d_lite_type, u_dat);
+    dat = &u_dat->c;
     set_to_complex(obj, dat, nth, jd, df, sf, of, sg,
 		   y, m, d, h, min, s, flags);
 
@@ -3878,7 +4114,7 @@ static VALUE
 rt_complete_frags(VALUE klass, VALUE hash)
 {
     static VALUE tab = Qnil;
-    long e;
+    rb_len_t e;
     VALUE k, a, d;
 
     if (NIL_P(tab)) {
@@ -3977,7 +4213,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
     k = a = Qnil;
 
     {
-	long i, eno = 0;
+	rb_len_t i, eno = 0;
 	VALUE t = Qnil;
 
 	e = 0;
@@ -3988,7 +4224,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	    a = RARRAY_AREF(x, 1);
 
 	    {
-		long j, n = 0;
+		rb_len_t j, n = 0;
 
 		for (j = 0; j < RARRAY_LEN(a); j++)
 		    if (!NIL_P(ref_hash0(RARRAY_AREF(a, j))))
@@ -4019,7 +4255,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("yday", INT2FIX(1));
 	}
 	else if (k == sym("civil")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4036,7 +4272,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("mday", INT2FIX(1));
 	}
 	else if (k == sym("commercial")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4060,7 +4296,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 					   ref_hash("wday"))));
 	}
 	else if (k == sym("wnum0")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4077,7 +4313,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("wday", INT2FIX(0));
 	}
 	else if (k == sym("wnum1")) {
-	    long i;
+	    rb_len_t i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_AREF(a, i);
@@ -4322,7 +4558,8 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 }
 
 VALUE date__strptime(const char *str, size_t slen,
-		     const char *fmt, size_t flen, VALUE hash);
+		     const char *fmt, size_t flen,
+		     VALUE hash, rb_encoding *enc);
 
 static VALUE
 date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
@@ -4331,10 +4568,12 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     VALUE vstr, vfmt, hash;
     const char *str, *fmt;
     size_t slen, flen;
+    rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &vstr, &vfmt);
 
     StringValue(vstr);
+    if (argc > 1) StringValue(vfmt);
     if (!rb_enc_str_asciicompat_p(vstr))
 	rb_raise(rb_eArgError,
 		 "string should have ASCII compatible encoding");
@@ -4343,34 +4582,18 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     if (argc < 2) {
 	fmt = default_fmt;
 	flen = strlen(default_fmt);
+	enc = rb_enc_get(vstr);
     }
     else {
-	StringValue(vfmt);
 	if (!rb_enc_str_asciicompat_p(vfmt))
 	    rb_raise(rb_eArgError,
 		     "format should have ASCII compatible encoding");
+	enc = rb_enc_check(vstr, vfmt);
 	fmt = RSTRING_PTR(vfmt);
 	flen = RSTRING_LEN(vfmt);
     }
     hash = rb_hash_new();
-    if (NIL_P(date__strptime(str, slen, fmt, flen, hash)))
-	return Qnil;
-
-    {
-	VALUE zone = ref_hash("zone");
-	VALUE left = ref_hash("leftover");
-
-	if (!NIL_P(zone)) {
-	    rb_enc_copy(zone, vstr);
-	    set_hash("zone", zone);
-	}
-	if (!NIL_P(left)) {
-	    rb_enc_copy(left, vstr);
-	    set_hash("leftover", left);
-	}
-    }
-
-    return hash;
+    return date__strptime(str, slen, fmt, flen, hash, enc);
 }
 
 /*
@@ -5810,7 +6033,7 @@ dup_obj_with_new_start(VALUE obj, double sg)
 
 /*
  * call-seq:
- *   new_start(start = Date::ITALY]) -> new_date
+ *   new_start(start = Date::ITALY) -> new_date
  *
  * Returns a copy of +self+ with the given +start+ value:
  *
@@ -7191,7 +7414,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
 {
     VALUE vfmt;
     const char *fmt;
-    long len;
+    rb_len_t len;
     char buffer[SMALLBUF], *buf = buffer;
     struct tmx tmx;
     VALUE str;
@@ -7264,7 +7487,7 @@ strftimev(const char *fmt, VALUE self,
 {
     char buffer[SMALLBUF], *buf = buffer;
     struct tmx tmx;
-    long len;
+    rb_len_t len;
     VALUE str;
 
     (*func)(self, &tmx);
@@ -7285,7 +7508,7 @@ strftimev(const char *fmt, VALUE self,
  *
  *   Date.new(2001, 2, 3).asctime # => "Sat Feb  3 00:00:00 2001"
  *
- * See {asctime}[https://linux.die.net/man/3/asctime].
+ * See {asctime}[https://man7.org/linux/man-pages/man3/asctime.3p.html].
  *
  */
 static VALUE
@@ -7427,7 +7650,7 @@ static VALUE
 deconstruct_keys(VALUE self, VALUE keys, int is_datetime)
 {
     VALUE h = rb_hash_new();
-    long i;
+    rb_len_t i;
 
     get_d1(self);
 
@@ -7611,8 +7834,6 @@ d_lite_marshal_load(VALUE self, VALUE a)
     if (simple_dat_p(dat)) {
 	if (df || !f_zero_p(sf) || of) {
 	    /* loading a fractional date; promote to complex */
-	    dat = ruby_xrealloc(dat, sizeof(struct ComplexDateData));
-	    RTYPEDDATA(self)->data = dat;
 	    goto complex_data;
 	}
 	set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);

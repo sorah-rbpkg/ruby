@@ -4,6 +4,7 @@
  */
 
 #include "eval_intern.h"
+#include "internal/ractor.h"
 
 /* exit */
 
@@ -42,6 +43,7 @@ rb_f_at_exit(VALUE _)
     if (!rb_block_given_p()) {
         rb_raise(rb_eArgError, "called without a block");
     }
+    rb_ractor_ensure_main_ractor("can not call at_exit from non-main Ractors");
     proc = rb_block_proc();
     rb_set_end_proc(rb_call_end_proc, proc);
     return proc;
@@ -101,7 +103,7 @@ exec_end_procs_chain(struct end_proc_data *volatile *procs, VALUE *errp)
     while ((link = *procs) != 0) {
         *procs = link->next;
         endproc = *link;
-        xfree(link);
+        SIZED_FREE(link);
         (*endproc.func) (endproc.data);
         *errp = errinfo;
     }

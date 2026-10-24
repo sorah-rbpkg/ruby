@@ -591,13 +591,7 @@ class TestDateParse < Test::Unit::TestCase
   end
 
   def test__parse_too_long_year
-    # Math.log10 does not support so big numbers like 10^100_000 on TruffleRuby
-    unless RUBY_ENGINE == 'truffleruby'
-      str = "Jan 1" + "0" * 100_000
-      h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
-      assert_equal(100_000, Math.log10(h[:year]))
-      assert_equal(1, h[:mon])
-    end
+    omit 'transient' if RUBY_ENGINE == 'truffleruby'
 
     str = "Jan - 1" + "0" * 100_000
     h = EnvUtil.timeout(3) {Date._parse(str, limit: 100_010)}
@@ -893,6 +887,24 @@ class TestDateParse < Test::Unit::TestCase
     assert_equal({}, h)
 
     assert_raise(TypeError) {Date._rfc3339('2001-02-03T04:05:06Z'.to_sym)}
+  end
+
+  def test__rfc3339__deprecated_separator
+    pat = /Invalid RFC3339 date time separator/
+
+    ["\t", "\n", "\v", "\f", "\r"].each do |sep|
+      h = assert_deprecated_warn(pat) do
+        Date._rfc3339("2001-02-03#{sep}04:05:06Z")
+      end
+      assert_equal([2001, 2, 3, 4, 5, 6, 0],
+                   h.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset))
+    end
+
+    ["T", "t", " "].each do |sep|
+      assert_deprecated_warn("") do
+        Date._rfc3339("2001-02-03#{sep}04:05:06Z")
+      end
+    end
   end
 
   def test__xmlschema

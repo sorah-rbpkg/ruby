@@ -74,8 +74,7 @@ return rb_int_zero_p(self);
 
 static VALUE builtin_inline_class_340(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const to__ptr = (VALUE *)&ec->cfp->ep[-4];
-MAYBE_UNUSED(const VALUE) to = *to__ptr;
+MAYBE_UNUSED(const VALUE) to = ec->cfp->ep[-4];
 #line 340 "numeric.rb"
 return SIZED_ENUMERATOR(self, 1, &to, int_downto_size);
 #line 81 "numeric.rbinc"

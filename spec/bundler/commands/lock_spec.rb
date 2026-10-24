@@ -177,6 +177,58 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
+  it "writes the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock"
+
+    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app("custom.lock")).to exist
+  end
+
+  it "writes to BUNDLE_LOCKFILE over the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock", env: { "BUNDLE_LOCKFILE" => "env.lock" }
+
+    expect(bundled_app("env.lock")).to exist
+    expect(bundled_app("custom.lock")).not_to exist
+  end
+
+  it "does not write a lockfile when the Gemfile sets lockfile false" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile false
+    G
+
+    bundle "lock"
+
+    expect(err).to include("Not writing a lockfile because the Gemfile sets `lockfile false`")
+    expect(out).not_to include("Writing lockfile")
+    expect(bundled_app_lock).not_to exist
+  end
+
   it "prints a lockfile without fetching new checksums if the existing lockfile had no checksums" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 
@@ -720,8 +772,8 @@ RSpec.describe "bundle lock" do
       gem "thin"
       gem "myrack_middleware", :group => "test"
     G
-    bundle "config set without test"
-    bundle "config set path vendor/bundle"
+    bundle_config "without test"
+    bundle_config "path vendor/bundle"
     bundle "lock", verbose: true
     expect(bundled_app("vendor/bundle")).not_to exist
   end
@@ -747,8 +799,9 @@ RSpec.describe "bundle lock" do
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
-      # establish a lockfile set to 1.4.3
-      install_gemfile <<-G
+      # establish a lockfile set to 1.4.3 (these examples only assert on the
+      # generated lockfile, so resolve-and-lock without the install)
+      lock_gemfile <<-G
         source "https://gem.repo4"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
@@ -885,6 +938,26 @@ RSpec.describe "bundle lock" do
     expect(lockfile).to end_with("BUNDLED WITH\n  99\n")
   end
 
+  it "does not update the bundler version in the lockfile to a prerelease version, unless the target version allows prereleases" do
+    build_repo4 do
+      build_gem "bundler", "55"
+      build_gem "bundler", "56.0.0.beta1"
+    end
+
+    system_gems "bundler-55", gem_repo: gem_repo4
+
+    install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "https://gem.repo4"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  55\n")
+
+    bundle "lock --update --bundler '> 0.a' --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  56.0.0.beta1\n")
+  end
+
   it "supports adding new platforms when there's no previous lockfile" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 
@@ -989,7 +1062,7 @@ RSpec.describe "bundle lock" do
         platform_specific
     L
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -1053,7 +1126,7 @@ RSpec.describe "bundle lock" do
     end
 
     simulate_platform "x86_64-darwin-22" do
-      install_gemfile <<~G
+      lock_gemfile <<~G
         source "https://gem.repo4"
 
         gem "nokogiri"
@@ -1148,8 +1221,10 @@ RSpec.describe "bundle lock" do
     simulate_platform("x86-mingw32") { bundle :lock }
 
     checksums = checksums_section_when_enabled do |c|
+      c.checksum gem_repo4, "ffi", "1.9.14"
       c.checksum gem_repo4, "ffi", "1.9.14", "x86-mingw32"
       c.checksum gem_repo4, "gssapi", "1.2.0"
+      c.checksum gem_repo4, "mixlib-shellout", "2.2.6"
       c.checksum gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32"
       c.checksum gem_repo4, "win32-process", "0.8.3"
     end
@@ -1158,9 +1233,11 @@ RSpec.describe "bundle lock" do
       GEM
         remote: https://gem.repo4/
         specs:
+          ffi (1.9.14)
           ffi (1.9.14-x86-mingw32)
           gssapi (1.2.0)
             ffi (>= 1.0.1)
+          mixlib-shellout (2.2.6)
           mixlib-shellout (2.2.6-universal-mingw32)
             win32-process (~> 0.8.2)
           win32-process (0.8.3)
@@ -1177,7 +1254,7 @@ RSpec.describe "bundle lock" do
         #{Bundler::VERSION}
     G
 
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     bundle :lock
 
     checksums.checksum gem_repo4, "ffi", "1.9.14"
@@ -1360,6 +1437,11 @@ RSpec.describe "bundle lock" do
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mswin64"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end
@@ -2260,7 +2342,7 @@ RSpec.describe "bundle lock" do
       end
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile <<-G
@@ -2294,7 +2376,7 @@ RSpec.describe "bundle lock" do
       build_gem "warning", "18.0.0"
     end
 
-    bundle "config lockfile_checksums false"
+    bundle_config "lockfile_checksums false"
 
     simulate_platform "x86_64-linux" do
       install_gemfile(<<-G, artifice: "endpoint")

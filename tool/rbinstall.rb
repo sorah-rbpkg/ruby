@@ -668,7 +668,32 @@ module RbInstall
           Dir.glob("**/*", File::FNM_DOTMATCH, base: base).select do |n|
             next if n == "."
             next if File.fnmatch?("*.gemspec", n, File::FNM_DOTMATCH|File::FNM_PATHNAME)
+            next if build_artifact?(File.basename(n))
             !File.directory?(File.join(base, n))
+          end
+        end
+
+        private
+
+        # Files left behind by building a C extension in place under
+        # .bundle/gems. They are non-reproducible and unused at run time, so
+        # they must not be packed into the installed gem directory. The built
+        # extension itself is installed separately into extensions_dir, so
+        # dropping the in-tree shared library here does not affect loading.
+        # This matches by base name, so a source file that happens to share
+        # one of these names would be excluded too. The extensions cover
+        # Unix/macOS (.o/.so/.bundle/.dylib) and Windows/MSVC, which also
+        # leaves an import library (.lib), export files (.exp/.def), debug
+        # databases (.pdb, including vc*.pdb), and .ilk/.pch/.res/.manifest
+        # beside the built DLL. No bundled gem ships a .lib or .def of its own
+        # in its published .gem, so excluding those two by extension is safe.
+        def build_artifact?(name)
+          case name
+          when "mkmf.log", "gem_make.out", "Makefile", "exts.mk"
+            true
+          else
+            /\Aconftest(?:\.|\z)/.match?(name) ||
+              /\.(?:o|obj|so|bundle|dll|dylib|time|lib|exp|def|pdb|ilk|pch|res|manifest)\z/.match?(name)
           end
         end
       end
@@ -861,6 +886,18 @@ module RbInstall
       super
     ensure
       $VERBOSE = verbose
+    end
+
+    def regenerate_plugins_for(spec, plugins_dir)
+      plugins = spec.plugins
+      return if plugins.empty?
+      dir = without_destdir(plugins_dir)
+      plugins.each do |plugin|
+        $installed_list.puts(File.join(dir, "#{spec.name}_plugin#{File.extname(plugin)}"))
+      end
+      unless $dryrun
+        super
+      end
     end
   end
 end
@@ -1089,7 +1126,7 @@ install?(:local, :comm, :hdr, :'comm-hdr') do
   prepare "common headers", rubyhdrdir
 
   noinst = []
-  unless RUBY_PLATFORM =~ /mswin|mingw|bccwin/
+  unless RUBY_PLATFORM =~ /mswin|mingw/
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?

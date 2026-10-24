@@ -63,7 +63,7 @@ RSpec.describe Bundler::LockfileParser do
 
       it "returns the same as > 1.0" do
         expect(subject).to contain_exactly(
-          described_class::BUNDLED, described_class::CHECKSUMS, described_class::RUBY, described_class::PLUGIN
+          described_class::BUNDLED, described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY, described_class::PLUGIN
         )
       end
     end
@@ -73,7 +73,7 @@ RSpec.describe Bundler::LockfileParser do
 
       it "returns the same as for the release version" do
         expect(subject).to contain_exactly(
-          described_class::CHECKSUMS, described_class::RUBY, described_class::PLUGIN
+          described_class::CHECKSUMS, described_class::CONTENT_ADDRESSES, described_class::RUBY, described_class::PLUGIN
         )
       end
     end
@@ -118,7 +118,7 @@ RSpec.describe Bundler::LockfileParser do
     let(:platforms) { [Gem::Platform::RUBY] }
     let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
     let(:ruby_version) { "ruby 2.1.3p242" }
-    let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
+    let(:lockfile_path) { Bundler::SharedHelpers.relative_lockfile_path }
     let(:rake_sha256_checksum) do
       Bundler::Checksum.from_lock(
         "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
@@ -144,6 +144,74 @@ RSpec.describe Bundler::LockfileParser do
     end
 
     include_examples "parsing"
+
+    context "when a spec has a content address" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-x86_64-linux)
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            mygem
+
+          CONTENT ADDRESSES
+            mygem (1.0-x86_64-linux) abcdef1234 sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e
+
+          CHECKSUMS
+            mygem (1.0-x86_64-linux) sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8
+
+          BUNDLED WITH
+             1.12.0.rc.2
+        L
+      end
+
+      it "parses the platform and content address" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.platform).to eq(Gem::Platform.new("x86_64-linux"))
+        expect(spec.content_address).to eq("abcdef1234")
+        expect(spec.full_name).to eq("mygem-1.0-abcdef1234")
+      end
+
+      it "keeps the platform build's checksum under the lock name and the content-addressable build's checksum under its full name" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+        store = subject.sources.first.checksum_store
+
+        expect(store.to_lock(spec)).to eq("mygem (1.0-x86_64-linux) sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8")
+        expect(store.checksums_to_lock(spec.full_name)).to eq("sha256=abcdef1234f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e")
+      end
+    end
+
+    context "when a Ruby-platform suffix resembles a content address but no platform is present" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-abcdef1234)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            mygem
+
+          BUNDLED WITH
+             1.12.0.rc.2
+        L
+      end
+
+      it "does not parse the suffix as a content address" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.content_address).to be_nil
+      end
+    end
 
     context "when an extra section is at the end" do
       let(:lockfile_contents) { super() + "\n\nFOO BAR\n  baz\n   baa\n    qux\n" }
@@ -268,6 +336,27 @@ RSpec.describe Bundler::LockfileParser do
         private_spec = subject.specs.find {|s| s.name == "private_gem" }
         expect(private_spec.version).to eq(v("1.2.3"))
         expect(private_spec.source).to be_a(Bundler::Plugin::UnloadedSource)
+      end
+    end
+
+    context "when lockfile_path is given" do
+      it "uses the provided path in error messages instead of looking up Bundler.default_lockfile" do
+        expect(Bundler::SharedHelpers).not_to receive(:relative_lockfile_path)
+        parser = described_class.new(lockfile_contents, lockfile_path: "custom/path.lock")
+        expect(parser.valid?).to be(true)
+        rake_spec = parser.specs.last
+        checksums = parser.sources.last.checksum_store.to_lock(rake_spec)
+        expected_checksum = Bundler::Checksum.from_lock(
+          "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
+          "custom/path.lock:20:17"
+        )
+        expect(checksums).to eq("#{rake_spec.lock_name} #{expected_checksum.to_lock}")
+      end
+
+      it "raises with the provided path when the lockfile contains merge conflicts" do
+        expect do
+          described_class.new("<<<<<<<\n", lockfile_path: "custom/path.lock")
+        end.to raise_error(Bundler::LockfileError, %r{custom/path\.lock contains merge conflicts})
       end
     end
 

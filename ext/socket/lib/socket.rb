@@ -2,12 +2,17 @@
 
 require 'socket.so'
 
-unless IO.method_defined?(:wait_writable, false)
-  # It's only required on older Rubies < v3.2:
-  require 'io/wait'
-end
-
 class Addrinfo
+  # :stopdoc:
+  # Windows signals a failed connect(2) through the exceptfds of select(2)
+  # only.  Elsewhere the priority event would just take the wait off the M:N
+  # thread scheduler, which refuses any event but readable and writable.
+  # [Bug #18661]
+  CONNECT_EVENTS = IO::WRITABLE |
+    (/mswin|mingw|cygwin/.match?(RUBY_PLATFORM) ? IO::PRIORITY : 0)
+  private_constant :CONNECT_EVENTS
+  # :startdoc:
+
   # creates an Addrinfo object from the arguments.
   #
   # The arguments are interpreted as similar to self.
@@ -61,7 +66,7 @@ class Addrinfo
         when 0 # success or EISCONN, other errors raise
           break
         when :wait_writable
-          sock.wait_writable(timeout) or
+          sock.wait(CONNECT_EVENTS, timeout) or
             raise Errno::ETIMEDOUT, "user specified timeout for #{self.ip_address}:#{self.ip_port}"
           # Check SO_ERROR instead of relying on the connect_nonblock retry;
           # some kernels (e.g. Darwin 27) answer the retry connect(2) with
@@ -667,12 +672,11 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
-
     if open_timeout && (connect_timeout || resolv_timeout)
       raise ArgumentError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout"
     end
 
-    sock = if fast_fallback && !(host && ip_address?(host))
+    sock = if fast_fallback && !(host && ip_address?(host)) && !(local_port && local_port.to_i != 0)
       tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     else
       tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
@@ -743,7 +747,7 @@ class Socket < BasicSocket
           if local_addrinfos.any?
             local_addrinfo = local_addrinfos.find { |lai| lai.afamily == addrinfo.afamily }
 
-            if local_addrinfo.nil? # Connecting addrinfoと同じアドレスファミリのLocal addrinfoがない
+            if local_addrinfo.nil?
               if resolution_store.any_addrinfos?
                 # Try other Addrinfo in next "while"
                 next
@@ -932,15 +936,11 @@ class Socket < BasicSocket
       end
     end
   ensure
-    hostname_resolution_threads.each do |thread|
-      thread.exit
-    end
+    hostname_resolution_threads.each(&:exit).each(&:join)
 
     hostname_resolution_result&.close
 
-    connecting_sockets.each_key do |connecting_socket|
-      connecting_socket.close
-    end
+    connecting_sockets.each_key(&:close)
   end
   private_class_method :tcp_with_fast_fallback
 

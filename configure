@@ -691,6 +691,7 @@ ac_subst_vars='LTLIBOBJS
 DESTDIR
 exec
 ruby_pc
+X_DEPENDENCIES_DIR
 XCC_WRAPPER
 CC_WRAPPER
 PACKAGE
@@ -735,7 +736,6 @@ ridir
 rubysitearchprefix
 rubyarchprefix
 MAKEFILES
-USE_LLVM_WINDRES
 PLATFORM_DIR
 COROUTINE_TYPE
 THREAD_MODEL
@@ -745,6 +745,7 @@ EXPORT_PREFIX
 COMMON_HEADERS
 COMMON_MACROS
 COMMON_LIBS
+PROGRAM_LIBS
 MAINLIBS
 ENABLE_SHARED
 DLDSHARED
@@ -775,19 +776,20 @@ debugflags
 optflags
 NULLCMD
 ENABLE_DEBUG_ENV
-DLNOBJ
+DLNOBJS
 XSYMBOLS_IN_EMPTYLIB
 JIT_CARGO_SUPPORT
-RLIB_DIR
-RUST_LIB
-JIT_OBJ
-ZJIT_OBJ
-ZJIT_LIBS
+X_RLIB_DIR
+X_RUST_LIB
+X_JIT_OBJ
+X_ZJIT_OBJ
+X_ZJIT_LIBS
 ZJIT_SUPPORT
-YJIT_OBJ
-YJIT_LIBS
+X_YJIT_OBJ
+X_YJIT_LIBS
 YJIT_SUPPORT
 CARGO_BUILD_ARGS
+RUSTC_FLAGS
 JIT_RUST_FLAGS
 ZJIT_TEST_FEATURES
 CARGO
@@ -828,6 +830,7 @@ RPATHFLAG
 LIBPATHFLAG
 LINK_SO
 ADDITIONAL_DLDFLAGS
+PROGRAM_EXTS
 EXTOBJS
 ENCOBJS
 ENCSTATIC
@@ -934,8 +937,12 @@ MINOR
 MAJOR
 HAVE_GIT
 GIT
+X_DUMP_AST_TARGET
+X_DUMP_AST
+X_BUILD_EXEEXT
 HAVE_BASERUBY
 BASERUBY
+rustc_flags
 cxxflags
 cppflags
 cflags
@@ -983,6 +990,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_baseruby
+with_dump_ast
 with_git
 with_gcc
 with_os_version_style
@@ -1054,6 +1062,7 @@ target_alias
 cflags
 cppflags
 cxxflags
+rustc_flags
 AR
 AS
 CC
@@ -1737,6 +1746,9 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-baseruby=RUBY    use RUBY as baseruby; RUBY is the pathname of ruby
+  --with-dump-ast=DUMP_AST
+                          use DUMP_AST as dump_ast; for cross-compiling with a
+                          host-built dump_ast
   --without-git           never use git
   --without-gcc           never use gcc
   --with-os-version-style=TYPE
@@ -1819,6 +1831,7 @@ Some influential environment variables:
   cflags      additional CFLAGS (ignored when CFLAGS is given)
   cppflags    additional CPPFLAGS (ignored when CPPFLAGS is given)
   cxxflags    additional CXXFLAGS (ignored when CXXFLAGS is given)
+  rustc_flags additional RUSTC_FLAGS
   AR          Archiver command
   AS          Assembler command
   CC          C compiler command
@@ -3763,13 +3776,30 @@ else
 fi
 
 
+		HAVE_BASERUBY=
 
 fi
 
-if test "$HAVE_BASERUBY" != no
+if test "$HAVE_BASERUBY" = no
 then :
 
-    RUBYOPT=- $BASERUBY --disable=gems -rerb -rfileutils -rtempfile "${tooldir}/missing-baseruby.bat" || HAVE_BASERUBY=no
+    # --without-baseruby
+
+elif error=`RUBYOPT=- $BASERUBY --disable=gems "${tooldir}/missing-baseruby.bat" --verbose 2>&1`
+then :
+
+    HAVE_BASERUBY=yes
+
+elif test "$HAVE_BASERUBY" = ""
+then :
+   # no --with-baseruby option
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: $error" >&5
+printf "%s\n" "$as_me: WARNING: $error" >&2;}            # just warn and continue
+    HAVE_BASERUBY=no
+
+else $as_nop
+                                 # the ruby given by --with-baseruby is too old
+    as_fn_error $? "$error" "$LINENO" 5           # bail out
 
 fi
 if test "${HAVE_BASERUBY:=no}" != no
@@ -3808,6 +3838,49 @@ fi
 
 fi
 
+
+if test "$cross_compiling" = yes
+then :
+  X_BUILD_EXEEXT=`$BASERUBY -rrbconfig -e 'puts RbConfig::CONFIG["EXEEXT"]'`
+else $as_nop
+  X_BUILD_EXEEXT='$(EXEEXT)'
+
+fi
+
+
+
+# Check whether --with-dump-ast was given.
+if test ${with_dump_ast+y}
+then :
+  withval=$with_dump_ast; DUMP_AST=$withval DUMP_AST_TARGET='$(empty)'
+else $as_nop
+  if test ${RUBY_DUMP_AST+set}
+then :
+
+	    DUMP_AST="${RUBY_DUMP_AST}"
+	    DUMP_AST_TARGET='$(empty)'
+
+elif test "$cross_compiling" = yes
+then :
+
+	    DUMP_AST='build-tool/dump_ast$(BUILD_EXEEXT)'
+	    DUMP_AST_TARGET='$(DUMP_AST)'
+
+else $as_nop
+
+	    DUMP_AST='./dump_ast$(BUILD_EXEEXT)'
+	    DUMP_AST_TARGET='$(DUMP_AST)'
+
+fi
+fi
+
+if test "$HAVE_BASERUBY" = no
+then :
+  DUMP_AST_TARGET='$(empty)'
+fi
+X_DUMP_AST="${DUMP_AST}"
+
+X_DUMP_AST_TARGET="${DUMP_AST_TARGET}"
 
 
 : ${GIT=git}
@@ -5365,6 +5438,11 @@ fi
 
 
 
+
+    # These -Wno-* flags silence clang-specific diagnostics that don't exist
+    # in GCC.  GCC silently accepts unknown -Wno-* flags but later emits noisy
+    # "unrecognized command-line option" notes whenever another warning fires.
+    clang_warnflags="-Wno-constant-logical-operand -Wno-parentheses-equality -Wno-self-assign"
  ;; #(
   *) :
      ;;
@@ -8330,9 +8408,9 @@ printf %s "checking if minimum required OS X version is supported... " >&6; }
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <AvailabilityMacros.h>
-	#if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
-	#error pre OS X 10.5
-	[!<===== pre OS X 10.5 =====>]
+	#if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_6
+	#error pre OS X 10.6
+	[!<===== pre OS X 10.6 =====>]
 	#endif
 
 _ACEOF
@@ -8755,12 +8833,6 @@ printf %s "checking for real target cpu... " >&6; }
 #ifdef __i386__
 "processor-name=i386"
 #endif
-#ifdef __ppc__
-"processor-name=powerpc"
-#endif
-#ifdef __ppc64__
-"processor-name=powerpc64"
-#endif
 #ifdef __arm64__
 "processor-name=arm64"
 #endif
@@ -9176,19 +9248,10 @@ fi
 esac
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    if $WINDRES --version | grep LLVM > /dev/null
-then :
-  USE_LLVM_WINDRES=yes
-else $as_nop
-  USE_LLVM_WINDRES=no
-fi
      ;; #(
-  hiuxmpp*) :
-    printf "%s\n" "#define __HIUX_MPP__ 1" >>confdefs.h
- ;; #(
   *) :
      ;;
-esac    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
+esac
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ln -s works" >&5
 printf %s "checking whether ln -s works... " >&6; }
@@ -9895,7 +9958,29 @@ else $as_nop
 	cd .. && rm -fr tmp.$$.try_link
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
     printf "%s\n" "${msg_result_no}no${msg_reset}" >&6 ; }
-	as_fn_error $? "something wrong with LDFLAGS=\"$LDFLAGS\"" "$LINENO" 5
+	rb_ldflags_nodir= rb_ldflags_Lopt=
+	for rb_ldflags_arg in $LDFLAGS; do
+	    if test "$rb_ldflags_Lopt"
+then :
+  rb_ldflags_Lopt=
+else $as_nop
+  case "$rb_ldflags_arg" in #(
+  -L?*) :
+    rb_ldflags_arg="${rb_ldflags_arg#-L}" rb_ldflags_Lopt= ;; #(
+  -L) :
+    rb_ldflags_Lopt=yes; continue ;; #(
+  *) :
+    continue ;;
+esac
+fi
+	    if test -d "${rb_ldflags_arg}"
+then :
+
+else $as_nop
+  rb_ldflags_nodir="$rb_ldflags_nodir ${rb_ldflags_arg}"
+fi
+	done
+	as_fn_error $? "something wrong with LDFLAGS=\"$LDFLAGS\"${rb_ldflags_nodir:+; no such directory:$rb_ldflags_nodir}" "$LINENO" 5
 
 
 fi
@@ -10191,7 +10276,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
+#include <cstdio>
 int
 main (void)
 {
@@ -10289,6 +10374,17 @@ fi
 	extra_warnflags="$extra_warnflags -Werror=misleading-indentation"
      ;;
 esac
+    case $target_os in #(
+  mingw*) :
+
+	# 64bit Windows is IL32P64; shorten-64-to-32 causes tons of warnigs
+	extra_warnflags="$extra_warnflags -Wno-shorten-64-to-32"
+     ;; #(
+  *) :
+
+	extra_warnflags="$extra_warnflags -Werror=shorten-64-to-32"
+     ;;
+esac
 
     # ICC doesn't support -Werror=
     if test $icc_version -gt 0
@@ -10305,19 +10401,15 @@ fi
 		 -Werror=implicit-function-declaration \
 		 -Werror=implicit-int \
 		 -Werror=pointer-arith \
-		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
 		 -Werror=old-style-definition \
 		 -Wimplicit-fallthrough=0 \
 		 -Wmissing-noreturn \
 		 -Wno-cast-function-type \
-		 -Wno-constant-logical-operand \
 		 -Wno-long-long \
 		 -Wno-missing-field-initializers \
 		 -Wno-overlength-strings \
 		 -Wno-packed-bitfield-compat \
-		 -Wno-parentheses-equality \
-		 -Wno-self-assign \
 		 -Wno-tautological-compare \
 		 -Wno-unused-parameter \
 		 -Wno-unused-value \
@@ -10325,6 +10417,7 @@ fi
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
 		 -diag-disable=175,188,1684,2259,2312 \
+		 $clang_warnflags \
 		 $extra_warnflags \
 		 ; do
 	if test "$particular_werror_flags" != yes
@@ -12357,7 +12450,7 @@ fi
      ;; #(
   root:*) :
      ;; #(
-  c_r:*|*:openbsd*|*:mirbsd*) :
+  c_r:*|*:openbsd*) :
     LIBS="-pthread $LIBS" ;; #(
   *) :
     LIBS="-l$pthread_lib $LIBS" ;;
@@ -12434,12 +12527,6 @@ POSTLINK=:
 cleanlibs=
 
 case "$target_os" in #(
-  nextstep*) :
-    	 ;; #(
-  openstep*) :
-    	 ;; #(
-  rhapsody*) :
-    	 ;; #(
   darwin*) :
 
 		ORIG_LIBS="$LIBS"
@@ -12726,6 +12813,7 @@ then :
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 
 fi
+		: ${POSTLINK:=:}
 		ac_fn_c_check_header_compile "$LINENO" "crt_externs.h" "ac_cv_header_crt_externs_h" "
 		    #include <crt_externs.h>
 
@@ -13062,13 +13150,6 @@ fi
 esac
 
 		 ;; #(
-  bsdi*) :
-    	LIBS="-lm $LIBS"
-		printf "%s\n" "#define BROKEN_SETREUID 1" >>confdefs.h
-
-		printf "%s\n" "#define BROKEN_SETREGID 1" >>confdefs.h
-
-                ac_cv_sizeof_rlim_t=8 ;; #(
   freebsd*) :
     	LIBS="-lm $LIBS"
 		ac_cv_func_getpeername=no
@@ -13304,7 +13385,7 @@ then :
   LIBS="-lcrypt $LIBS"
 
 fi
-      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
+      # glibc (GNU/Linux, GNU/Hurd)
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
 printf %s "checking for dlopen in -ldl... " >&6; }
 if test ${ac_cv_lib_dl_dlopen+y}
@@ -17188,8 +17269,8 @@ then :
 
 else $as_nop
 
-    case ac_cv_sizeof_voidp in #(
-  1-9*) :
+    case "$ac_cv_sizeof_voidp" in #(
+  [1-9]*) :
          ;; #(
   *) :
 
@@ -19154,8 +19235,9 @@ fi
 
 
 # __VA_ARGS__ is also tested in AC_PROG_CC_C99 since autoconf 2.60a (around
-# 2006). The check below is redundant and should always success.  Remain not
-# deleted for backward compat.
+# 2006). The check below is  redundant and should always success.  However,
+# when using the script generated by autoconf 2.71 cannot detect any of the
+# C89/C99/C11 features in clang-20.
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for variable length macro" >&5
 printf %s "checking for variable length macro... " >&6; }
 if test ${rb_cv_va_args_macro+y}
@@ -19191,6 +19273,10 @@ then :
 
   printf "%s\n" "#define HAVE_VA_ARGS_MACRO 1" >>confdefs.h
 
+
+else $as_nop
+
+  as_fn_error $? "C99 compiler is needed" "$LINENO" 5
 
 fi
 
@@ -21730,9 +21816,6 @@ case "$target_cpu" in #(
   *::yes) :
     # gcc
 			CFLAGS="-mieee $CFLAGS" ;; #(
-  osf*) :
-    # ccc
-			CFLAGS="-ieee $CFLAGS" ;; #(
   *) :
      ;;
 esac ;; #(
@@ -25633,34 +25716,7 @@ fi
 printf "%s\n" "#define GETGROUPS_T $ac_cv_type_getgroups" >>confdefs.h
 
 
-case "${target_cpu}-${target_os}:${target_archs}" in #(
-  powerpc*-darwin*) :
-
-
-  ALLOCA=\${LIBOBJDIR}alloca.${ac_objext}
-
-  printf "%s\n" "#define C_ALLOCA 1" >>confdefs.h
-
-  printf "%s\n" "#define alloca alloca" >>confdefs.h
-
-   ;; #(
-  universal-darwin*:*ppc*) :
-
-
-  ALLOCA=\${LIBOBJDIR}alloca.${ac_objext}
-
-      printf "#if %s\n" "defined __POWERPC__" >>confdefs.h
-printf "%s\n" "#define C_ALLOCA 1" >>confdefs.h
-    printf "#endif /* %s */\n" "defined __POWERPC__" >>confdefs.h
- # Darwin defines __POWERPC__ for ppc and ppc64 both
-      printf "#if %s\n" "defined __POWERPC__" >>confdefs.h
-printf "%s\n" "#define alloca alloca" >>confdefs.h
-    printf "#endif /* %s */\n" "defined __POWERPC__" >>confdefs.h
-
-   ;; #(
-  *) :
-
-  # The Ultrix 4.2 mips builtin alloca declared by alloca.h only works
+# The Ultrix 4.2 mips builtin alloca declared by alloca.h only works
 # for constant arguments.  Useless!
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for working alloca.h" >&5
 printf %s "checking for working alloca.h... " >&6; }
@@ -25809,8 +25865,6 @@ printf "%s\n" "#define STACK_DIRECTION $ac_cv_c_stack_direction" >>confdefs.h
 
 fi
 
-   ;;
-esac
 if test "x$ALLOCA" = "x"
 then :
 
@@ -26138,6 +26192,20 @@ esac
 
 fi
 
+ac_fn_c_check_func "$LINENO" "memrchr" "ac_cv_func_memrchr"
+if test "x$ac_cv_func_memrchr" = xyes
+then :
+  printf "%s\n" "#define HAVE_MEMRCHR 1" >>confdefs.h
+
+else $as_nop
+  case " $LIBOBJS " in
+  *" memrchr.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS memrchr.$ac_objext"
+ ;;
+esac
+
+fi
+
 ac_fn_c_check_func "$LINENO" "nan" "ac_cv_func_nan"
 if test "x$ac_cv_func_nan" = xyes
 then :
@@ -26270,7 +26338,7 @@ printf "%s\n" "#define HAVE_ISFINITE 1" >>confdefs.h
 
 # for missing/setproctitle.c
 case "$target_os" in #(
-  aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*) :
+  aix* | linux* | darwin*) :
     printf "%s\n" "#define SPT_TYPE SPT_REUSEARGV" >>confdefs.h
  ;; #(
   *) :
@@ -27195,13 +27263,6 @@ then :
 
 fi
 
-ac_fn_c_check_func "$LINENO" "memrchr" "ac_cv_func_memrchr"
-if test "x$ac_cv_func_memrchr" = xyes
-then :
-  printf "%s\n" "#define HAVE_MEMRCHR 1" >>confdefs.h
-
-fi
-
 ac_fn_c_check_func "$LINENO" "memmem" "ac_cv_func_memmem"
 if test "x$ac_cv_func_memmem" = xyes
 then :
@@ -27956,6 +28017,41 @@ if test "${rb_cv_builtin___builtin_bswap64}" != no
 then :
 
   printf "%s\n" "#define HAVE_BUILTIN___BUILTIN_BSWAP64 1" >>confdefs.h
+
+
+fi
+test "$ac_cv_sizeof___int128" = 0 || { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap128" >&5
+printf %s "checking for __builtin_bswap128... " >&6; }
+if test ${rb_cv_builtin___builtin_bswap128+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int foo;
+int
+main (void)
+{
+__builtin_bswap128(0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  rb_cv_builtin___builtin_bswap128=yes
+else $as_nop
+  rb_cv_builtin___builtin_bswap128=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_builtin___builtin_bswap128" >&5
+    colorize_result "$rb_cv_builtin___builtin_bswap128" ; }
+if test "${rb_cv_builtin___builtin_bswap128}" != no
+then :
+
+  printf "%s\n" "#define HAVE_BUILTIN___BUILTIN_BSWAP128 1" >>confdefs.h
 
 
 fi
@@ -29101,43 +29197,6 @@ then :
 
 fi
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for unsetenv returns a value" >&5
-printf %s "checking for unsetenv returns a value... " >&6; }
-if test ${rb_cv_unsetenv_return_value+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdlib.h>
-
-int
-main (void)
-{
-int v = unsetenv("foo");
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  rb_cv_unsetenv_return_value=yes
-else $as_nop
-  rb_cv_unsetenv_return_value=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $rb_cv_unsetenv_return_value" >&5
-    colorize_result "$rb_cv_unsetenv_return_value" ; }
-if test "$rb_cv_unsetenv_return_value" = no
-then :
-
-  printf "%s\n" "#define VOID_UNSETENV 1" >>confdefs.h
-
-
-fi
-
 # End of setjmp check.
 
 # Check whether --enable-setreuid was given.
@@ -30031,17 +30090,6 @@ case $coroutine_type in #(
 
             coroutine_type=arm64
          ;; #(
-  # Correct target name is powerpc*-, but Ruby seems to prefer ppc*-.
-        # Notice that Darwin PPC ABI differs from AIX and ELF.
-        # Adding PPC targets for AIX, *BSD and *Linux will require separate implementations.
-        powerpc-darwin*|ppc-darwin*) :
-
-            coroutine_type=ppc
-         ;; #(
-  powerpc64-darwin*|ppc64-darwin*) :
-
-            coroutine_type=ppc64
-         ;; #(
   x*64-linux*) :
 
             case "$ac_cv_sizeof_voidp" in #(
@@ -30108,6 +30156,14 @@ esac
   powerpc64le-freebsd*) :
 
             coroutine_type=ppc64le
+         ;; #(
+  riscv64-freebsd*) :
+
+            coroutine_type=riscv64
+         ;; #(
+  arm*-freebsd*) :
+
+            coroutine_type=arm32
          ;; #(
   x86_64-netbsd*) :
 
@@ -30956,7 +31012,7 @@ esac
 fi
 
 case "$target_os" in #(
-  linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu) :
+  linux* | gnu*) :
 
     if test "$rb_cv_binary_elf" = no
 then :
@@ -31004,7 +31060,7 @@ then :
   *) :
      CCDLFLAGS="$CCDLFLAGS -fno-common" ;;
 esac ;; #(
-  bsdi*|cygwin*|msys*|mingw*|aix*|interix*) :
+  cygwin*|msys*|mingw*|aix*) :
       ;; #(
   *) :
 
@@ -31022,11 +31078,7 @@ esac
 else $as_nop
 
     case "$target_os" in #(
-  solaris*|irix*) :
-    CCDLFLAGS="$CCDLFLAGS -KPIC" ;; #(
-  sunos*) :
-    CCDLFLAGS="$CCDLFLAGS -PIC" ;; #(
-  esix*|uxpds*) :
+  solaris*) :
     CCDLFLAGS="$CCDLFLAGS -KPIC" ;; #(
   *) :
     : ${CCDLFLAGS=""} ;;
@@ -31054,7 +31106,6 @@ case ",$EXTSTATIC," in #(
   ,static,|*,enc,*) :
 
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT)'
   printf "%s\n" "#define EXTSTATIC 1" >>confdefs.h
 
   ENCSTATIC=static
@@ -31063,10 +31114,12 @@ case ",$EXTSTATIC," in #(
   *) :
 
   ENCOBJS='dmyenc.$(OBJEXT)'
-  EXTOBJS='dmyext.$(OBJEXT)'
  ;;
 esac
+EXTOBJS='dmyext.$(OBJEXT)'
 
+
+PROGRAM_EXTS=${EXTSTATIC:+exts}
 
 
 : "rpath" && {
@@ -31101,33 +31154,7 @@ else $as_nop
 
 fi
 			rb_cv_dlopen=yes ;; #(
-  sunos*) :
-    	: ${LDSHARED='$(LD) -assert nodefinitions'}
-			rb_cv_dlopen=yes ;; #(
-  irix*) :
-    	: ${LDSHARED='$(LD) -shared'}
-			rb_cv_dlopen=yes ;; #(
-  sysv4*) :
-    	: ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes ;; #(
-  nto-qnx*) :
-    	: ${LDSHARED='$(CC) -shared'}
-			rb_cv_dlopen=yes ;; #(
-  esix*|uxpds*) :
-     : ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes ;; #(
-  osf*) :
-    	: ${LDSHARED='$(LD) -shared -expect_unresolved "*"'}
-			rb_cv_dlopen=yes ;; #(
-  bsdi3*) :
-    	case "$CC" in #(
-  *shlicc*) :
-    	: ${LDSHARED='$(CC) -r'}
-					rb_cv_dlopen=yes ;; #(
-  *) :
-     ;;
-esac ;; #(
-  linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | kopensolaris*-gnu | haiku*) :
+  linux* | gnu* | netbsd* | haiku*) :
 
 			: ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes
@@ -31137,33 +31164,15 @@ then :
 
 fi
 			rb_cv_dlopen=yes ;; #(
-  interix*) :
-    	: ${LDSHARED='$(CC) -shared'}
-			XLDFLAGS="$XLDFLAGS -Wl,-E"
-			rb_cv_dlopen=yes ;; #(
   freebsd*|dragonfly*) :
 
 			: ${LDSHARED='$(CC) -shared'}
-			if test "$rb_cv_binary_elf" = yes
-then :
-
-			    LDFLAGS="$LDFLAGS -rdynamic"
-			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
-
-else $as_nop
-
-			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED='$(LD) -Bshareable'
-
-fi
+			LDFLAGS="$LDFLAGS -rdynamic"
+			DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			rb_cv_dlopen=yes ;; #(
-  openbsd*|mirbsd*) :
+  openbsd*) :
     	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
-			if test "$rb_cv_binary_elf" = yes
-then :
-
-			    LDFLAGS="$LDFLAGS -Wl,-E"
-
-fi
+			LDFLAGS="$LDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes ;; #(
   darwin*) :
     	: ${LDSHARED='$(CC) -dynamic -bundle'}
@@ -31206,11 +31215,6 @@ fi
 			: ${LIBPATHENV=LIBPATH}
 			: ${PRELOADENV=LDR_PRELOAD}
 			rb_cv_dlopen=yes ;; #(
-  nto-qnx*) :
-    	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			: ${LDSHARED='$(LD) -Bshareable -x'}
-			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			rb_cv_dlopen=yes ;; #(
   cygwin*|msys*|mingw*) :
 
 			: ${LDSHARED='$(CC) -shared'}
@@ -31218,11 +31222,6 @@ fi
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
 			: ${LIBPATHENV=PATH}
 			: ${PRELOADENV=""}
-			rb_cv_dlopen=yes ;; #(
-  hiuxmpp) :
-    	: ${LDSHARED='$(LD) -r'} ;; #(
-  atheos*) :
-    	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes ;; #(
   wasi*) :
     	: ${LDSHARED='$(LD) -shared -Xlinker --export-dynamic'} ;; #(
@@ -31781,7 +31780,7 @@ fi
 
 	SOEXT=dylib
 	DLEXT=bundle ;; #(
-  cygwin*|msys*|mingw*|*djgpp*) :
+  cygwin*|msys*|mingw*) :
 
 	LOAD_RELATIVE=1
 	SOEXT=dll
@@ -32007,7 +32006,7 @@ then :
   *) :
      ;;
 esac
-  RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
+  RUNRUBY_COMMAND='$(MINIRUBY) -I`$(CHDIR) $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
@@ -32058,7 +32057,12 @@ esac
 # Check whether --enable-multiarch was given.
 if test ${enable_multiarch+y}
 then :
-  enableval=$enable_multiarch; multiarch=
+  enableval=$enable_multiarch; case $enableval in #(
+  no) :
+    unset multiarch ;; #(
+  *) :
+    multiarch= ;;
+esac
 else $as_nop
   unset multiarch
 fi
@@ -32319,11 +32323,7 @@ esac
 
   relative_libprefix="/../${multiarch+../}${libdir_basename}"
   case "$target_os" in #(
-  sunos4*) :
-
-	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	 ;; #(
-  linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*) :
+  linux* | gnu* | haiku*) :
 
 	# RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS)
 	for rb_opt in '-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"; do
@@ -32350,13 +32350,7 @@ fi
 
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SONAME='$(LIBRUBY_SO)'
-	if test "$rb_cv_binary_elf" != "yes"
-then :
-
-	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
-	    LIBRUBY_ALIASES=''
-
-elif test "$load_relative" = yes
+	if test "$load_relative" = yes
 then :
 
 	    libprefix="'\$\$ORIGIN${relative_libprefix}'"
@@ -32380,18 +32374,9 @@ fi
      LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS ${rb_opt}" ;;
 esac
 	done
-	if test "$rb_cv_binary_elf" = yes
-then :
-   # ELF platforms
-	   LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-
-else $as_nop
-  	# a.out platforms
-	   LIBRUBY_ALIASES=""
-
-fi
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	 ;; #(
-  openbsd*|mirbsd*) :
+  openbsd*) :
 
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	 ;; #(
@@ -32465,10 +32450,6 @@ then :
 
 fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
-	 ;; #(
-  interix*) :
-
-	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
 	 ;; #(
   cygwin*|msys*|mingw*|mswin*) :
 
@@ -32775,11 +32756,14 @@ esac
     rb_cv_dtrace_available=no
  ;;
 esac
-case "$target_os" in #(
-  freebsd*) :
-
-         rb_cv_dtrace_available=no
-	  ;; #(
+case "$target_cpu-$target_os" in #(
+  aarch64-freebsd* | arm64-freebsd*) :
+        # FreeBSD's libdtrace mishandles is-enabled probes on aarch64: dt_modtext()
+    # rewrites the call site to a bare nop without clearing the return register,
+    # so RUBY_DTRACE_*_ENABLED() returns a garbage value and fires probes even
+    # when no consumer is attached. See dt_link.c dt_modtext() for __aarch64__.
+    rb_cv_dtrace_available=no
+ ;; #(
   *) :
      ;;
 esac
@@ -33489,6 +33473,14 @@ JIT_CARGO_SUPPORT=no
 case "${YJIT_SUPPORT}" in #(
   yes|dev|stats|dev_nodebug) :
 
+    case "$target_os" in #(
+  mingw*) :
+
+        as_fn_error $? "YJIT is not supported on mingw. Use win32\configure.bat --enable-yjit on mswin instead" "$LINENO" 5
+     ;; #(
+  *) :
+     ;;
+esac
     if test x"$RUSTC" = "xno"
 then :
   as_fn_error $? "rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install" "$LINENO" 5
@@ -33602,6 +33594,14 @@ fi
 
  ;;
 esac
+
+RUSTC_FLAGS='-g -C lto=thin -C opt-level=3 -C overflow-checks=on'
+if test -n "${rustc_flags}"
+then :
+
+    RUSTC_FLAGS="${RUSTC_FLAGS} ${rustc_flags}"
+
+fi
 
 JIT_RUST_FLAGS='--crate-type=staticlib --cfg feature=\"stats_allocator\"'
 RLIB_DIR=
@@ -33782,10 +33782,17 @@ then :
 esac
 
     # absolute path to stop the "target" dir in src dir from interfering through VPATH
-    RUST_LIB="$(pwd)/${RUST_LIB}"
+    RUST_LIB='$(TOP_BUILD_DIR)'/"${RUST_LIB}"
 
 fi
 
+X_YJIT_LIBS=$YJIT_LIBS
+X_YJIT_OBJ=$YJIT_OBJ
+X_ZJIT_LIBS=$ZJIT_LIBS
+X_ZJIT_OBJ=$ZJIT_OBJ
+X_JIT_OBJ=$JIT_OBJ
+X_RUST_LIB=$RUST_LIB
+X_RLIB_DIR=$RLIB_DIR
 }
 
 begin_group "build section" && {
@@ -33810,7 +33817,7 @@ _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
 
-	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
+	rb_cv_symbol_prefix=`$NM conftest.$ac_objext 2>/dev/null |
 			     sed -n '/.*T[ 	]\([^ 	]*\)conftest_external.*/!d;s//\1/p;q'`
 
 else $as_nop
@@ -33875,11 +33882,11 @@ fi
 XSYMBOLS_IN_EMPTYLIB="${rb_cv_symbols_in_emptylib}"
 
 
-DLNOBJ=dln.o
+DLNOBJS=dln.o
 # Check whether --enable-dln was given.
 if test ${enable_dln+y}
 then :
-  enableval=$enable_dln; test "$enableval" = yes || DLNOBJ=dmydln.o
+  enableval=$enable_dln; test "$enableval" = yes || DLNOBJS=dmydln.o
 fi
 
 
@@ -34042,28 +34049,6 @@ esac
   *) :
      LIBRUBYARG_STATIC="$LIBRUBYARG_STATIC -framework CoreFoundation" ;;
 esac
-	 ;; #(
-  osf*) :
-
-	if test "$GCC" != "yes"
-then :
-
-	  # compile something small: taint.c is fine for this.
-	  # the main point is the '-v' flag of 'cc'.
-	  case "`cc -v -I. -c main.c -o /tmp/main.o 2>&1`" in #(
-  */gemc_cc*) :
-       # we have the new DEC GEM CC
-                        CFLAGS="$CFLAGS -oldc"
-                         ;; #(
-  *) :
-                # we have the old MIPS CC
-                         ;;
-esac
-	  # cleanup
-	  rm -f /tmp/main.o
-	  CFLAGS="$CFLAGS -std"
-
-fi
 	 ;; #(
   cygwin*|msys*|mingw*) :
 
@@ -34340,8 +34325,13 @@ then :
 
 fi
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
-CPPFLAGS="$CPPFLAGS "'$(DEFS)'
-test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
+case "$LIBRUBYARG" in #(
+  '$(LIBRUBYARG_STATIC)') :
+    PROGRAM_LIBS= ;; #(
+  *) :
+    PROGRAM_LIBS='$(MAINLIBS)' ;;
+esac
+CPPFLAGS="$CPPFLAGS "'$(DEFS) ${cppflags}'
 if test -n "${cflags+set}"
 then :
 
@@ -34428,8 +34418,8 @@ cflags='${hardenflags} '"${orig_cflags:+$orig_cflags }"' ${optflags} ${debugflag
 
 
 
-COROUTINE_TYPE=${coroutine_type}
 
+COROUTINE_TYPE=${coroutine_type}
 
 
 
@@ -34871,6 +34861,19 @@ case $with_parser in #(
  ;;
 esac
 
+# Use the ruby allocator for prism. See prism/defines.h
+# RUBY_APPEND_OPTIONS(XCFLAGS)
+	for rb_opt in -DPRISM_XALLOCATOR; do
+	case " ${XCFLAGS-} " in #(
+  *" ${rb_opt} "*) :
+     ;; #(
+  '  ') :
+     XCFLAGS="${rb_opt}" ;; #(
+  *) :
+     XCFLAGS="$XCFLAGS ${rb_opt}" ;;
+esac
+	done
+
 arch_hdrdir="${EXTOUT}/include/${arch}/ruby"
 as_dir="${arch_hdrdir}"; as_fn_mkdir_p
 config_h="${arch_hdrdir}/config.h"
@@ -34951,6 +34954,18 @@ else $as_nop
 fi
 
 fi
+
+if test "x$HAVE_BASERUBY" = xyes
+then :
+
+    X_DEPENDENCIES_DIR=.deps
+
+else $as_nop
+
+    X_DEPENDENCIES_DIR='$(srcdir)'
+
+fi
+
 
 if test x"$firstmf" != x
 then :
@@ -35696,6 +35711,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 #
 firstmf="$firstmf" firsttmpl="$firsttmpl"
 EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'
+ X_DEPENDENCIES_DIR='$X_DEPENDENCIES_DIR' BASERUBY='$BASERUBY' HAVE_BASERUBY='$HAVE_BASERUBY'
 
 _ACEOF
 
@@ -36168,6 +36184,21 @@ esac
         done
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
+	if test "x$X_DEPENDENCIES_DIR" = x.deps -a "x$HAVE_BASERUBY" = xyes
+then :
+
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: generating build dependencies" >&5
+printf "%s\n" "$as_me: generating build dependencies" >&6;}
+	    ${MAKE-make} -f "$srcdir/depend" BASERUBY="$BASERUBY" \
+		srcdir="$srcdir" update-dependencies >&6 ||
+		as_fn_error $? "failed to generate build dependencies" "$LINENO" 5
+	    dependency_dir="$ac_pwd/.deps"
+
+else $as_nop
+
+	    dependency_dir=.
+
+fi
 	if test "$gnumake" != yes
 then :
 
@@ -36175,7 +36206,9 @@ then :
 	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
 	    echo common_mk_includes "$*" # generate the macro assignment
 	    shift
-	    common_mk_includes="`echo \"$*\" | sed 's|\$(srcdir)|.|g'`"
+	    common_mk_includes="`echo \"$*\" | sed \
+	        -e "s|\\\$(DEPENDENCIES_DIR)|$dependency_dir|g" \
+	        -e 's|\$(srcdir)|.|g'`"
 	    (PWD= cd ${srcdir} && sed -f tool/prereq.status common.mk ${common_mk_includes})
             if test "$YJIT_SUPPORT" = yes
 then :
@@ -36332,6 +36365,7 @@ config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
 config_summary "ZJIT support"        "$ZJIT_SUPPORT"
+config_summary "RUSTC_FLAGS"         "$RUSTC_FLAGS"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

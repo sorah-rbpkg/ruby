@@ -30,6 +30,7 @@
 #include "internal/compilers.h"
 #include "internal/complex.h"
 #include "internal/enumerator.h"
+#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/numeric.h"
@@ -38,6 +39,7 @@
 #include "internal/string.h"
 #include "internal/util.h"
 #include "internal/variable.h"
+#include "vm_core.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 #include "builtin.h"
@@ -493,7 +495,7 @@ rb_num_coerce_cmp(VALUE x, VALUE y, ID func)
 static VALUE
 ensure_cmp(VALUE c, VALUE x, VALUE y)
 {
-    if (NIL_P(c)) rb_cmperr(x, y);
+    if (NIL_P(c)) rb_cmperr_reason(x, y, "comparator returned nil");
     return c;
 }
 
@@ -503,7 +505,7 @@ rb_num_coerce_relop(VALUE x, VALUE y, ID func)
     VALUE x0 = x, y0 = y;
 
     if (!do_coerce(&x, &y, FALSE)) {
-        rb_cmperr(x0, y0);
+        rb_cmperr_reason(x0, y0, "coercion was not possible");
         UNREACHABLE_RETURN(Qnil);
     }
     return ensure_cmp(rb_funcall(x, func, 1, y), x0, y0);
@@ -911,7 +913,7 @@ num_negative_p(VALUE num)
 VALUE
 rb_float_new_in_heap(double d)
 {
-    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0), sizeof(struct RFloat), 0);
+    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT, sizeof(struct RFloat));
 
 #if SIZEOF_DOUBLE <= SIZEOF_VALUE
     flt->float_value = d;
@@ -978,7 +980,7 @@ flo_to_s(VALUE flt)
             rb_str_cat(s, buf, digs + 1);
         }
         else if (decpt <= DBL_DIG) {
-            long len;
+            rb_len_t len;
             char *ptr;
             rb_str_cat(s, buf, digs);
             rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs + 2);
@@ -994,7 +996,7 @@ flo_to_s(VALUE flt)
         }
     }
     else if (decpt > -4) {
-        long len;
+        rb_len_t len;
         char *ptr;
         rb_str_cat(s, "0.", 2);
         rb_str_resize(s, (len = RSTRING_LEN(s)) - decpt + digs);
@@ -1503,7 +1505,7 @@ num_equal(VALUE x, VALUE y)
  *  call-seq:
  *     self == other -> true or false
  *
- *  Returns +true+ if +other+ has the same value as +self+, +false+ otherwise:
+ *  Returns whether +other+ is numerically equal to +self+:
  *
  *     2.0 == 2              # => true
  *     2.0 == 2.0            # => true
@@ -1640,7 +1642,8 @@ rb_float_cmp(VALUE x, VALUE y)
  *  call-seq:
  *    self > other -> true or false
  *
- *  Returns +true+ if +self+ is numerically greater than +other+:
+ *  Returns whether the value of +self+ is greater than the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 > 1              # => true
  *    2.0 > 1.0            # => true
@@ -1676,7 +1679,8 @@ rb_float_gt(VALUE x, VALUE y)
  *  call-seq:
  *    self >= other -> true or false
  *
- *  Returns +true+ if +self+ is numerically greater than or equal to +other+:
+ *  Returns whether the value of +self+ is greater than or equal to the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    2.0 >= 1              # => true
  *    2.0 >= 1.0            # => true
@@ -2161,8 +2165,8 @@ flo_floor(int argc, VALUE *argv, VALUE num)
  *  returns an Integer based on a computed granularity:
  *
  *  - The granularity is `10 ** ndigits.abs`.
- *  - The returned value is the largest multiple of the granularity
- *    that is less than or equal to `self`.
+ *  - The returned value is the smallest multiple of the granularity
+ *    that is greater than or equal to `self`.
  *
  *  Examples with positive `self`:
  *
@@ -2569,6 +2573,12 @@ flo_to_i(VALUE num)
     return dbl2ival(f);
 }
 
+VALUE
+rb_flo_to_i(VALUE num)
+{
+    return flo_to_i(num);
+}
+
 /*
  *  call-seq:
  *    truncate(ndigits = 0) -> float or integer
@@ -2655,7 +2665,7 @@ num_ceil(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *    round(digits = 0) -> integer or float
+ *    round(digits = 0, half: :up) -> integer or float
  *
  *  Returns +self+ rounded to the nearest value with
  *  a precision of +digits+ decimal digits.
@@ -3107,7 +3117,7 @@ rb_num2long(VALUE val)
 {
   again:
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     if (FIXNUM_P(val)) return FIX2LONG(val);
@@ -3135,7 +3145,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
 {
   again:
     if (NIL_P(val)) {
-       rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     if (FIXNUM_P(val)) {
@@ -3181,6 +3191,13 @@ void
 rb_out_of_int(SIGNED_VALUE num)
 {
     rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'int'",
+             num, num < 0 ? "small" : "big");
+}
+
+void
+rb_out_of_long(SIGNED_VALUE num)
+{
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'long'",
              num, num < 0 ? "small" : "big");
 }
 
@@ -3378,7 +3395,7 @@ LONG_LONG
 rb_num2ll(VALUE val)
 {
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from nil");
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     if (FIXNUM_P(val)) return (LONG_LONG)FIX2LONG(val);
@@ -3395,11 +3412,8 @@ rb_num2ll(VALUE val)
     else if (RB_BIGNUM_TYPE_P(val)) {
         return rb_big2ll(val);
     }
-    else if (RB_TYPE_P(val, T_STRING)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from string");
-    }
-    else if (RB_TYPE_P(val, T_TRUE) || RB_TYPE_P(val, T_FALSE)) {
-        rb_raise(rb_eTypeError, "no implicit conversion from boolean");
+    else if (val == Qfalse || val == Qtrue || RB_TYPE_P(val, T_STRING)) {
+        rb_no_implicit_conversion(val, "Integer");
     }
 
     val = rb_to_int(val);
@@ -3410,7 +3424,7 @@ unsigned LONG_LONG
 rb_num2ull(VALUE val)
 {
     if (NIL_P(val)) {
-        rb_raise(rb_eTypeError, "no implicit conversion of nil into Integer");
+        rb_no_implicit_conversion(val, "Integer");
     }
     else if (FIXNUM_P(val)) {
         return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
@@ -3685,9 +3699,9 @@ rb_int128_to_numeric(rb_int128_t n)
  * First, what's elsewhere. Class \Integer:
  *
  * - Inherits from
- *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
- *   and {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ *   {class Numeric}[rdoc-ref:Numeric@Whats+Here]
+ *   and {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Integer provides methods for:
  *
@@ -4041,6 +4055,11 @@ rb_int_uminus(VALUE num)
     }
 }
 
+/* ruby_decimal_digit_pairs is defined in bignum.c and declared in
+ * internal/bignum.h.  See there for the rationale of the 2-digit
+ * lookup-table itoa optimisation; both rb_fix2str here and big2str_2bdigits
+ * in bignum.c consume it. */
+
 VALUE
 rb_fix2str(VALUE x, int base)
 {
@@ -4073,9 +4092,34 @@ rb_fix2str(VALUE x, int base)
     else {
         u = val;
     }
-    do {
-        *--b = ruby_digitmap[(int)(u % base)];
-    } while (u /= base);
+    if (base == 10) {
+        /* Emit two digits per iteration from a precomputed table.  The
+         * compiler lowers `u % 100` and `u / 100` to a single multiply +
+         * shift, so each iteration costs roughly one multiply, one shift,
+         * and two stores.  About 2x fewer iterations than the classic
+         * per-digit loop for multi-digit inputs. */
+        while (u >= 100) {
+            unsigned long idx = (u % 100) * 2;
+            u /= 100;
+            b -= 2;
+            b[0] = ruby_decimal_digit_pairs[idx];
+            b[1] = ruby_decimal_digit_pairs[idx + 1];
+        }
+        if (u >= 10) {
+            unsigned long idx = u * 2;
+            b -= 2;
+            b[0] = ruby_decimal_digit_pairs[idx];
+            b[1] = ruby_decimal_digit_pairs[idx + 1];
+        }
+        else {
+            *--b = (char)('0' + u);
+        }
+    }
+    else {
+        do {
+            *--b = ruby_digitmap[(int)(u % base)];
+        } while (u /= base);
+    }
     if (neg) {
         *--b = '-';
     }
@@ -4295,16 +4339,24 @@ rb_int_mul(VALUE x, VALUE y)
     return rb_num_coerce_bin(x, y, '*');
 }
 
+static bool
+accurate_in_double(long i)
+{
+#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
+    return ((i < 0 ? -i : i) < (1L << DBL_MANT_DIG));
+#else
+    return true;
+#endif
+}
+
 static double
 fix_fdiv_double(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
         long iy = FIX2LONG(y);
-#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
-        if ((iy < 0 ? -iy : iy) >= (1L << DBL_MANT_DIG)) {
+        if (!accurate_in_double(iy)) {
             return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), rb_int2big(iy));
         }
-#endif
         return double_div_double(FIX2LONG(x), iy);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -4318,10 +4370,29 @@ fix_fdiv_double(VALUE x, VALUE y)
     }
 }
 
+static bool
+int_accurate_in_double(VALUE n)
+{
+    if (FIXNUM_P(n)) {
+        return accurate_in_double(FIX2LONG(n));
+    }
+    RUBY_ASSERT(RB_TYPE_P(n, T_BIGNUM));
+#if SIZEOF_LONG * CHAR_BIT <= DBL_MANT_DIG
+    int nlz;
+    size_t size = rb_absint_size(n, &nlz);
+    const size_t mant_size = roomof(DBL_MANT_DIG, CHAR_BIT);
+    if (size < mant_size) return true;
+    if (size > mant_size) return false;
+    if ((size_t)nlz >= (CHAR_BIT * mant_size - DBL_MANT_DIG)) return true;
+#endif
+    return false;
+}
+
 double
 rb_int_fdiv_double(VALUE x, VALUE y)
 {
-    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y)) {
+    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y) &&
+        !(int_accurate_in_double(x) && int_accurate_in_double(y))) {
         VALUE gcd = rb_gcd(x, y);
         if (!FIXNUM_ZERO_P(gcd) && gcd != INT2FIX(1)) {
             x = rb_int_idiv(x, gcd);
@@ -4407,7 +4478,8 @@ fix_div(VALUE x, VALUE y)
  *
  * Returns the quotient of +self+ and +other+.
  *
- * For integer +other+, truncates the result to an integer:
+ * For integer +other+, returns the largest integer less than or equal to
+ * the mathematical quotient:
  *
  *   4 / 3              # => 1
  *   4 / -3             # => -2
@@ -4858,7 +4930,7 @@ fix_equal(VALUE x, VALUE y)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns +true+ if +self+ is numerically equal to +other+; +false+ otherwise.
+ *  Returns whether +self+ is numerically equal to +other+:
  *
  *    1 == 2     #=> false
  *    1 == 1.0   #=> true
@@ -4964,7 +5036,8 @@ fix_gt(VALUE x, VALUE y)
  *  call-seq:
  *    self > other -> true or false
  *
- * Returns +true+ if the value of +self+ is greater than that of +other+:
+ * Returns whether the value of +self+ is greater than the value of +other+;
+ * +other+ must be numeric, but may not be Complex:
  *
  *    1 > 0              # => true
  *    1 > 1              # => false
@@ -5008,10 +5081,10 @@ fix_ge(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *    self >= real -> true or false
+ *    self >= other -> true or false
  *
- *  Returns +true+ if the value of +self+ is greater than or equal to
- *  that of +other+:
+ *  Returns whether the value of +self+ is greater than or equal to the value of +other+;
+ *  +other+ must be numeric, but may not be Complex:
  *
  *    1 >= 0              # => true
  *    1 >= 1              # => true
@@ -5669,6 +5742,49 @@ rb_int_bit_length(VALUE num)
 }
 
 static VALUE
+rb_fix_bit_count(VALUE fix)
+{
+    long v = FIX2LONG(fix);
+    if (v < 0)
+        rb_raise(rb_eArgError, "bit_count is undefined for negative integers");
+    return LONG2FIX(rb_popcount_intptr((uintptr_t)v));
+}
+
+/*
+ *  call-seq:
+ *    bit_count -> integer
+ *
+ *  Returns the number of set bits (bits equal to 1) in the binary
+ *  representation of +self+, also known as the population count or
+ *  Hamming weight.
+ *
+ *    0.bit_count            # => 0
+ *    1.bit_count            # => 1
+ *    7.bit_count            # => 3
+ *    0b10101.bit_count      # => 3
+ *    255.bit_count          # => 8
+ *    (2**1000).bit_count    # => 1
+ *    (2**1000-1).bit_count  # => 1000
+ *
+ *  Raises an exception if +self+ is negative.
+ *
+ *    (-1).bit_count # Raises ArgumentError
+ *
+ */
+
+VALUE
+rb_int_bit_count(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+        return rb_fix_bit_count(num);
+    }
+    else if (RB_BIGNUM_TYPE_P(num)) {
+        return rb_big_bit_count(num);
+    }
+    UNREACHABLE_RETURN(Qnil);
+}
+
+static VALUE
 rb_fix_digits(VALUE fix, long base)
 {
     VALUE digits;
@@ -5731,7 +5847,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     digits = rb_ary_new_from_args(1, num);
     while (RARRAY_LEN(bases)) {
         VALUE b = rb_ary_pop(bases);
-        long i, last_idx = RARRAY_LEN(digits) - 1;
+        rb_len_t i, last_idx = RARRAY_LEN(digits) - 1;
         for(i = last_idx; i >= 0; i--) {
             VALUE n = RARRAY_AREF(digits, i);
             VALUE divmod = rb_int_divmod(n, b);
@@ -5890,7 +6006,7 @@ int_downto(VALUE from, VALUE to)
             rb_yield(i);
             i = rb_funcall(i, '-', 1, INT2FIX(1));
         }
-        if (NIL_P(c)) rb_cmperr(i, to);
+        ensure_cmp(c, i, to);
     }
     return from;
 }
@@ -6369,8 +6485,8 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * First, what's elsewhere. Class \Numeric:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
  *
  * Here, class \Numeric provides methods for:
  *
@@ -6450,10 +6566,6 @@ int_s_try_convert(VALUE self, VALUE num)
 void
 Init_Numeric(void)
 {
-#ifdef _UNICOSMP
-    /* Turn off floating point exceptions for divide by zero, etc. */
-    _set_Creg(0, 0);
-#endif
     id_coerce = rb_intern_const("coerce");
     id_to = rb_intern_const("to");
     id_by = rb_intern_const("by");
@@ -6546,6 +6658,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
+    rb_define_method(rb_cInteger, "bit_count", rb_int_bit_count, 0);
 
 #define fix_to_s_static(n) do { \
         VALUE lit = rb_fstring_literal(#n); \

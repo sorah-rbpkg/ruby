@@ -68,6 +68,7 @@ RSpec.describe Bundler::SharedHelpers do
   describe "#default_bundle_dir" do
     context ".bundle does not exist" do
       it "returns nil" do
+        skip "temp dir is on a different drive than the source tree" if tmp_and_source_on_different_drives?
         expect(subject.default_bundle_dir).to be_nil
       end
     end
@@ -159,7 +160,7 @@ RSpec.describe Bundler::SharedHelpers do
     let(:pwd_stub) { nil }
 
     it "returns the current absolute path" do
-      expect(subject.pwd).to eq(source_root.to_s)
+      expect(subject.pwd).to eq(git_root.to_s)
     end
   end
 
@@ -386,7 +387,11 @@ RSpec.describe Bundler::SharedHelpers do
 
       before do
         ENV["RUBYOPT"] = "-r#{install_path}/bundler/setup"
-        allow(File).to receive(:expand_path).and_return("#{install_path}/bundler/setup")
+        # Only fake the resolution of bundler/setup itself. A blanket stub
+        # breaks unrelated RubyGems path lookups triggered lazily inside the
+        # example, see #set_rubyopt.
+        allow(File).to receive(:expand_path).and_call_original
+        allow(File).to receive(:expand_path).with("setup", anything).and_return("#{install_path}/bundler/setup")
         allow(Gem).to  receive(:bin_path).and_return("#{install_path}/bundler/setup")
       end
 
@@ -402,7 +407,8 @@ RSpec.describe Bundler::SharedHelpers do
       let(:install_path) { "/opt/ruby with space/lib" }
 
       before do
-        allow(File).to receive(:expand_path).and_return("#{install_path}/bundler/setup")
+        allow(File).to receive(:expand_path).and_call_original
+        allow(File).to receive(:expand_path).with("setup", anything).and_return("#{install_path}/bundler/setup")
         allow(Gem).to receive(:bin_path).and_return("#{install_path}/bundler/setup")
       end
 

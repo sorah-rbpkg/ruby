@@ -1,2 +1,2 @@
 #!ruby
-load File.realpath("../gems/minitest-6.0.0/bin/minitest", __dir__)
+load File.realpath("../gems/minitest-6.0.6/bin/minitest", __dir__)

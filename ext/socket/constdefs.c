@@ -4958,7 +4958,7 @@ init_constants(void)
 }
 
 int
-rsock_family_to_int(const char *str, long len, int *valp)
+rsock_family_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 2:
@@ -5485,7 +5485,7 @@ rsock_family_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_socktype_to_int(const char *str, long len, int *valp)
+rsock_socktype_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 3:
@@ -5577,7 +5577,7 @@ rsock_socktype_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_ipproto_to_int(const char *str, long len, int *valp)
+rsock_ipproto_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 2:
@@ -5786,7 +5786,7 @@ rsock_ipproto_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_unknown_level_to_int(const char *str, long len, int *valp)
+rsock_unknown_level_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 6:
@@ -5809,7 +5809,7 @@ rsock_unknown_level_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_ip_level_to_int(const char *str, long len, int *valp)
+rsock_ip_level_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 2:
@@ -6024,7 +6024,7 @@ rsock_ip_level_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_so_optname_to_int(const char *str, long len, int *valp)
+rsock_so_optname_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 3:
@@ -6500,7 +6500,7 @@ rsock_so_optname_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_ip_optname_to_int(const char *str, long len, int *valp)
+rsock_ip_optname_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 3:
@@ -6830,7 +6830,7 @@ rsock_ip_optname_to_int(const char *str, long len, int *valp)
 
 #ifdef IPPROTO_IPV6
 int
-rsock_ipv6_optname_to_int(const char *str, long len, int *valp)
+rsock_ipv6_optname_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 5:
@@ -7058,7 +7058,7 @@ rsock_ipv6_optname_to_int(const char *str, long len, int *valp)
 #endif
 
 int
-rsock_tcp_optname_to_int(const char *str, long len, int *valp)
+rsock_tcp_optname_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 4:
@@ -7291,7 +7291,7 @@ rsock_tcp_optname_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_udp_optname_to_int(const char *str, long len, int *valp)
+rsock_udp_optname_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 4:
@@ -7314,7 +7314,7 @@ rsock_udp_optname_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_shutdown_how_to_int(const char *str, long len, int *valp)
+rsock_shutdown_how_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 2:
@@ -7355,7 +7355,7 @@ rsock_shutdown_how_to_int(const char *str, long len, int *valp)
 
 
 int
-rsock_scm_optname_to_int(const char *str, long len, int *valp)
+rsock_scm_optname_to_int(const char *str, rb_len_t len, int *valp)
 {
     switch (len) {
       case 5:

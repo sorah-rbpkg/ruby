@@ -290,7 +290,8 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
             {
                 rb_proc_t *proc;
                 GetProcPtr(calling->recv, proc);
-                ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler);
+                ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler,
+                                        rb_proc_refinements_cref_for_call(calling->recv));
                 goto success;
             }
           case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
@@ -417,6 +418,9 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
 
     vm_search_method_slowpath0(vm->self, &cd, klass);
 
+    if (UNLIKELY(!vm->global_cc_cache_table_used)) {
+        vm->global_cc_cache_table_used = true;
+    }
     return vm->global_cc_cache_table[index] = cd.cc;
 }
 
@@ -491,12 +495,13 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
 }
 
 VALUE
-rb_gccct_clear_table(VALUE _self)
+rb_gccct_clear_table(void)
 {
-    int i;
     rb_vm_t *vm = GET_VM();
-    for (i=0; i<VM_GLOBAL_CC_CACHE_TABLE_SIZE; i++) {
-        vm->global_cc_cache_table[i] = NULL;
+    if (vm->global_cc_cache_table_used) {
+        const struct rb_callcache **const table = vm->global_cc_cache_table;
+        MEMZERO(table, struct rb_callcache *, VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+        vm->global_cc_cache_table_used = false;
     }
     return Qnil;
 }
@@ -1076,6 +1081,7 @@ VALUE
 rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     VM_ASSERT(ruby_thread_has_gvl_p());
+    VM_ASSERT(!RB_TYPE_P(recv, T_IMEMO));
 
     return rb_funcallv_scope(recv, mid, argc, argv, CALL_FCALL);
 }
@@ -1473,11 +1479,12 @@ vm_frametype_name(const rb_control_frame_t *cfp);
 static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
             const struct vm_ifunc *const ifunc,
-            rb_execution_context_t *ec)
+            rb_execution_context_t *ec_arg)
 {
     enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = ec->cfp;
+    rb_execution_context_t * volatile ec = ec_arg;
+    rb_control_frame_t *volatile const cfp = ec->cfp;
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
@@ -1531,13 +1538,6 @@ rb_iterate_internal(VALUE (* it_proc)(VALUE), VALUE data1,
     return rb_iterate0(it_proc, data1,
                        bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
                        GET_EC());
-}
-
-VALUE
-rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
-           rb_block_call_func_t bl_proc, VALUE data2)
-{
-    return rb_iterate_internal(it_proc, data1, bl_proc, data2);
 }
 
 struct iter_method_arg {
@@ -1721,23 +1721,23 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         coverage_enabled = 0;
     }
 
-    pm_parse_result_t result = { 0 };
-    pm_options_line_set(&result.options, line);
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_options_line_set(result.options, line);
     result.node.coverage_enabled = coverage_enabled;
 
-    // Cout scopes, one for each parent iseq, plus one for our local scope
+    // Count scopes, one for each parent iseq, plus one for our local scope
     int scopes_count = 0;
     do {
         scopes_count++;
     } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
-    pm_options_scopes_init(&result.options, scopes_count + 1);
+    pm_options_scopes_init(result.options, scopes_count + 1);
 
     // Walk over the scope tree, adding known locals at the correct depths. The
     // scope array should be deepest -> shallowest. so lower indexes in the
     // scopes array refer to root nodes on the tree, and higher indexes are the
     // leaf nodes.
     iseq = parent;
-    rb_encoding *encoding = rb_enc_get(src);
 
 #define FORWARDING_POSITIONALS_CHR '*'
 #define FORWARDING_POSITIONALS_STR "*"
@@ -1752,39 +1752,25 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
 
-        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        pm_options_scope_t *options_scope = pm_options_scope_mut(result.options, scopes_count - scopes_index - 1);
         pm_options_scope_init(options_scope, locals_count);
 
         uint8_t forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
-            pm_string_t *scope_local = &options_scope->locals[local_index];
+            pm_string_t *scope_local = pm_options_scope_local_mut(options_scope, local_index);
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
                 VALUE name_obj = rb_id2str(local);
                 const char *name = RSTRING_PTR(name_obj);
-                size_t length = strlen(name);
-
-                // Explicitly skip numbered parameters. These should not be sent
-                // into the eval.
-                if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
-                    continue;
-                }
-
-                // Check here if this local can be represented validly in the
-                // encoding of the source string. If it _cannot_, then it should
-                // not be added to the constant pool as it would not be able to
-                // be referenced anyway.
-                if (rb_enc_str_coderange_scan(name_obj, encoding) == ENC_CODERANGE_BROKEN) {
-                    continue;
-                }
+                size_t length = RSTRING_LEN(name_obj);
 
                 /* We need to duplicate the string because the Ruby string may
                  * be embedded so compaction could move the string and the pointer
                  * will change. */
-                char *name_dup = xmalloc(length + 1);
-                strlcpy(name_dup, name, length + 1);
+                char *name_dup = xmalloc(length);
+                MEMCPY(name_dup, name, char, length);
 
                 RB_GC_GUARD(name_obj);
 
@@ -1819,7 +1805,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
     // Add our empty local scope at the very end of the array for our eval
     // scope's locals.
-    pm_options_scope_init(&result.options.scopes[scopes_count], 0);
+    pm_options_scope_init(pm_options_scope_mut(result.options, scopes_count), 0);
 
     VALUE script_lines;
     VALUE error = pm_parse_string(&result, src, fname, ruby_vm_keep_script_lines ? &script_lines : NULL);
@@ -1840,17 +1826,16 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         pm_scope_node_t *parent_scope = ruby_xcalloc(1, sizeof(pm_scope_node_t));
         RUBY_ASSERT(parent_scope != NULL);
 
-        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        const pm_options_scope_t *options_scope = pm_options_scope(result.options, scopes_count - scopes_index - 1);
         parent_scope->coverage_enabled = coverage_enabled;
-        parent_scope->parser = &result.parser;
-        parent_scope->index_lookup_table = st_init_numtable();
-
+        parent_scope->parser = result.parser;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        pm_index_lookup_table_init_heap(&parent_scope->index_lookup_table, (int) pm_parser_constants_size(result.parser));
         parent_scope->local_table_for_iseq_size = locals_count;
         pm_constant_id_list_init(&parent_scope->locals);
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
-            const pm_string_t *scope_local = &options_scope->locals[local_index];
+            const pm_string_t *scope_local = pm_options_scope_local(options_scope, local_index);
             pm_constant_id_t constant_id = 0;
 
             const uint8_t *source = pm_string_source(scope_local);
@@ -1872,18 +1857,18 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                         constant_id = PM_CONSTANT_DOT3;
                         break;
                       default:
-                        constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                        constant_id = pm_parser_constant_find(result.parser, source, length);
                         break;
                     }
                 }
                 else {
-                    constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                    constant_id = pm_parser_constant_find(result.parser, source, length);
                 }
 
-                st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
+                pm_index_lookup_table_insert(&parent_scope->index_lookup_table, constant_id, local_index);
             }
 
-            pm_constant_id_list_append(&parent_scope->locals, constant_id);
+            pm_constant_id_list_append(result.arena, &parent_scope->locals, constant_id);
         }
 
         node->previous = parent_scope;
@@ -1906,9 +1891,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     pm_scope_node_t *prev = result.node.previous;
     while (prev) {
         pm_scope_node_t *next = prev->previous;
-        pm_constant_id_list_free(&prev->locals);
         pm_scope_node_destroy(prev);
-        ruby_xfree(prev);
+        SIZED_FREE(prev);
         prev = next;
     }
 
@@ -1993,12 +1977,12 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
     block.as.captured.self = self;
-    block.as.captured.code.iseq = cfp->iseq;
+    block.as.captured.code.iseq = CFP_ISEQ(cfp);
     block.type = block_type_iseq;
 
     // EP is not escaped to the heap here, but captured and reused by another frame.
     // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    rb_zjit_invalidate_no_ep_escape(cfp->iseq);
+    if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
@@ -2008,7 +1992,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     /* TODO: what the code checking? */
     if (!cref && block.as.captured.code.val) {
         rb_cref_t *orig_cref = vm_get_cref(vm_block_ep(&block));
-        cref = vm_cref_dup(orig_cref);
+        cref = rb_vm_cref_dup(orig_cref);
     }
     vm_set_eval_stack(ec, iseq, cref, &block);
 
@@ -2038,21 +2022,38 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
 }
 
 /*
- *  call-seq:
- *     eval(string [, binding [, filename [,lineno]]])  -> obj
+ * call-seq:
+ *    eval(string, binding = nil, filename = default_filename, lineno = 1) -> obj
  *
- *  Evaluates the Ruby expression(s) in <em>string</em>. If
- *  <em>binding</em> is given, which must be a Binding object, the
- *  evaluation is performed in its context. If the optional
- *  <em>filename</em> and <em>lineno</em> parameters are present, they
- *  will be used when reporting syntax errors.
+ * Evaluates the Ruby expression(s) in +string+. Returns the result of the last
+ * expression.
  *
- *     def get_binding(str)
- *       return binding
- *     end
- *     str = "hello"
- *     eval "str + ' Fred'"                      #=> "hello Fred"
- *     eval "str + ' Fred'", get_binding("bye")  #=> "bye Fred"
+ *   str = "Hello"
+ *   eval("str + ' World'") # => "Hello World"
+ *
+ * If +binding+ is given, which must be a Binding object, the
+ * evaluation is performed in its context. Otherwise, the
+ * evaluation is performed in the context of the caller.
+ *
+ *   def get_binding(str) = binding
+ *   str = "Hello"
+ *   eval("str + ' World'", get_binding("Bye")) # => "Bye World"
+ *
+ * If the optional +filename+ is given, it will be used as the
+ * filename of the evaluation (for <tt>__FILE__</tt> and errors).
+ * Otherwise, it will default to <tt>(eval at __FILE__:__LINE__)</tt>
+ * where <tt>__FILE__</tt> and <tt>__LINE__</tt> are the filename and
+ * line number of the caller, respectively.
+ *
+ *   eval("puts __FILE__") # => "(eval at test.rb:1)"
+ *   eval("puts __FILE__", nil, "foobar.rb") # => "foobar.rb"
+ *
+ * If the optional +lineno+ is given, it will be used as the
+ * line number of the evaluation (for <tt>__LINE__</tt> and errors).
+ * Otherwise, it will default to 1.
+ *
+ *   eval("puts __LINE__") # => 1
+ *   eval("puts __LINE__", nil, "foobar.rb", 10) # => 10
  */
 
 VALUE
@@ -2203,6 +2204,7 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
     const VALUE *ep = NULL;
     rb_cref_t *cref;
     int is_lambda = FALSE;
+    const rb_cref_t *proc_cref = NULL;
 
     if (block_handler != VM_BLOCK_HANDLER_NONE) {
       again:
@@ -2218,8 +2220,14 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
             new_block_handler = VM_BH_FROM_IFUNC_BLOCK(&new_captured);
             break;
           case block_handler_type_proc:
-            is_lambda = rb_proc_lambda_p(block_handler) != Qfalse;
-            block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
+            {
+                VALUE procval = VM_BH_TO_PROC(block_handler);
+                rb_proc_t *po;
+                GetProcPtr(procval, po);
+                is_lambda = po->header.is_lambda;
+                if (po->header.is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
+                block_handler = vm_block_to_block_handler(&po->block);
+            }
             goto again;
           case block_handler_type_symbol:
             return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
@@ -2235,6 +2243,11 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
 
     VM_ASSERT(singleton || RB_TYPE_P(self, T_MODULE) || RB_TYPE_P(self, T_CLASS));
     cref = vm_cref_push(ec, self, ep, TRUE, singleton);
+
+    if (proc_cref && !NIL_P(CREF_REFINEMENTS(proc_cref))) {
+        CREF_REFINEMENTS_SET(cref, rb_hash_dup(CREF_REFINEMENTS(proc_cref)));
+        CREF_REFINED_PROC_SET(cref);
+    }
 
     return vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
 }
@@ -2379,29 +2392,66 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     mod.class_eval(string [, filename [, lineno]])  -> obj
- *     mod.class_eval {|mod| block }                   -> obj
- *     mod.module_eval(string [, filename [, lineno]]) -> obj
- *     mod.module_eval {|mod| block }                  -> obj
+ *     class_eval(string, filename = nil, lineno = 1) -> obj
+ *     class_eval { |mod| ... } -> obj
+ *     module_eval(string, filename = nil, lineno = 1) -> obj
+ *     module_eval { |mod| ... } -> obj
  *
- *  Evaluates the string or block in the context of _mod_, except that when
- *  a block is given, constant/class variable lookup is not affected. This
- *  can be used to add methods to a class. <code>module_eval</code> returns
- *  the result of evaluating its argument. The optional _filename_ and
- *  _lineno_ parameters set the text for error messages.
+ *  Evaluates the +string+ or block in the context of +self+.
+ *  Returns the result of the last expression.
  *
- *     class Thing
- *     end
- *     a = %q{def hello() "Hello there!" end}
- *     Thing.module_eval(a)
- *     puts Thing.new.hello()
- *     Thing.module_eval("invalid code", "dummy", 123)
+ *  When +string+ is given, evaluates the given string in the
+ *  context of +self+:
  *
- *  <em>produces:</em>
+ *      class Foo; end
  *
- *     Hello there!
- *     dummy:123:in `module_eval': undefined local variable
- *         or method `code' for Thing:Class
+ *      Foo.module_eval("def greeting = puts 'hello'")
+ *
+ *      Foo.new.greeting # => "hello"
+ *
+ *  If the optional +filename+ is given, it will be used as the
+ *  filename of the evaluation (for <tt>__FILE__</tt> and errors).
+ *  Otherwise, it will default to <tt>(eval at __FILE__:__LINE__)</tt>
+ *  where <tt>__FILE__</tt> and <tt>__LINE__</tt> are the filename and
+ *  line number of the caller, respectively:
+ *
+ *      class Foo; end
+ *
+ *      Foo.module_eval("puts __FILE__") # => "(eval at ../test.rb:3)"
+ *      Foo.module_eval("puts __FILE__", "foobar.rb") # => "foobar.rb"
+ *
+ *  If the optional +lineno+ is given, it will be used as the
+ *  line number of the evaluation (for <tt>__LINE__</tt> and errors).
+ *  Otherwise, it will default to 1:
+ *
+ *      class Foo; end
+ *
+ *      Foo.module_eval("puts __LINE__") # => 1
+ *      Foo.module_eval("puts __LINE__", nil, 10) # => 10
+ *
+ *  When a block is given, evaluates the block in the context
+ *  of +self+:
+ *
+ *      class Foo; end
+ *
+ *      Foo.module_eval do
+ *        def greeting = puts "hello"
+ *      end
+ *
+ *      Foo.new.greeting
+ *
+ *  However, constant and class variable lookup differs between
+ *  +string+ and block. When +string+ is given, constant and class
+ *  variables are looked up in the context of +self+. When a block
+ *  is given, the context of the lookup is not changed:
+ *
+ *      class Foo
+ *        GREETING = "hello"
+ *      end
+ *
+ *      Foo.module_eval("puts GREETING") # => "hello"
+ *
+ *      Foo.module_eval { puts GREETING } # => NameError: uninitialized constant GREETING
  */
 
 static VALUE
@@ -2640,11 +2690,12 @@ rb_catch(const char *tag, rb_block_call_func_t func, VALUE data)
 
 static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
-                 enum ruby_tag_type *stateptr, rb_execution_context_t *volatile ec)
+                 enum ruby_tag_type *stateptr_arg, rb_execution_context_t *volatile ec)
 {
     enum ruby_tag_type state;
     VALUE val = Qnil;		/* OK */
     rb_control_frame_t *volatile saved_cfp = ec->cfp;
+    enum ruby_tag_type * volatile stateptr = stateptr_arg;
 
     EC_PUSH_TAG(ec);
 
@@ -2761,9 +2812,9 @@ rb_f_local_variables(VALUE _)
 
     local_var_list_init(&vars);
     while (cfp) {
-        if (cfp->iseq) {
-            for (i = 0; i < ISEQ_BODY(cfp->iseq)->local_table_size; i++) {
-                local_var_list_add(&vars, ISEQ_BODY(cfp->iseq)->local_table[i]);
+        if (CFP_ISEQ(cfp)) {
+            for (i = 0; i < ISEQ_BODY(CFP_ISEQ(cfp))->local_table_size; i++) {
+                local_var_list_add(&vars, ISEQ_BODY(CFP_ISEQ(cfp))->local_table[i]);
             }
         }
         if (!VM_ENV_LOCAL_P(cfp->ep)) {
@@ -2837,16 +2888,17 @@ rb_current_realfilepath(void)
     rb_control_frame_t *cfp = ec->cfp;
     cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     if (cfp != NULL) {
-        VALUE path = rb_iseq_realpath(cfp->iseq);
+        const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+        VALUE path = rb_iseq_realpath(iseq);
         if (RTEST(path)) return path;
         // eval context
-        path = rb_iseq_path(cfp->iseq);
+        path = rb_iseq_path(iseq);
         if (path == eval_default_path) {
             return Qnil;
         }
 
         // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
-        const long len = RSTRING_LEN(path);
+        const rb_len_t len = RSTRING_LEN(path);
         if (len > EVAL_LOCATION_MARK_LEN+1) {
             const char *const ptr = RSTRING_PTR(path);
             if (ptr[len - 1] == ')' &&
@@ -2866,7 +2918,7 @@ struct vm_ifunc *
 rb_current_ifunc(void)
 {
     // Search VM_FRAME_MAGIC_IFUNC to see ifunc imemos put on the iseq field.
-    VALUE ifunc = (VALUE)GET_EC()->cfp->iseq;
+    VALUE ifunc = (VALUE)CFP_ISEQ(GET_EC()->cfp);
     RUBY_ASSERT_ALWAYS(imemo_type_p(ifunc, imemo_ifunc));
     return (struct vm_ifunc *)ifunc;
 }

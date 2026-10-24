@@ -129,12 +129,12 @@ class Array
   def first n = unspecified = true
     if Primitive.mandatory_only?
       Primitive.attr! :leaf
-      Primitive.cexpr! %q{ ary_first(self) }
+      Primitive.rb_builtin_ary_first
     else
       if unspecified
-        Primitive.cexpr! %q{ ary_first(self) }
+        Primitive.rb_builtin_ary_first
       else
-        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_FIRST) }
+        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LEN(n), ARY_TAKE_FIRST) }
       end
     end
   end
@@ -171,7 +171,7 @@ class Array
       if unspecified
         Primitive.cexpr! %q{ ary_last(self) }
       else
-        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST) }
+        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LEN(n), ARY_TAKE_LAST) }
       end
     end
   end
@@ -217,15 +217,15 @@ class Array
       undef :each
 
       def each # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
-        _i = 0
-        value = nil
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          yield value
+        i = 0
+        until Primitive.rb_builtin_ary_at_end(i)
+          yield Primitive.rb_builtin_ary_at(i)
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         self
       end
@@ -235,17 +235,18 @@ class Array
       undef :map
 
       def map # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
 
-        _i = 0
-        value = nil
+        i = 0
         result = Primitive.ary_sized_alloc
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << yield(value)
+        until Primitive.rb_builtin_ary_at_end(i)
+          value = yield(Primitive.rb_builtin_ary_at(i))
+          Primitive.rb_jit_ary_push(result, value)
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         result
       end
@@ -260,17 +261,20 @@ class Array
       undef :select
 
       def select # :nodoc:
-        Primitive.attr! :inline_block, :c_trace
+        Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
 
-        _i = 0
-        value = nil
+        i = 0
         result = Primitive.ary_sized_alloc
-        while Primitive.cexpr!(%q{ ary_fetch_next(self, LOCAL_PTR(_i), LOCAL_PTR(value)) })
-          result << value if yield value
+        until Primitive.rb_builtin_ary_at_end(i)
+          value = Primitive.rb_builtin_ary_at(i)
+          if yield value
+            Primitive.rb_jit_ary_push(result, value)
+          end
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         result
       end
@@ -280,5 +284,25 @@ class Array
         alias filter select
       end
     end
+
+    # TODO: Temporarily disabled because it is not compatible and fails multiple spec/ruby/core/array specs
+    # if Primitive.rb_builtin_basic_definition_p(:find)
+    #   undef :find
+
+    #   def find(if_none_proc = nil) # :nodoc:
+    #     Primitive.attr! :inline_block, :c_trace, :without_interrupts
+
+    #     unless defined?(yield)
+    #       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+    #     end
+    #     i = 0
+    #     until Primitive.rb_builtin_ary_at_end(i)
+    #       value = Primitive.rb_builtin_ary_at(i)
+    #       return value if yield(value)
+    #       i = Primitive.rb_builtin_fixnum_inc(i)
+    #     end
+    #     if_none_proc&.call
+    #   end
+    # end
   end
 end

@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class SourceLocationTest < TestCase
     def test_AliasGlobalVariableNode
       assert_location(AliasGlobalVariableNode, "alias $foo $bar")
@@ -650,6 +650,10 @@ module Prism
       assert_location(NilNode, "nil")
     end
 
+    def test_NoBlockParameterNode
+      assert_location(NoBlockParameterNode, "def foo(&nil); end", 8...12) { |node| node.parameters.block }
+    end
+
     def test_NoKeywordsParameterNode
       assert_location(NoKeywordsParameterNode, "def foo(**nil); end", 8...13) { |node| node.parameters.keyword_rest }
     end
@@ -920,7 +924,7 @@ module Prism
     end
 
     def test_all_tested
-      expected = Prism.constants.grep(/.Node$/).sort - %i[MissingNode ProgramNode]
+      expected = Ruby::Prism.constants.grep(/.Node$/).sort - %i[ErrorRecoveryNode ProgramNode]
       actual = SourceLocationTest.instance_methods(false).grep(/.Node$/).map { |name| name[5..].to_sym }.sort
       assert_equal expected, actual
     end
@@ -928,23 +932,23 @@ module Prism
     private
 
     def assert_location(kind, source, expected = 0...source.length, **options)
-      result = Prism.parse(source, **options)
+      result = Ruby::Prism.parse(source, **options)
       assert result.success?
 
       node = result.value.statements.body.last
       node = yield node if block_given?
 
       if expected.begin == 0
-        assert_equal 0, node.location.start_column
+        assert_equal 0, node.location.start_column, "#{kind} start_column"
       end
 
       if expected.end == source.length
-        assert_equal source.split("\n").last.length, node.location.end_column
+        assert_equal source.split("\n").last.length, node.location.end_column, "#{kind} end_column"
       end
 
       assert_kind_of kind, node
-      assert_equal expected.begin, node.location.start_offset
-      assert_equal expected.end, node.location.end_offset
+      assert_equal expected.begin, node.location.start_offset, "#{kind} start_offset"
+      assert_equal expected.end, node.location.end_offset, "#{kind} end_offset"
     end
   end
 end

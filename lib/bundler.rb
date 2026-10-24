@@ -41,7 +41,6 @@ module Bundler
   autoload :Checksum,               File.expand_path("bundler/checksum", __dir__)
   autoload :CLI,                    File.expand_path("bundler/cli", __dir__)
   autoload :CIDetector,             File.expand_path("bundler/ci_detector", __dir__)
-  autoload :CompactIndexClient,     File.expand_path("bundler/compact_index_client", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
@@ -62,6 +61,7 @@ module Bundler
   autoload :MatchRemoteMetadata,    File.expand_path("bundler/match_remote_metadata", __dir__)
   autoload :Materialization,        File.expand_path("bundler/materialization", __dir__)
   autoload :NULL,                   File.expand_path("bundler/constants", __dir__)
+  autoload :Override,               File.expand_path("bundler/override", __dir__)
   autoload :ProcessLock,            File.expand_path("bundler/process_lock", __dir__)
   autoload :RemoteSpecification,    File.expand_path("bundler/remote_specification", __dir__)
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
@@ -119,9 +119,7 @@ module Bundler
     def bin_path
       @bin_path ||= begin
         path = Bundler.settings[:bin] || "bin"
-        path = Pathname.new(path).expand_path(root).expand_path
-        mkdir_p(path)
-        path
+        Pathname.new(path).expand_path(root).expand_path
       end
     end
 

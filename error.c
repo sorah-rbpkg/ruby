@@ -27,10 +27,6 @@
 # include <sys/wait.h>
 #endif
 
-#if defined __APPLE__
-# include <AvailabilityMacros.h>
-#endif
-
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/error.h"
@@ -47,9 +43,11 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "internal/vm.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
 #include "yjit.h"
+#include "zjit.h"
 
 #include "builtin.h"
 
@@ -364,7 +362,7 @@ rb_warn_category(VALUE str, VALUE category)
     else {
         VALUE args[2];
         args[0] = str;
-        args[1] = rb_hash_new();
+        args[1] = rb_hash_new_capa(1);
         rb_hash_aset(args[1], sym_category, category);
         return rb_funcallv_kw(rb_mWarning, id_warn, 2, args, RB_PASS_KEYWORDS);
     }
@@ -543,7 +541,7 @@ deprecation_warning_enabled(void)
 }
 
 static void
-warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
+warn_deprecated(VALUE mesg, const char *removal, const char *suggest, VALUE category)
 {
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_cat_cstr(mesg, " is deprecated");
@@ -552,7 +550,7 @@ warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
     }
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_warn_category(mesg, ID2SYM(id_deprecated));
+    rb_warn_category(mesg, category);
 }
 
 void
@@ -561,7 +559,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     if (!deprecation_warning_enabled()) return;
 
     with_warning_string_from(mesg, 0, fmt, suggest) {
-        warn_deprecated(mesg, NULL, suggest);
+        warn_deprecated(mesg, NULL, suggest, ID2SYM(id_deprecated));
     }
 }
 
@@ -571,7 +569,17 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
     if (!deprecation_warning_enabled()) return;
 
     with_warning_string_from(mesg, 0, fmt, suggest) {
-        warn_deprecated(mesg, removal, suggest);
+        warn_deprecated(mesg, removal, suggest, ID2SYM(id_deprecated));
+    }
+}
+
+void
+rb_warn_to_remove(const char *removal, const char *fmt, const char *suggest, ...)
+{
+    if (NIL_P(ruby_verbose)) return;
+
+    with_warning_string_from(mesg, 0, fmt, suggest) {
+        warn_deprecated(mesg, removal, suggest, Qnil);
     }
 }
 
@@ -908,6 +916,10 @@ bug_report_file(const char *file, int line, rb_pid_t *pid)
     int len = err_position_0(buf, sizeof(buf), file, line);
 
     if (out) {
+        /* Disable buffering so crash report output is not lost if
+         * rb_vm_bugreport() triggers a secondary crash (e.g. SIGSEGV
+         * while walking JIT frames). */
+        setvbuf(out, NULL, _IONBF, 0);
         if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len) return out;
         fclose(out);
     }
@@ -948,11 +960,6 @@ bug_important_message(FILE *out, const char *const msg, size_t len)
     fwrite(p, 1, endmsg - p, out);
 }
 
-#undef CRASH_REPORTER_MAY_BE_CREATED
-#if defined(__APPLE__) && \
-    (!defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6 || defined(__POWERPC__)) /* 10.6 PPC case */
-# define CRASH_REPORTER_MAY_BE_CREATED
-#endif
 static void
 preface_dump(FILE *out)
 {
@@ -961,10 +968,6 @@ preface_dump(FILE *out)
         "-- Crash Report log information "
         "--------------------------------------------\n"
         "   See Crash Report log file in one of the following locations:\n"
-# ifdef CRASH_REPORTER_MAY_BE_CREATED
-        "     * ~/Library/Logs/CrashReporter\n"
-        "     * /Library/Logs/CrashReporter\n"
-# endif
         "     * ~/Library/Logs/DiagnosticReports\n"
         "     * /Library/Logs/DiagnosticReports\n"
         "   for more details.\n"
@@ -986,9 +989,6 @@ postscript_dump(FILE *out)
         "[IMPORTANT]"
         /*" ------------------------------------------------"*/
         "\n""Don't forget to include the Crash Report log file under\n"
-# ifdef CRASH_REPORTER_MAY_BE_CREATED
-        "CrashReporter or "
-# endif
         "DiagnosticReports directory in bug reports.\n"
         /*"------------------------------------------------------------\n"*/
         "\n";
@@ -1036,9 +1036,41 @@ bug_report_end(FILE *out, rb_pid_t pid)
     finish_report(out, pid);
 }
 
+/* Only the first thread to get here writes a report.  A second one -- another Ractor
+ * failing the same assertion, say -- would interleave into it and leave both
+ * unreadable [Bug #21146], so it waits for the writer to abort the process instead.
+ * The writer is let through again, for the crash-while-reporting path. */
+static const rb_execution_context_t *bug_reporter_ec;
+static rb_atomic_t bug_reporter_claimed;
+
+static bool
+bug_report_claim(void)
+{
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
+
+    if (RUBY_ATOMIC_CAS(bug_reporter_claimed, 0, 1) == 0) {
+        bug_reporter_ec = ec;
+        return true;
+    }
+    if (ec != NULL && ec == bug_reporter_ec) {
+        return true;
+    }
+
+    /* Bounded, so a writer that hangs ends as a crash and not as a hang. */
+    for (int i = 0; i < 100; i++) {
+#ifdef _WIN32
+        Sleep(100);
+#else
+        struct timespec ts = { 0, 100 * 1000 * 1000 };
+        nanosleep(&ts, NULL);
+#endif
+    }
+    return false;
+}
+
 #define report_bug(file, line, fmt, ctx) do { \
     rb_pid_t pid = -1; \
-    FILE *out = bug_report_file(file, line, &pid); \
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL; \
     if (out) { \
         bug_report_begin(out, fmt); \
         rb_vm_bugreport(ctx, out); \
@@ -1048,7 +1080,7 @@ bug_report_end(FILE *out, rb_pid_t pid)
 
 #define report_bug_valist(file, line, fmt, ctx, args) do { \
     rb_pid_t pid = -1; \
-    FILE *out = bug_report_file(file, line, &pid); \
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL; \
     if (out) { \
         bug_report_begin_valist(out, fmt, args); \
         rb_vm_bugreport(ctx, out); \
@@ -1081,6 +1113,10 @@ die(void)
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 
+    /* Reset SIGABRT to default so that abort() does not trigger our custom
+     * handler (sigabrt), which would re-open the crash report file with "w"
+     * and truncate the report already written by rb_bug(). */
+    signal(SIGABRT, SIG_DFL);
     abort();
 }
 
@@ -1197,7 +1233,7 @@ rb_assert_failure_detail(const char *file, int line, const char *name, const cha
                          const char *fmt, ...)
 {
     rb_pid_t pid = -1;
-    FILE *out = bug_report_file(file, line, &pid);
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL;
     if (out) {
         fputs("Assertion Failed: ", out);
         if (name) fprintf(out, "%s:", name);
@@ -1313,6 +1349,20 @@ rb_builtin_class_name(VALUE x)
 COLDFUNC NORETURN(static void unexpected_type(VALUE, int, int));
 #define UNDEF_LEAKED "undef leaked to the Ruby space"
 
+void
+rb_unexpected_typeddata(const rb_data_type_t *actual, const rb_data_type_t *expected)
+{
+    rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+             actual->wrap_struct_name, expected->wrap_struct_name);
+}
+
+void
+rb_unexpected_object_type(VALUE obj, const char *expected)
+{
+    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+             displaying_class_of(obj), expected);
+}
+
 static void
 unexpected_type(VALUE x, int xt, int t)
 {
@@ -1320,9 +1370,7 @@ unexpected_type(VALUE x, int xt, int t)
     VALUE mesg, exc = rb_eFatal;
 
     if (tname) {
-        mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
-                          displaying_class_of(x), tname);
-        exc = rb_eTypeError;
+        rb_unexpected_object_type(x, tname);
     }
     else if (xt > T_MASK && xt <= 0x3f) {
         mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
@@ -1343,8 +1391,7 @@ rb_check_type(VALUE x, int t)
         rb_bug(UNDEF_LEAKED);
     }
 
-    xt = TYPE(x);
-    if (xt != t || (xt == T_DATA && rbimpl_rtypeddata_p(x))) {
+    if (t == T_DATA) {
         /*
          * Typed data is not simple `T_DATA`, but in a sense an
          * extension of `struct RVALUE`, which are incompatible with
@@ -1353,6 +1400,10 @@ rb_check_type(VALUE x, int t)
          * So it is not enough to just check `T_DATA`, it must be
          * identified by its `type` using `Check_TypedStruct` instead.
          */
+        rb_unexpected_object_type(x, builtin_types[t]);
+    }
+    xt = TYPE(x);
+    if (xt != t) {
         unexpected_type(x, xt, t);
     }
 }
@@ -1367,24 +1418,18 @@ rb_unexpected_type(VALUE x, int t)
     unexpected_type(x, TYPE(x), t);
 }
 
+#undef rb_typeddata_inherited_p
 int
 rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
-    while (child) {
-        if (child == parent) return 1;
-        child = child->parent;
-    }
-    return 0;
+    return rbimpl_typeddata_inherited_p_inline(child, parent);
 }
 
+#undef rb_typeddata_is_kind_of
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    if (!RB_TYPE_P(obj, T_DATA) ||
-        !RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-        return 0;
-    }
-    return 1;
+    return rbimpl_typeddata_is_kind_of_inline(obj, data_type);
 }
 
 #undef rb_typeddata_is_instance_of
@@ -1397,26 +1442,7 @@ rb_typeddata_is_instance_of(VALUE obj, const rb_data_type_t *data_type)
 void *
 rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
-    VALUE actual;
-
-    if (!RB_TYPE_P(obj, T_DATA)) {
-        actual = displaying_class_of(obj);
-    }
-    else if (!RTYPEDDATA_P(obj)) {
-        actual = displaying_class_of(obj);
-    }
-    else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-        const char *name = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-        actual = rb_str_new_cstr(name); /* or rb_fstring_cstr? not sure... */
-    }
-    else {
-        return RTYPEDDATA_GET_DATA(obj);
-    }
-
-    const char *expected = data_type->wrap_struct_name;
-    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-             actual, expected);
-    UNREACHABLE_RETURN(NULL);
+    return rbimpl_check_typeddata(obj, data_type);
 }
 
 /* exception classes */
@@ -1466,7 +1492,7 @@ static ID id_private_call_p, id_top, id_bottom;
 #undef rb_exc_new_cstr
 
 VALUE
-rb_exc_new(VALUE etype, const char *ptr, long len)
+rb_exc_new(VALUE etype, const char *ptr, rb_len_t len)
 {
     VALUE mesg = rb_str_new(ptr, len);
     return rb_class_new_instance(1, &mesg, etype);
@@ -1537,7 +1563,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *
  *    x0 = StandardError.new('Boom') # => #<StandardError: Boom>
  *    x1 = x0.exception              # => #<StandardError: Boom>
- *    x0.__id__ == x1.__id__         # => true
+ *    x0.equal?(x1)                  # => true
  *
  *  With {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
  *  +message+ (even the same as the original message),
@@ -1545,7 +1571,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  and whose message is the given +message+:
  *
  *    x1 = x0.exception('Boom') # => #<StandardError: Boom>
- *    x0..equal?(x1)            # => false
+ *    x0.equal?(x1)             # => false
  *
  */
 
@@ -1587,7 +1613,7 @@ exc_to_s(VALUE exc)
 /* FIXME: Include eval_error.c */
 void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse);
 
-VALUE
+static VALUE
 rb_get_message(VALUE exc)
 {
     VALUE e = rb_check_funcall(exc, id_message, 0, 0);
@@ -1734,7 +1760,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     order = check_order_keyword(opt);
 
     {
-        if (NIL_P(opt)) opt = rb_hash_new();
+        if (NIL_P(opt)) opt = rb_hash_new_capa(1);
         rb_hash_aset(opt, sym_highlight, highlight);
     }
 
@@ -1759,6 +1785,71 @@ static VALUE
 exc_message(VALUE exc)
 {
     return rb_funcallv(exc, idTo_s, 0, 0);
+}
+
+// Whether error_highlight, did_you_mean, and syntax_suggest have already
+// been loaded (lazily on the first error, or eagerly via Process.warmup).
+// Ractors run in parallel, so the load is claimed by an atomic exchange.
+static rb_atomic_t decoration_gems_loaded = 0;
+
+static VALUE
+load_decoration_gem(VALUE feature)
+{
+    // The C-level require bypasses Kernel#require monkeypatches;
+    // displaying an error must not invoke or depend on them.
+    return rb_require_string(feature);
+}
+
+// Require error_highlight, did_you_mean, and syntax_suggest.
+// rb_define_gem_modules registers an autoload entry for each enabled gem;
+// disabled gems have no entry and are skipped.
+static void
+require_decoration_gems(void)
+{
+    // Loading must not disturb the caller's $!: it is called while
+    // displaying an exception. rb_protect does not preserve errinfo, so
+    // save and restore it around the requires, leaving $! untouched
+    // whether or not a require raises.
+    VALUE saved_errinfo = rb_errinfo();
+    static const char *const gems[] = {"ErrorHighlight", "DidYouMean", "SyntaxSuggest"};
+    for (size_t i = 0; i < numberof(gems); i++) {
+        VALUE feature = rb_autoload_p(rb_cObject, rb_intern(gems[i]));
+        if (NIL_P(feature)) continue;
+        int state;
+        rb_protect(load_decoration_gem, feature, &state);
+        (void)state;
+    }
+    rb_set_errinfo(saved_errinfo);
+}
+
+// Load the decoration gems on the first error display instead of at boot.
+// In non-main Ractors rb_require_string delegates the require to the main
+// Ractor, so this works from any Ractor.
+// Returns whether the caller should re-dispatch to pick up the
+// detailed_message decorators the gems prepend.
+static bool
+lazy_load_decoration_gems(VALUE exc)
+{
+    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return false;
+
+    // When entered through super from a decorator already sitting above
+    // this method, the caller decorates the result; re-dispatching would
+    // decorate it twice.
+    bool redispatch = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
+
+    require_decoration_gems();
+    return redispatch;
+}
+
+// Load the decoration gems eagerly, e.g. from Process.warmup before a
+// pre-forking server forks, so the prepended detailed_message decorators
+// land in shared memory and do not bust method caches at runtime.
+void
+rb_eager_load_detailed_message_extension(void)
+{
+    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return;
+
+    require_decoration_gems();
 }
 
 /*
@@ -1809,6 +1900,10 @@ exc_message(VALUE exc)
 static VALUE
 exc_detailed_message(int argc, VALUE *argv, VALUE exc)
 {
+    if (lazy_load_decoration_gems(exc)) {
+        return rb_funcallv_kw(exc, id_detailed_message, argc, argv, RB_PASS_CALLED_KEYWORDS);
+    }
+
     VALUE opt;
 
     rb_scan_args(argc, argv, "0:", &opt);
@@ -1985,7 +2080,7 @@ exc_backtrace_locations(VALUE exc)
 static VALUE
 rb_check_backtrace(VALUE bt)
 {
-    long i;
+    rb_len_t i;
     static const char err[] = "backtrace must be an Array of String or an Array of Thread::Backtrace::Location";
 
     if (!NIL_P(bt)) {
@@ -2172,9 +2267,9 @@ try_convert_to_exception(VALUE obj)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is the same class as +self+
+ *  Returns whether +other+ is the same class as +self+
  *  and its #message and #backtrace are equal to those of +self+.
  *
  */
@@ -2380,7 +2475,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     rb_ivar_set(exc, id_name, method);
     err_init_recv(exc, recv);
     if (cfp && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-        rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+        rb_ivar_set(exc, id_iseq, rb_iseqw_new(CFP_ISEQ(cfp)));
     }
     return exc;
 }
@@ -2534,7 +2629,7 @@ static const rb_data_type_t name_err_mesg_data_type = {
         NULL, // No external memory to report,
         name_err_mesg_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /* :nodoc: */
@@ -2625,6 +2720,8 @@ name_err_mesg_to_str(VALUE obj)
         int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();
 
+#define rb_memsearch_lit(str, v) \
+    rb_memsearch((str), rb_strlen_lit(str), RSTRING_PTR(v), RSTRING_LEN(v), rb_enc_get(v))
 #define FAKE_CSTR(v, str) rb_setup_fake_str((v), (str), rb_strlen_lit(str), usascii)
         c = s = FAKE_CSTR(&s_str, "");
         obj = ptr->recv;
@@ -2639,7 +2736,7 @@ name_err_mesg_to_str(VALUE obj)
             c = d = FAKE_CSTR(&d_str, "false");
             break;
           default:
-            if (strstr(RSTRING_PTR(mesg), "%2$s")) {
+            if (rb_memsearch_lit("%2$s", mesg) >= 0) {
                 d = rb_protect(name_err_mesg_receiver_name, obj, &state);
                 if (state || NIL_OR_UNDEF_P(d))
                     d = rb_protect(rb_inspect, obj, &state);
@@ -2769,6 +2866,68 @@ static VALUE
 nometh_err_private_call_p(VALUE self)
 {
     return rb_attr_get(self, id_private_call_p);
+}
+
+static const char *
+type_err_cname(VALUE val)
+{
+    if (NIL_P(val)) {
+        return "nil";
+    }
+    else if (val == Qtrue) {
+        return "true";
+    }
+    else if (val == Qfalse) {
+        return "false";
+    }
+    return NULL;
+}
+
+NORETURN(static void type_err_raise(VALUE val, const char *tname, const char *msg));
+static void
+type_err_raise(VALUE val, const char *tname, const char *msg)
+{
+    const char *cname = type_err_cname(val);
+    rb_encoding *enc = rb_utf8_encoding();
+    if (cname) {
+        rb_enc_raise(enc, rb_eTypeError, "%s %s into %s", msg, cname, tname);
+    }
+    rb_enc_raise(enc, rb_eTypeError, "%s %"PRIsVALUE" into %s", msg, rb_obj_class(val), tname);
+}
+
+NORETURN(void rb_no_implicit_conversion(VALUE val, const char *tname));
+void
+rb_no_implicit_conversion(VALUE val, const char *tname)
+{
+    type_err_raise(val, tname, "no implicit conversion of");
+}
+
+NORETURN(void rb_cant_convert(VALUE val, const char *tname));
+void
+rb_cant_convert(VALUE val, const char *tname)
+{
+    type_err_raise(val, tname, "can't convert");
+}
+
+NORETURN(void rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret));
+void
+rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret)
+{
+    const char *cname = type_err_cname(val);
+    rb_encoding *enc = rb_utf8_encoding();
+    if (cname) {
+        rb_enc_raise(
+            enc, rb_eTypeError, "can't convert %s into %s (%s#%s gives %s)",
+            cname, tname, cname, method_name, type_err_cname(ret));
+    }
+    VALUE klass = rb_obj_class(val);
+    const char *retname = type_err_cname(ret);
+    if (!retname) {
+        retname = rb_obj_classname(ret);
+    }
+    rb_enc_raise(
+        enc, rb_eTypeError, "can't convert %"PRIsVALUE" into %s (%"PRIsVALUE"#%s gives %s)",
+        klass, tname, klass, method_name, retname);
 }
 
 void
@@ -4208,15 +4367,6 @@ rb_warn_unchilled_literal(VALUE obj)
         }
         rb_warn_category(mesg, rb_warning_category_to_name(category));
     }
-}
-
-void
-rb_warn_unchilled_symbol_to_s(VALUE obj)
-{
-    rb_category_warn(
-        RB_WARN_CATEGORY_DEPRECATED,
-        "string returned by :%s.to_s will be frozen in the future", RSTRING_PTR(obj)
-    );
 }
 
 #undef rb_check_frozen

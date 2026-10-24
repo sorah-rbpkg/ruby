@@ -16,7 +16,6 @@ With no block given, returns an array of the results:
   'cruel world'.scan(/.../)      # => ["cru", "el ", "wor"]
   'cruel world'.scan(/(...)/)    # => [["cru"], ["el "], ["wor"]]
   'cruel world'.scan(/(..)(..)/) # => [["cr", "ue"], ["l ", "wo"]]
-  'тест'.scan(/../)              # => ["те", "ст"]
   'こんにちは'.scan(/../)         # => ["こん", "にち"]
   'abracadabra'.scan('ab')       # => ["ab", "ab"]
   'abracadabra'.scan('nosuch')   # => []
@@ -33,4 +32,4 @@ With a block given, calls the block with each result; returns +self+:
   # => ["w", "o"]
   # => ["r", "l"]
 
-Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].

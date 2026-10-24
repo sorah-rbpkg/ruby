@@ -2,35 +2,35 @@ require_relative '../../spec_helper'
 
 describe "Process.exec" do
   it "raises Errno::ENOENT for an empty string" do
-    -> { Process.exec "" }.should raise_error(Errno::ENOENT)
+    -> { Process.exec "" }.should.raise(Errno::ENOENT)
   end
 
   it "raises Errno::ENOENT for a command which does not exist" do
-    -> { Process.exec "bogus-noent-script.sh" }.should raise_error(Errno::ENOENT)
+    -> { Process.exec "bogus-noent-script.sh" }.should.raise(Errno::ENOENT)
   end
 
   it "raises an ArgumentError if the command includes a null byte" do
-    -> { Process.exec "\000" }.should raise_error(ArgumentError)
+    -> { Process.exec "\000" }.should.raise(ArgumentError)
   end
 
   unless File.executable?(__FILE__) # Some FS (e.g. vboxfs) locate all files executable
     platform_is_not :windows do
       it "raises Errno::EACCES when the file does not have execute permissions" do
-        -> { Process.exec __FILE__ }.should raise_error(Errno::EACCES)
+        -> { Process.exec __FILE__ }.should.raise(Errno::EACCES)
       end
     end
 
     platform_is :windows do
       it "raises Errno::EACCES or Errno::ENOEXEC when the file is not an executable file" do
-        -> { Process.exec __FILE__ }.should raise_error(SystemCallError) { |e|
-          [Errno::EACCES, Errno::ENOEXEC].should include(e.class)
+        -> { Process.exec __FILE__ }.should.raise(SystemCallError) { |e|
+          [Errno::EACCES, Errno::ENOEXEC].should.include?(e.class)
         }
       end
     end
   end
 
   it "raises Errno::EACCES when passed a directory" do
-    -> { Process.exec __dir__ }.should raise_error(Errno::EACCES)
+    -> { Process.exec __dir__ }.should.raise(Errno::EACCES)
   end
 
   it "runs the specified command, replacing current process" do
@@ -171,9 +171,9 @@ describe "Process.exec" do
     end
 
     it "raises an ArgumentError if the Array does not have exactly two elements" do
-      -> { Process.exec([]) }.should raise_error(ArgumentError)
-      -> { Process.exec([:a]) }.should raise_error(ArgumentError)
-      -> { Process.exec([:a, :b, :c]) }.should raise_error(ArgumentError)
+      -> { Process.exec([]) }.should.raise(ArgumentError)
+      -> { Process.exec([:a]) }.should.raise(ArgumentError)
+      -> { Process.exec([:a, :b, :c]) }.should.raise(ArgumentError)
     end
   end
 
@@ -235,6 +235,28 @@ describe "Process.exec" do
           output = ruby_exe(cmd)
           output.split.should == ['true', 'false']
         end
+      end
+    end
+  end
+
+  describe "options validation" do
+    # Use a non-existent command to prevent unexpected execve() calls and
+    # provide clearer failures if options aren't validated.
+
+    it "raises an ArgumentError if :unsetenv_others option is not a boolean or nil" do
+      -> { Process.exec("should_raise_before_and_not_run", unsetenv_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.exec("should_raise_before_and_not_run", unsetenv_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    it "raises an ArgumentError if :close_others option is not a boolean or nil" do
+      -> { Process.exec("should_raise_before_and_not_run", close_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.exec("should_raise_before_and_not_run", close_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    platform_is :windows do
+      it "raises an ArgumentError if :new_pgroup option is not a boolean or nil" do
+        -> { Process.exec("should_raise_before_and_not_run", new_pgroup: 1) }.should.raise(ArgumentError, /expected true or false/)
+        -> { Process.exec("should_raise_before_and_not_run", new_pgroup: "true") }.should.raise(ArgumentError, /expected true or false/)
       end
     end
   end

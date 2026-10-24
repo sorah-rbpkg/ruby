@@ -25,24 +25,12 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
-#include "ruby/internal/arithmetic/long.h"
 #include "ruby/internal/arithmetic/int.h"
+#include "ruby/internal/arithmetic/len_t.h"
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
 # include "ruby/backward.h"
 #endif
 
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- *
- * @internal
- *
- * Declaration of rb_struct_ptr() is at include/ruby/backward.h.
- */
-#define RSTRUCT_PTR(st) rb_struct_ptr(st)
 /** @cond INTERNAL_MACRO */
 #define RSTRUCT_LEN RSTRUCT_LEN
 #define RSTRUCT_SET RSTRUCT_SET
@@ -90,12 +78,12 @@ RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_ARTIFICIAL()
 /** @copydoc rb_struct_size()  */
-static inline long
+static inline rb_len_t
 RSTRUCT_LEN(VALUE st)
 {
     RBIMPL_ASSERT_TYPE(st, RUBY_T_STRUCT);
 
-    return RB_NUM2LONG(rb_struct_size(st));
+    return RB_NUM2LEN(rb_struct_size(st));
 }
 
 RBIMPL_ATTR_ARTIFICIAL()

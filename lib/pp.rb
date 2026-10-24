@@ -64,7 +64,7 @@ require 'prettyprint'
 class PP < PrettyPrint
 
   # The version string
-  VERSION = "0.6.3"
+  VERSION = "0.6.4"
 
   # Returns the usable width for +out+.
   # As the width of +out+:
@@ -388,7 +388,7 @@ class PP < PrettyPrint
     # This method should return an array of names of instance variables as symbols or strings as:
     # +[:@a, :@b]+.
     def pretty_print_instance_variables
-      ivars = respond_to?(:instance_variables_to_inspect) ? instance_variables_to_inspect : instance_variables
+      ivars = respond_to?(:instance_variables_to_inspect, true) ? instance_variables_to_inspect || instance_variables : instance_variables
       ivars.sort
     end
 

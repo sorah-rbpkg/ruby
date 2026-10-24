@@ -677,6 +677,7 @@ if defined? Zlib
           assert_equal(Zlib::OS_CODE, f.os_code)
         end
       }
+      assert_equal(Zlib::OS_WIN32, Zlib::OS_CODE) if /mswin|mingw/ =~ RUBY_PLATFORM
     end
 
     def test_orig_name
@@ -1285,6 +1286,36 @@ if defined? Zlib
         end
       }
     end
+
+    # Test for signal interrupt bug: Z_BUF_ERROR with avail_out > 0
+    # This reproduces the issue where thread wakeup during GzipReader operations
+    # can cause Z_BUF_ERROR to be raised incorrectly
+    def test_thread_wakeup_interrupt
+      pend 'fails' if RUBY_ENGINE == 'truffleruby'
+      content = SecureRandom.base64(5000)
+      gzipped = Zlib.gzip(content)
+
+      1000.times do
+        thr = Thread.new do
+          loop do
+            Zlib::GzipReader.new(StringIO.new(gzipped)).read
+          end
+        end
+
+        # Wakeup the thread multiple times to trigger interrupts
+        10.times do
+          thr.wakeup
+          Thread.pass
+        end
+
+        # Give thread a moment to process
+        sleep 0.001
+
+        # Clean up
+        thr.kill
+        thr.join
+      end
+    end
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase
@@ -1494,6 +1525,8 @@ if defined? Zlib
     end
 
     def test_gzip
+      assert_raise(Zlib::StreamError) { Zlib.gzip("foo", level: 100) }
+
       actual = Zlib.gzip("foo".freeze)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
@@ -1552,6 +1585,37 @@ if defined? Zlib
       {#
         10_000.times {Zlib.gunzip(d)}
       };
+    end
+
+    # Test for signal interrupt bug: Z_BUF_ERROR with avail_out > 0
+    # This reproduces the issue where thread wakeup during GzipReader operations
+    # can cause Z_BUF_ERROR to be raised incorrectly
+    def test_thread_wakeup_interrupt
+      pend 'fails' if RUBY_ENGINE == 'truffleruby'
+
+      content = SecureRandom.base64(5000)
+      gzipped = Zlib.gzip(content)
+
+      1000.times do
+        thr = Thread.new do
+          loop do
+            Zlib::GzipReader.new(StringIO.new(gzipped)).read
+          end
+        end
+
+        # Wakeup the thread multiple times to trigger interrupts
+        10.times do
+          thr.wakeup
+          Thread.pass
+        end
+
+        # Give thread a moment to process
+        sleep 0.001
+
+        # Clean up
+        thr.kill
+        thr.join
+      end
     end
   end
 end

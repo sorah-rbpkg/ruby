@@ -252,6 +252,8 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_hash_with_compare_by_identity
+    pend "Marshal.dump of a compare_by_identity Hash emits an unexpected ivar on jruby" if RUBY_ENGINE == "jruby"
+
     with_const(Gem::SafeMarshal, :PERMITTED_CLASSES, %w[Hash]) do
       assert_safe_load_as Hash.new.compare_by_identity.tap {|h|
                             h[+"a"] = 1
@@ -340,6 +342,41 @@ class TestGemSafeMarshal < Gem::TestCase
       assert_safe_load_as(i + 1)
       assert_safe_load_as(i - 1)
     end
+  end
+
+  def test_name_tuple_unmarshal_content_addressable_metadata
+    tuple = Gem::NameTuple.new(
+      "a",
+      Gem::Version.new("1"),
+      "x86_64-linux",
+      content_address: "abcdef12",
+      ruby_abi: "3.3"
+    )
+
+    unmarshalled_tuple = Gem::SafeMarshal.safe_load(Marshal.dump(tuple))
+
+    assert_equal "a", unmarshalled_tuple.name
+    assert_equal Gem::Version.new("1"), unmarshalled_tuple.version
+    assert_equal "x86_64-linux", unmarshalled_tuple.platform
+    assert_equal "abcdef12", unmarshalled_tuple.content_address
+    assert_equal "3.3", unmarshalled_tuple.ruby_abi
+    assert_equal "a-1-abcdef12", unmarshalled_tuple.full_name
+  end
+
+  def test_name_tuple_unmarshal_legacy_payload_without_content_addressable_metadata
+    tuple = Gem::NameTuple.allocate
+    tuple.instance_variable_set :@name, "a"
+    tuple.instance_variable_set :@version, Gem::Version.new("1")
+    tuple.instance_variable_set :@platform, "x86_64-linux"
+
+    unmarshalled_tuple = Gem::SafeMarshal.safe_load(Marshal.dump(tuple))
+
+    assert_equal "a", unmarshalled_tuple.name
+    assert_equal Gem::Version.new("1"), unmarshalled_tuple.version
+    assert_equal "x86_64-linux", unmarshalled_tuple.platform
+    assert_nil unmarshalled_tuple.content_address
+    assert_nil unmarshalled_tuple.ruby_abi
+    assert_equal "a-1-x86_64-linux", unmarshalled_tuple.full_name
   end
 
   def test_gem_spec_unmarshall_license

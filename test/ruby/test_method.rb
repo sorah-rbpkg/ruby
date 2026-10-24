@@ -32,6 +32,7 @@ class TestMethod < Test::Unit::TestCase
   def mk7(a, b = nil, *c, d, **o) nil && o end
   def mk8(a, b = nil, *c, d, e:, f: nil, **o) nil && o end
   def mnk(**nil) end
+  def mnb(&nil) end
   def mf(...) end
 
   class Base
@@ -491,7 +492,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_clone_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       o = Object.new
       def o.foo; :foo; end
@@ -500,6 +500,20 @@ class TestMethod < Test::Unit::TestCase
       assert_equal(:foo, m.clone.call)
       assert_equal(:bar, m.clone.bar)
     end
+  end
+
+  def test_clone_preserves_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_equal(:bar, m.clone.foo)
+  end
+
+  def test_dup_does_not_preserve_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_raise(NoMethodError) { m.dup.foo }
   end
 
   def test_inspect
@@ -623,6 +637,7 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmk7) {|a, b = nil, *c, d, **o|}
   define_method(:pmk8) {|a, b = nil, *c, d, e:, f: nil, **o|}
   define_method(:pmnk) {|**nil|}
+  define_method(:pmnb) {|&nil|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -646,6 +661,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
+    assert_equal([[:noblock]], method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], method(:mf).parameters)
   end
@@ -672,6 +688,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
@@ -697,6 +714,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:pmk8).parameters)
     assert_equal([[:nokey]], method(:pmnk).parameters)
+    assert_equal([[:noblock]], method(:pmnb).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -721,6 +739,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:pmk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:pmnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:pmnb).parameters)
   end
 
   def test_hidden_parameters
@@ -1271,7 +1290,9 @@ class TestMethod < Test::Unit::TestCase
         [:C1_m1] + super
       end
       prepend m
-      alias m2 m1
+    end
+    assert_deprecated_warning(/aliasing .*#m1 defined in a prepended module .* is deprecated/) do
+      c1.class_eval { alias m2 m1 }
     end
 
     o1 = c1.new
@@ -1451,10 +1472,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_splat_long_array
-    if File.exist?('/etc/os-release') && File.read('/etc/os-release').include?('openSUSE Leap')
-      # For RubyCI's openSUSE machine http://rubyci.s3.amazonaws.com/opensuseleap/ruby-trunk/recent.html, which tends to die with NoMemoryError here.
-      omit 'do not exhaust memory on RubyCI openSUSE Leap machine'
-    end
     n = 10_000_000
     assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
   end
@@ -1909,5 +1926,9 @@ class TestMethod < Test::Unit::TestCase
     RUBY
       assert_equal 0, err.size, err.join("\n")
     end
+  end
+
+  def test_unbound_method_ractor_shareable
+    assert Ractor.shareable?(BasicObject.instance_method(:equal?).freeze)
   end
 end

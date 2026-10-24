@@ -2,7 +2,7 @@
 
 require 'socket'
 require 'timeout'
-require 'io/wait'
+require 'io/wait' if RUBY_VERSION < '3.2'
 require 'securerandom'
 require 'rbconfig'
 
@@ -35,7 +35,7 @@ require 'rbconfig'
 class Resolv
 
   # The version string
-  VERSION = "0.7.2"
+  VERSION = "0.8.1"
 
   ##
   # Looks up the first IP address for +name+.
@@ -179,7 +179,7 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
+    if /mswin|cygwin|mingw/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
       begin
         require 'win32/resolv' unless defined?(Win32::Resolv)
         hosts = Win32::Resolv.get_hosts_path || IO::NULL
@@ -562,7 +562,19 @@ class Resolv
             next if !sender
             senders[[candidate, requester, nameserver, port]] = sender
           end
-          reply, reply_name = requester.request(sender, tout)
+          begin
+            reply, reply_name = requester.request(sender, tout)
+          rescue ResolvTimeout
+            # Giving up part way through a frame loses stream sync, and a peer
+            # seen going away leaves the socket dead.  Either way the requester
+            # says so, and the next attempt has to open a fresh connection.  A
+            # timeout with the stream still on a frame boundary keeps it.
+            unless requester.reusable?
+              requesters.delete([nameserver, port])
+              requester.close
+            end
+            raise
+          end
           case reply.rcode
           when RCode::NoError
             if reply.tc == 1 and not Requester::TCP === requester
@@ -698,13 +710,27 @@ class Resolv
         @socks = nil
       end
 
+      # Whether another request may be sent over the same transport.  Only a
+      # stream transport can end up in a state that rules this out.
+      def reusable?
+        true
+      end
+
+      # A request could not be written.  Only a stream transport can be left
+      # unusable by that; see #reusable?.
+      def send_failed
+      end
+
       def request(sender, tout)
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         timelimit = start + tout
         begin
           sender.send
         rescue Errno::EHOSTUNREACH, # multi-homed IPv6 may generate this
-               Errno::ENETUNREACH
+               Errno::ENETUNREACH,
+               Errno::EPIPE, # a peer that went away between requests
+               Errno::ECONNRESET # the same, as Windows reports it
+          send_failed
           raise ResolvTimeout
         end
         while true
@@ -724,7 +750,7 @@ class Resolv
             raise ResolvTimeout
           end
           begin
-            reply, from = recv_reply(select_result[0])
+            reply, from = recv_reply(select_result[0], timelimit)
           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
                  Errno::ECONNRESET, # Windows
                  EOFError
@@ -801,7 +827,7 @@ class Resolv
           self
         end
 
-        def recv_reply(readable_socks)
+        def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply, from = readable_socks[0].recvfrom(UDPSize)
           return reply, [from[3],from[1]]
@@ -860,20 +886,37 @@ class Resolv
           @mutex.synchronize {
             next if @initialized
             @initialized = true
-            is_ipv6 = @host.index(':')
-            sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
-            @socks = [sock]
-            sock.do_not_reverse_lookup = true
-            DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
-            sock.connect(@host, @port)
+            connect_socket
           }
           self
         end
 
-        def recv_reply(readable_socks)
+        # The socket to talk to the nameserver over, opening one if there is
+        # none yet.  #recv_reply may have replaced it since a sender was
+        # created, so senders ask for it per request instead of holding on to
+        # one.
+        def sock
+          lazy_initialize
+          @socks[0]
+        end
+
+        def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply = readable_socks[0].recv(UDPSize)
           return reply, nil
+        rescue Errno::ECONNREFUSED, Errno::ECONNRESET
+          # The kernel reports these from an ICMP message, and a second one for
+          # the same pair of endpoints is not always passed on: macOS 26.1 and
+          # later deliver every other one.  A retry over this socket would then
+          # wait out its whole timeout rather than fail at once, so start over
+          # from a new source port.
+          @mutex.synchronize {
+            if @initialized
+              @socks&.each(&:close)
+              connect_socket
+            end
+          }
+          raise
         end
 
         def sender(msg, data, host=@host, port=@port)
@@ -884,7 +927,7 @@ class Resolv
           id = DNS.allocate_request_id(@host, @port)
           request = msg.encode
           request[0,2] = [id].pack('n')
-          return @senders[[nil,id]] = Sender.new(request, data, @socks[0])
+          return @senders[[nil,id]] = Sender.new(request, data, self)
         end
 
         def close
@@ -899,10 +942,23 @@ class Resolv
           end
         end
 
+        private def connect_socket
+          is_ipv6 = @host.index(':')
+          sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
+          @socks = [sock]
+          sock.do_not_reverse_lookup = true
+          DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
+          sock.connect(@host, @port)
+        end
+
         class Sender < Requester::Sender # :nodoc:
+          def initialize(msg, data, requester)
+            super(msg, data, nil)
+            @requester = requester
+          end
+
           def send
-            raise "@sock is nil." if @sock.nil?
-            @sock.send(@msg, 0)
+            @requester.sock.send(@msg, 0)
           end
           attr_reader :data
         end
@@ -933,15 +989,32 @@ class Resolv
           sock = TCPSocket.new(@host, @port)
           @socks = [sock]
           @senders = {}
+          @reusable = true
         end
 
-        def recv_reply(readable_socks)
-          len_data = readable_socks[0].read(2)
+        def reusable?
+          @reusable
+        end
+
+        def send_failed
+          @reusable = false
+        end
+
+        def recv_reply(readable_socks, timelimit = nil)
+          sock = readable_socks[0]
+          len_data = read_exactly(sock, 2, timelimit)
           raise EOFError if len_data.nil? || len_data.bytesize != 2
           len = len_data.unpack('n')[0]
-          reply = @socks[0].read(len)
+          reply = read_exactly(sock, len, timelimit)
           raise EOFError if reply.nil? || reply.bytesize != len
+          @reusable = true
           return reply, nil
+        rescue EOFError, SystemCallError
+          # Whatever the kernel reported, this socket cannot be trusted for
+          # another frame.  In practice that is the peer closing or resetting;
+          # the rest is rare enough that erring towards reconnecting is right.
+          @reusable = false
+          raise
         end
 
         def sender(msg, data, host=@host, port=@port)
@@ -963,10 +1036,39 @@ class Resolv
         end
 
         def close
+          @reusable = false
           super
           @senders.each_key {|from,id|
             DNS.free_request_id(@host, @port, id)
           }
+        end
+
+        private
+
+        # Read +len+ bytes, giving up with ResolvTimeout once +timelimit+ (a
+        # CLOCK_MONOTONIC value) has passed.  A shorter result means the peer
+        # closed the connection, which the caller turns into an EOFError.
+        # Consuming any byte marks the requester unusable until the whole frame
+        # has been read, since giving up in between loses frame sync.  Without a
+        # +timelimit+ the read blocks instead and keeps no such mark; that is
+        # only for a caller still using the one argument form of #recv_reply.
+        def read_exactly(sock, len, timelimit)
+          return sock.read(len) unless timelimit
+          buf = String.new
+          while buf.bytesize < len
+            case chunk = sock.read_nonblock(len - buf.bytesize, exception: false)
+            when :wait_readable
+              remaining = timelimit - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              raise ResolvTimeout if remaining <= 0
+              sock.wait_readable(remaining) or raise ResolvTimeout
+            when nil
+              break
+            else
+              @reusable = false
+              buf << chunk
+            end
+          end
+          buf
         end
       end
 
@@ -1030,14 +1132,15 @@ class Resolv
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
-        if File.exist? filename
-          Config.parse_resolv_conf(filename)
-        elsif defined?(Win32::Resolv)
+        # Native Windows resolves the path against the current drive, while Cygwin's own resolver honors it.
+        if defined?(Win32::Resolv) and !(/cygwin/ =~ RUBY_PLATFORM and File.exist?(filename))
           search, nameserver = Win32::Resolv.get_resolv_info
           config_hash = {}
           config_hash[:nameserver] = nameserver if nameserver
           config_hash[:search] = [search].flatten if search
           config_hash
+        elsif File.exist? filename
+          Config.parse_resolv_conf(filename)
         else
           {}
         end
@@ -1089,7 +1192,7 @@ class Resolv
               if /\./ =~ hostname
                 @search = [Label.split($')]
               else
-                @search = [[]]
+                @search = []
               end
             end
 
@@ -1136,23 +1239,18 @@ class Resolv
       end
 
       def generate_candidates(name)
-        candidates = nil
         name = Name.create(name)
         if name.absolute?
-          candidates = [name]
+          [name]
         else
+          abs = Name.new(name.to_a)
+          search = @search.map {|domain| Name.new(name.to_a + domain)}
           if @ndots <= name.length - 1
-            candidates = [Name.new(name.to_a)]
+            [abs, *search].uniq
           else
-            candidates = []
-          end
-          candidates.concat(@search.map {|domain| Name.new(name.to_a + domain)})
-          fname = Name.create("#{name}.")
-          if !candidates.include?(fname)
-            candidates << fname
+            [*search, abs].uniq
           end
         end
-        return candidates
       end
 
       InitialTimeout = 5
@@ -1747,6 +1845,9 @@ class Resolv
           # size counts the encoded form, so it starts at 1 for the root
           # label's terminating zero octet. [RFC 1035 3.1]
           size = 1
+          # A pointer chain decodes to few or no labels, so the 255-octet cap
+          # never bounds its work; cap the pointers followed per name too.
+          pointers = 0
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1757,6 +1858,8 @@ class Resolv
               end
               return d
             when 192..255
+              pointers += 1
+              raise DecodeError.new("too many compression pointers") if pointers > 128
               idx = self.get_unpack('n')[0] & 0x3fff
               if prev_index <= idx
                 raise DecodeError.new("non-backward name pointer")
@@ -3347,7 +3450,7 @@ class Resolv
 
       # Regular expression LOC size must match.
 
-      Regex = /^(\d+\.*\d*)[m]$/
+      Regex = /\A0*(\d{1,8}(?:\.\d+)?)m\z/
 
       ##
       # Creates a new LOC::Size from +arg+ which may be:
@@ -3360,13 +3463,14 @@ class Resolv
         when Size
           return arg
         when String
-          scalar = ''
-          if Regex =~ arg
-            scalar = [(($1.to_f*(1e2)).to_i.to_s[0].to_i*(2**4)+(($1.to_f*(1e2)).to_i.to_s.length-1))].pack("C")
-          else
+          unless Regex =~ arg
             raise ArgumentError.new("not a properly formed Size string: " + arg)
           end
-          return Size.new(scalar)
+          unless (0.0...1e8) === (scalar = $1.to_f)
+            raise ArgumentError.new("out of range as Size: #{arg}")
+          end
+          str = (scalar * 100).to_i.to_s
+          return new([(str[0].to_i << 4) + (str.bytesize-1)].pack("C"))
         else
           raise ArgumentError.new("cannot interpret as Size: #{arg.inspect}")
         end
@@ -3383,8 +3487,8 @@ class Resolv
       attr_reader :scalar
 
       def to_s # :nodoc:
-        s = @scalar.unpack("H2").join.to_s
-        return ((s[0].to_i)*(10**(s[1].to_i-2))).to_s << "m"
+        s, = @scalar.unpack("C")
+        return "#{(s >> 4) * (10.0 ** ((s & 0xf) - 2))}m"
       end
 
       def inspect # :nodoc:
@@ -3412,7 +3516,10 @@ class Resolv
 
       # Regular expression LOC Coord must match.
 
-      Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
+      Regex = /\A0*(\d{1,3})\s([0-5]?\d)\s([0-5]?\d(?:\.\d+)?)\s([NESW])\z/
+
+      # Bias for the equator/prime meridian, in thousandths of a second of arc.
+      Bias = 1 << 31
 
       ##
       # Creates a new LOC::Coord from +arg+ which may be:
@@ -3425,17 +3532,19 @@ class Resolv
         when Coord
           return arg
         when String
-          coordinates = ''
-          if Regex =~ arg && $1.to_f < 180
-            m = $~
-            hemi = (m[4][/[NE]/]) || (m[4][/[SW]/]) ? 1 : -1
-            coordinates = [ ((m[1].to_i*(36e5)) + (m[2].to_i*(6e4)) +
-                             (m[3].to_f*(1e3))) * hemi+(2**31) ].pack("N")
-            orientation = m[4][/[NS]/] ? 'lat' : 'lon'
-          else
+          unless m = Regex.match(arg)
             raise ArgumentError.new("not a properly formed Coord string: " + arg)
           end
-          return Coord.new(coordinates,orientation)
+
+          arc = (m[1].to_i * 3_600_000) + (m[2].to_i * 60_000) + (m[3].to_f * 1_000).to_i
+          dir = m[4]
+          lat = dir[/[NS]/]
+          unless arc <= (lat ? 324_000_000 : 648_000_000) # (lat ? 90 : 180) * 3_600_000
+            raise ArgumentError.new("out of range as Coord: #{arg}")
+          end
+
+          hemi = dir[/[NE]/] ? 1 : -1
+          return new([arc * hemi + Bias].pack("N"), lat ? "lat" : "lon")
         else
           raise ArgumentError.new("cannot interpret as Coord: #{arg.inspect}")
         end
@@ -3443,10 +3552,10 @@ class Resolv
 
       # Internal use; use self.create.
       def initialize(coordinates,orientation)
-        unless coordinates.kind_of?(String)
+        unless coordinates.kind_of?(String) and coordinates.bytesize == 4
           raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
         end
-        unless orientation.kind_of?(String) && orientation[/^lon$|^lat$/]
+        unless orientation == "lon" || orientation == "lat"
           raise ArgumentError.new('Coord expects orientation to be a String argument of "lat" or "lon"')
         end
         @coordinates = coordinates
@@ -3463,22 +3572,17 @@ class Resolv
       attr_reader :orientation
 
       def to_s # :nodoc:
-          c = @coordinates.unpack("N").join.to_i
-          val      = (c - (2**31)).abs
-          fracsecs = (val % 1e3).to_i.to_s
-          val      = val / 1e3
-          secs     = (val % 60).to_i.to_s
-          val      = val / 60
-          mins     = (val % 60).to_i.to_s
-          degs     = (val / 60).to_i.to_s
-          posi = (c >= 2**31)
-          case posi
-          when true
-            hemi = @orientation[/^lat$/] ? "N" : "E"
+          c, = @coordinates.unpack("N")
+          val = (c -= Bias).abs
+          val, fracsecs = val.divmod(1000)
+          val, secs     = val.divmod(60)
+          degs, mins    = val.divmod(60)
+          hemi = if c.negative?
+            @orientation == "lon" ? "W" : "S"
           else
-            hemi = @orientation[/^lon$/] ? "W" : "S"
+            @orientation == "lat" ? "N" : "E"
           end
-          return degs << " " << mins << " " << secs << "." << fracsecs << " " << hemi
+          format("%d %02d %02d.%03d %s", degs, mins, secs, fracsecs, hemi)
       end
 
       def inspect # :nodoc:
@@ -3506,7 +3610,10 @@ class Resolv
 
       # Regular expression LOC Alt must match.
 
-      Regex = /^([+-]*\d+\.*\d*)[m]$/
+      Regex = /\A([+-]?0*\d{1,8}(?:\.\d+)?)m\z/
+
+      # Bias to a base of 100,000m below the WGS 84 reference spheroid.
+      Bias = 100_000_00
 
       ##
       # Creates a new LOC::Alt from +arg+ which may be:
@@ -3519,13 +3626,14 @@ class Resolv
         when Alt
           return arg
         when String
-          altitude = ''
-          if Regex =~ arg
-            altitude = [($1.to_f*(1e2))+(1e7)].pack("N")
-          else
+          unless Regex =~ arg
             raise ArgumentError.new("not a properly formed Alt string: " + arg)
           end
-          return Alt.new(altitude)
+          altitude = ($1.to_f * 100).to_i + Bias
+          unless (0...0x1_0000_0000) === altitude
+            raise ArgumentError.new("out of raise as Alt: #{arg}")
+          end
+          return new([altitude].pack("N"))
         else
           raise ArgumentError.new("cannot interpret as Alt: #{arg.inspect}")
         end
@@ -3542,8 +3650,8 @@ class Resolv
       attr_reader :altitude
 
       def to_s # :nodoc:
-        a = @altitude.unpack("N").join.to_i
-        return ((a.to_f/1e2)-1e5).to_s + "m"
+        a, = @altitude.unpack("N")
+        return "#{(a - Bias).fdiv(100)}m"
       end
 
       def inspect # :nodoc:

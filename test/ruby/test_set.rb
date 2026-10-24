@@ -996,7 +996,7 @@ class TC_Set < Test::Unit::TestCase
     set = set.dup
 
     10_000.times do |i|
-      assert_includes set, i
+      assert_include set, i
     end
   end
 
@@ -1124,7 +1124,8 @@ class TC_Enumerable < Test::Unit::TestCase
     assert_equal([-10,-8,-6,-4,-2], set.sort)
 
     assert_same set, set.to_set
-    assert_not_same set, set.to_set { |o| o }
+    transformed = set.to_set { |o| o + 1 }
+    assert_equal([-9,-7,-5,-3,-1], transformed.sort)
   end
 
   class MyEnum

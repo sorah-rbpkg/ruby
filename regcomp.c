@@ -2,8 +2,8 @@
   regcomp.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2013  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2002-2018  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -4226,7 +4226,7 @@ restart:
 /* set skip map for Sunday's quick search */
 static int
 set_bm_skip(UChar* s, UChar* end, regex_t* reg,
-            UChar skip[], int** int_skip, int ignore_case)
+            UChar skip[], int ignore_case)
 {
   OnigDistance i, len;
   int clen, flen, n, j, k;
@@ -4235,94 +4235,60 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
   OnigEncoding enc = reg->enc;
 
   len = end - s;
-  if (len < ONIG_CHAR_TABLE_SIZE) {
-    if (ignore_case) {
-      for (i = 0; i < len; i += clen) {
-        p = s + i;
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-            p, end, items);
-        clen = enclen(enc, p, end);
-        if (p + clen > end)
-          clen = (int )(end - p);
-
-        for (j = 0; j < n; j++) {
-          if ((items[j].code_len != 1) || (items[j].byte_len != clen)) {
-            /* Different length isn't supported. Stop optimization at here. */
-            end = p;
-            goto endcheck;
-          }
-          flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf);
-          if (flen != clen) {
-            /* Different length isn't supported. Stop optimization at here. */
-            end = p;
-            goto endcheck;
-          }
-        }
-      }
-endcheck:
-      ;
-    }
-
-    len = end - s;
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
-      skip[i] = (UChar )(len + 1);
-    n = 0;
-    for (i = 0; i < len; i += clen) {
-      p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
-      clen = enclen(enc, p, end);
-      if (p + clen > end)
-        clen = (int )(end - p);
-
-      for (j = 0; j < clen; j++) {
-        skip[s[i + j]] = (UChar )(len - i - j);
-        for (k = 0; k < n; k++) {
-          ONIGENC_CODE_TO_MBC(enc, items[k].code[0], buf);
-          skip[buf[j]] = (UChar )(len - i - j);
-        }
-      }
-    }
-  }
-  else {
-# if OPT_EXACT_MAXLEN < ONIG_CHAR_TABLE_SIZE
+  if (len >= ONIG_CHAR_TABLE_SIZE) {
     /* This should not happen. */
     return ONIGERR_TYPE_BUG;
-# else
-    if (IS_NULL(*int_skip)) {
-      *int_skip = (int* )xmalloc(sizeof(int) * ONIG_CHAR_TABLE_SIZE);
-      if (IS_NULL(*int_skip)) return ONIGERR_MEMORY;
-    }
-    for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++) (*int_skip)[i] = (int )(len + 1);
+  }
 
-    n = 0;
+  if (ignore_case) {
     for (i = 0; i < len; i += clen) {
       p = s + i;
-      if (ignore_case)
-        n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
-                                               p, end, items);
+      n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
+	  p, end, items);
       clen = enclen(enc, p, end);
       if (p + clen > end)
         clen = (int )(end - p);
 
       for (j = 0; j < n; j++) {
-        if ((items[j].code_len != 1) || (items[j].byte_len != clen))
-          return 1;  /* different length isn't supported. */
-        flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf[j]);
-        if (flen != clen)
-          return 1;  /* different length isn't supported. */
-      }
-      for (j = 0; j < clen; j++) {
-        (*int_skip)[s[i + j]] = (int )(len - i - j);
-        for (k = 0; k < n; k++) {
-          (*int_skip)[buf[k][j]] = (int )(len - i - j);
-        }
+	if ((items[j].code_len != 1) || (items[j].byte_len != clen)) {
+	  /* Different length isn't supported. Stop optimization at here. */
+	  end = p;
+	  goto endcheck;
+	}
+	flen = ONIGENC_CODE_TO_MBC(enc, items[j].code[0], buf);
+	if (flen != clen) {
+	  /* Different length isn't supported. Stop optimization at here. */
+	  end = p;
+	  goto endcheck;
+	}
       }
     }
-# endif
+endcheck:
+    len = end - s;
   }
-  return (int)len;
+
+  for (i = 0; i < ONIG_CHAR_TABLE_SIZE; i++)
+    skip[i] = (UChar )(len + 1);
+  n = 0;
+  for (i = 0; i < len; i += clen) {
+    p = s + i;
+    if (ignore_case)
+      n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
+					     p, end, items);
+    clen = enclen(enc, p, end);
+    if (p + clen > end)
+      clen = (int )(end - p);
+
+    for (j = 0; j < clen; j++) {
+      skip[s[i + j]] = (UChar )(len - i - j);
+      for (k = 0; k < n; k++) {
+	ONIGENC_CODE_TO_MBC(enc, items[k].code[0], buf);
+	skip[buf[j]] = (UChar )(len - i - j);
+      }
+    }
+  }
+
+  return (int )len;
 }
 
 typedef struct {
@@ -5310,7 +5276,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
       int orig_len = e->len;
       e->len = set_bm_skip(reg->exact, reg->exact_end, reg,
-                      reg->map, &(reg->int_map), 1);
+                           reg->map, 1);
       if (e->len >= 3) {
         reg->exact_end = reg->exact + e->len;
         reg->optimize = (allow_reverse != 0
@@ -5334,7 +5300,7 @@ set_optimize_exact_info(regex_t* reg, OptExactInfo* e)
   else {
     if (e->len >= 3 || (e->len >= 2 && allow_reverse)) {
       set_bm_skip(reg->exact, reg->exact_end, reg,
-                  reg->map, &(reg->int_map), 0);
+                  reg->map, 0);
       reg->optimize = (allow_reverse != 0
                      ? ONIG_OPTIMIZE_EXACT_BM : ONIG_OPTIMIZE_EXACT_BM_NOT_REV);
     }
@@ -5617,8 +5583,6 @@ onig_free_body(regex_t* reg)
   if (IS_NOT_NULL(reg)) {
     xfree(reg->p);
     xfree(reg->exact);
-    xfree(reg->int_map);
-    xfree(reg->int_map_backward);
     xfree(reg->repeat_range);
     onig_free(reg->chain);
 
@@ -5648,65 +5612,62 @@ dup_copy(const void *ptr, size_t size)
 }
 
 extern int
-onig_reg_copy(regex_t** nreg, regex_t* oreg)
+onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
 {
   if (IS_NOT_NULL(oreg)) {
-    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
-    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+    *nreg = *oreg;
 
-    *reg = *oreg;
+# define COPY_FAILED(mem, size) IS_NULL(nreg->mem = dup_copy(oreg->mem, size))
 
-# define COPY_FAILED(mem, size) IS_NULL(reg->mem = dup_copy(reg->mem, size))
-
-    if (IS_NOT_NULL(reg->exact)) {
-      size_t exact_size = reg->exact_end - reg->exact;
+    if (IS_NOT_NULL(oreg->exact)) {
+      size_t exact_size = oreg->exact_end - oreg->exact;
       if (COPY_FAILED(exact, exact_size))
         goto err;
-      (reg)->exact_end = (reg)->exact + exact_size;
+      (nreg)->exact_end = (nreg)->exact + exact_size;
     }
 
-    if (IS_NOT_NULL(reg->int_map)) {
-      if (COPY_FAILED(int_map, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
-        goto err_int_map;
-    }
-    if (IS_NOT_NULL(reg->int_map_backward)) {
-      if (COPY_FAILED(int_map_backward, sizeof(int) * ONIG_CHAR_TABLE_SIZE))
-        goto err_int_map_backward;
-    }
-    if (IS_NOT_NULL(reg->p)) {
-      if (COPY_FAILED(p, reg->alloc))
+    if (IS_NOT_NULL(oreg->p)) {
+      if (COPY_FAILED(p, oreg->alloc))
         goto err_p;
     }
-    if (IS_NOT_NULL(reg->repeat_range)) {
-      if (COPY_FAILED(repeat_range, reg->repeat_range_alloc * sizeof(OnigRepeatRange)))
+    if (IS_NOT_NULL(oreg->repeat_range)) {
+      if (COPY_FAILED(repeat_range, oreg->repeat_range_alloc * sizeof(OnigRepeatRange)))
         goto err_repeat_range;
     }
-    if (IS_NOT_NULL(reg->name_table)) {
-      if (onig_names_copy(reg, oreg))
+    if (IS_NOT_NULL(oreg->name_table)) {
+      if (onig_names_copy(nreg, oreg))
         goto err_name_table;
     }
-    if (IS_NOT_NULL(reg->chain)) {
-      if (onig_reg_copy(&reg->chain, reg->chain))
+    if (IS_NOT_NULL(oreg->chain)) {
+      if (onig_reg_copy(&nreg->chain, oreg->chain))
         goto err_chain;
     }
     return 0;
 # undef COPY_FAILED
 
   err_chain:
-    onig_names_free(reg);
+    onig_names_free(nreg);
   err_name_table:
-    xfree(reg->repeat_range);
+    xfree(nreg->repeat_range);
   err_repeat_range:
-    xfree(reg->p);
+    xfree(nreg->p);
   err_p:
-    xfree(reg->int_map_backward);
-  err_int_map_backward:
-    xfree(reg->int_map);
-  err_int_map:
-    xfree(reg->exact);
+    xfree(nreg->exact);
   err:
-    xfree(reg);
+    xfree(nreg);
     return ONIGERR_MEMORY;
+  }
+  return 0;
+}
+
+extern int
+onig_reg_copy(regex_t** nreg, regex_t* oreg)
+{
+  if (IS_NOT_NULL(oreg)) {
+    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
+    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+
+    return onig_reg_copy_body(reg, oreg);
   }
   return 0;
 }
@@ -5719,8 +5680,6 @@ onig_memsize(const regex_t *reg)
     if (IS_NULL(reg)) return 0;
     if (IS_NOT_NULL(reg->p))                size += reg->alloc;
     if (IS_NOT_NULL(reg->exact))            size += reg->exact_end - reg->exact;
-    if (IS_NOT_NULL(reg->int_map))          size += sizeof(int) * ONIG_CHAR_TABLE_SIZE;
-    if (IS_NOT_NULL(reg->int_map_backward)) size += sizeof(int) * ONIG_CHAR_TABLE_SIZE;
     if (IS_NOT_NULL(reg->repeat_range))     size += reg->repeat_range_alloc * sizeof(OnigRepeatRange);
     if (IS_NOT_NULL(reg->chain))            size += onig_memsize(reg->chain);
 
@@ -5916,7 +5875,6 @@ onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end,
   r = compile_tree(root, reg);
   if (r == 0) {
     r = add_opcode(reg, OP_END);
-    if (r != 0) goto err_unset;
 #ifdef USE_SUBEXP_CALL
     if (scan_env.num_call > 0) {
       r = unset_addr_list_fix(&uslist, reg);
@@ -5986,6 +5944,12 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   if (IS_NULL(reg))
     return ONIGERR_INVALID_ARGUMENT;
 
+  (reg)->exact            = (UChar* )NULL;
+  (reg)->chain            = (regex_t* )NULL;
+  (reg)->p                = (UChar* )NULL;
+  (reg)->name_table       = (void* )NULL;
+  (reg)->repeat_range     = (OnigRepeatRange* )NULL;
+
   if (ONIGENC_IS_UNDEF(enc))
     return ONIGERR_DEFAULT_ENCODING_IS_NOT_SET;
 
@@ -6005,15 +5969,9 @@ onig_reg_init(regex_t* reg, OnigOptionType option,
   (reg)->options          = option;
   (reg)->syntax           = syntax;
   (reg)->optimize         = 0;
-  (reg)->exact            = (UChar* )NULL;
-  (reg)->int_map          = (int* )NULL;
-  (reg)->int_map_backward = (int* )NULL;
-  (reg)->chain            = (regex_t* )NULL;
 
-  (reg)->p                = (UChar* )NULL;
   (reg)->alloc            = 0;
   (reg)->used             = 0;
-  (reg)->name_table       = (void* )NULL;
 
   (reg)->case_fold_flag   = case_fold_flag;
 

@@ -8,8 +8,9 @@ module Bundler
     include MatchPlatform
     include ForcePlatform
 
-    attr_reader :name, :version, :platform, :materialization
+    attr_reader :name, :version, :platform, :materialization, :content_address
     attr_accessor :source, :remote, :force_ruby_platform, :dependencies, :required_ruby_version, :required_rubygems_version
+    attr_accessor :overrides
 
     #
     # For backwards compatibility with existing lockfiles, if the most specific
@@ -26,20 +27,22 @@ module Bundler
     alias_method :runtime_dependencies, :dependencies
 
     def self.from_spec(s)
-      lazy_spec = new(s.name, s.version, s.platform, s.source)
+      lazy_spec = new(s.name, s.version, s.platform, s.source, content_address: s.content_address)
       lazy_spec.dependencies = s.runtime_dependencies
       lazy_spec.required_ruby_version = s.required_ruby_version
       lazy_spec.required_rubygems_version = s.required_rubygems_version
+      lazy_spec.overrides = s.overrides if s.is_a?(LazySpecification)
       lazy_spec
     end
 
-    def initialize(name, version, platform, source = nil, **materialization_options)
+    def initialize(name, version, platform, source = nil, content_address: nil, **materialization_options)
       @name          = name
       @version       = version
       @dependencies  = []
       @required_ruby_version = Gem::Requirement.default
       @required_rubygems_version = Gem::Requirement.default
       @platform = platform || Gem::Platform::RUBY
+      @content_address = content_address
 
       @original_source = source
       @source = source
@@ -63,11 +66,17 @@ module Bundler
     end
 
     def full_name
-      @full_name ||= if platform == Gem::Platform::RUBY
+      @full_name ||= if Gem::ContentAddress.content_addressed?(self, validate_ruby_abi: false)
+        "#{@name}-#{@version}-#{@content_address}"
+      elsif platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
         "#{@name}-#{@version}-#{platform}"
       end
+    end
+
+    def file_name
+      "#{full_name}.gem"
     end
 
     def lock_name
@@ -75,7 +84,7 @@ module Bundler
     end
 
     def name_tuple
-      Gem::NameTuple.new(@name, @version, @platform)
+      Gem::NameTuple.new(@name, @version, @platform, content_address: @content_address)
     end
 
     def ==(other)
@@ -110,6 +119,16 @@ module Bundler
       @name == dependency.name && effective_requirement.satisfied_by?(Gem::Version.new(@version))
     end
 
+    ##
+    # Assigns the content address parsed from the lockfile's CONTENT
+    # ADDRESSES section. The full name embeds the content address, so its
+    # memoization must be invalidated.
+
+    def content_address=(value)
+      @content_address = value
+      @full_name = nil
+    end
+
     def to_lock
       out = String.new
       out << "    #{lock_name}\n"
@@ -128,13 +147,13 @@ module Bundler
       materialize(self, &:first)
     end
 
-    def materialized_for_installation
-      @materialization = materialize_for_installation
+    def materialized_for_installation(locked_platforms = nil)
+      @materialization = materialize_for_installation(locked_platforms)
 
       self unless incomplete?
     end
 
-    def materialize_for_installation
+    def materialize_for_installation(locked_platforms)
       source.local!
 
       if use_exact_resolved_specifications?
@@ -144,7 +163,7 @@ module Bundler
         # Exact spec is incompatible; in frozen mode, try to find a compatible platform variant
         # In non-frozen mode, return nil to trigger re-resolution and lockfile update
         if Bundler.frozen_bundle?
-          materialize([name, version]) {|specs| resolve_best_platform(specs) }
+          materialize([name, version]) {|specs| resolve_best_platform(specs, locked_platforms: locked_platforms) }
         end
       else
         materialize([name, version]) {|specs| resolve_best_platform(specs) }
@@ -185,12 +204,14 @@ module Bundler
     # Try platforms in order of preference until finding a compatible spec.
     # Used for legacy lockfiles and as a fallback when the exact locked spec
     # is incompatible. Falls back to frozen bundle behavior if none match.
-    def resolve_best_platform(specs)
-      find_compatible_platform_spec(specs) || frozen_bundle_fallback(specs)
+    def resolve_best_platform(specs, locked_platforms: nil)
+      specs = MatchPlatform.select_all_content_address_match(specs, content_address)
+
+      find_compatible_platform_spec(specs, locked_platforms: locked_platforms) || frozen_bundle_fallback(specs)
     end
 
-    def find_compatible_platform_spec(specs)
-      candidate_platforms.each do |plat|
+    def find_compatible_platform_spec(specs, locked_platforms: nil)
+      candidate_platforms(locked_platforms: locked_platforms).each do |plat|
         candidates = MatchPlatform.select_best_platform_match(specs, plat)
         spec = choose_compatible(candidates, fallback_to_non_installable: false)
         return spec if spec
@@ -200,9 +221,14 @@ module Bundler
 
     # Platforms to try in order of preference. Ruby platform is last since it
     # requires compilation, but works when precompiled gems are incompatible.
-    def candidate_platforms
+    # When a set of locked platforms is given (frozen mode), restrict the
+    # candidates to those, so we never materialize a platform that wasn't locked.
+    def candidate_platforms(locked_platforms: nil)
       target = source.is_a?(Source::Path) ? platform : Bundler.local_platform
-      [target, platform, Gem::Platform::RUBY].uniq
+      platforms = [target, platform, Gem::Platform::RUBY].uniq
+      return platforms unless locked_platforms
+
+      platforms & locked_platforms
     end
 
     # In frozen mode, accept any candidate. Will error at install time.
@@ -234,8 +260,9 @@ module Bundler
     # about the mismatch higher up the stack, right before trying to install the
     # bad gem.
     def choose_compatible(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
+      override_list = overrides || []
       search = candidates.reverse.find do |spec|
-        spec.is_a?(StubSpecification) || spec.matches_current_metadata?
+        spec.is_a?(StubSpecification) || spec.matches_current_metadata_with_overrides?(override_list)
       end
       if search.nil? && fallback_to_non_installable
         search = candidates.last
@@ -259,10 +286,10 @@ module Bundler
     # which would affect `bundler/setup` performance.
     def validate_dependencies(spec)
       if !@materialization_options[:strict] && spec.is_a?(StubSpecification)
-        spec.dependencies = dependencies
+        spec.dependencies = Override.rewrite_dependencies(overrides, name, dependencies)
       else
         if !source.is_a?(Source::Path) && spec.runtime_dependencies.sort != dependencies.sort
-          raise IncorrectLockfileDependencies.new(self)
+          raise IncorrectLockfileDependencies.new(self, spec.runtime_dependencies, dependencies)
         end
       end
     end

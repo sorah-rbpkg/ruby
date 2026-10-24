@@ -1,0 +1,46 @@
+// -*- c -*-
+// DO NOT MODIFY THIS FILE DIRECTLY.
+// auto-generated file
+//   by ./tool/mk_builtin_loader.rb
+//   with string.rb
+#include "internal/compilers.h"     /* for MAYBE_UNUSED */
+#include "internal/warnings.h"      /* for COMPILER_WARNING_PUSH */
+#include "ruby/ruby.h"              /* for VALUE */
+#include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
+struct rb_execution_context_struct; /* in vm_core.h */
+
+static VALUE builtin_inline_class_9(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 9 "string.rb"
+return rb_str_valid_encoding_p(self);
+#line 17 "string.rbinc"
+}
+
+static VALUE builtin_inline_class_23(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 23 "string.rb"
+return rb_str_is_ascii_only_p(self);
+#line 24 "string.rbinc"
+}
+
+void Init_builtin_string(void)
+{
+  // table definition
+  static const struct rb_builtin_function string_table[] = {
+    RB_BUILTIN_FUNCTION(0, _bi9, builtin_inline_class_9, 0),
+    RB_BUILTIN_FUNCTION(1, _bi23, builtin_inline_class_23, 0),
+    RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+  };
+
+  // arity_check
+COMPILER_WARNING_PUSH
+#if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
+COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
+#endif
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_9);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_23);
+COMPILER_WARNING_POP
+
+  // load
+  rb_load_with_builtin_functions("string", string_table);
+}

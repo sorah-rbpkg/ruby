@@ -59,7 +59,6 @@
 #define FL_WB_PROTECTED RBIMPL_CAST((VALUE)RUBY_FL_WB_PROTECTED)         /**< @old{RUBY_FL_WB_PROTECTED} */
 #define FL_PROMOTED     RBIMPL_CAST((VALUE)RUBY_FL_PROMOTED)             /**< @old{RUBY_FL_PROMOTED} */
 #define FL_FINALIZE     RBIMPL_CAST((VALUE)RUBY_FL_FINALIZE)             /**< @old{RUBY_FL_FINALIZE} */
-#define FL_TAINT        RBIMPL_CAST((VALUE)RUBY_FL_TAINT)                /**< @old{RUBY_FL_TAINT} */
 #define FL_SHAREABLE    RBIMPL_CAST((VALUE)RUBY_FL_SHAREABLE)            /**< @old{RUBY_FL_SHAREABLE} */
 #define FL_UNTRUSTED    RBIMPL_CAST((VALUE)RUBY_FL_UNTRUSTED)            /**< @old{RUBY_FL_UNTRUSTED} */
 #define FL_EXIVAR       RBIMPL_CAST((VALUE)RUBY_FL_EXIVAR)               /**< @old{RUBY_FL_EXIVAR} */
@@ -89,7 +88,6 @@
 #define FL_USER19       RBIMPL_CAST((VALUE)(unsigned int)RUBY_FL_USER19) /**< @old{RUBY_FL_USER19} */
 
 #define ELTS_SHARED          RUBY_ELTS_SHARED     /**< @old{RUBY_ELTS_SHARED} */
-#define RB_OBJ_FREEZE        rb_obj_freeze_inline /**< @alias{rb_obj_freeze_inline} */
 
 /** @cond INTERNAL_MACRO */
 #define RUBY_ELTS_SHARED     RUBY_ELTS_SHARED
@@ -106,11 +104,10 @@
 #define RB_FL_TEST_RAW       RB_FL_TEST_RAW
 #define RB_FL_UNSET          RB_FL_UNSET
 #define RB_FL_UNSET_RAW      RB_FL_UNSET_RAW
+#define RB_OBJ_FREEZE        RB_OBJ_FREEZE
 #define RB_OBJ_FREEZE_RAW    RB_OBJ_FREEZE_RAW
 #define RB_OBJ_FROZEN        RB_OBJ_FROZEN
 #define RB_OBJ_FROZEN_RAW    RB_OBJ_FROZEN_RAW
-#define RB_OBJ_UNTRUST       RB_OBJ_TAINT
-#define RB_OBJ_UNTRUSTED     RB_OBJ_TAINTED
 /** @endcond */
 
 /**
@@ -135,15 +132,6 @@
 #define OBJ_FREEZE_RAW  RB_OBJ_FREEZE_RAW  /**< @old{RB_OBJ_FREEZE_RAW} */
 #define OBJ_FROZEN      RB_OBJ_FROZEN      /**< @old{RB_OBJ_FROZEN} */
 #define OBJ_FROZEN_RAW  RB_OBJ_FROZEN_RAW  /**< @old{RB_OBJ_FROZEN_RAW} */
-#define OBJ_INFECT      RB_OBJ_INFECT      /**< @old{RB_OBJ_INFECT} */
-#define OBJ_INFECT_RAW  RB_OBJ_INFECT_RAW  /**< @old{RB_OBJ_INFECT_RAW} */
-#define OBJ_TAINT       RB_OBJ_TAINT       /**< @old{RB_OBJ_TAINT} */
-#define OBJ_TAINTABLE   RB_OBJ_TAINTABLE   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_TAINTED     RB_OBJ_TAINTED     /**< @old{RB_OBJ_TAINTED} */
-#define OBJ_TAINTED_RAW RB_OBJ_TAINTED_RAW /**< @old{RB_OBJ_TAINTED_RAW} */
-#define OBJ_TAINT_RAW   RB_OBJ_TAINT_RAW   /**< @old{RB_OBJ_TAINT_RAW} */
-#define OBJ_UNTRUST     RB_OBJ_UNTRUST     /**< @old{RB_OBJ_TAINT} */
-#define OBJ_UNTRUSTED   RB_OBJ_UNTRUSTED   /**< @old{RB_OBJ_TAINTED} */
 /** @} */
 
 /**
@@ -217,11 +205,11 @@ ruby_fl_type {
     RUBY_FL_PROMOTED    = (1<<5),
 
     /**
-     * This flag meaning is type dependent, currently only used by T_DATA.
+     * This flag is no longer in use
      *
      * @internal
      */
-    RUBY_FL_USERPRIV0    = (1<<6),
+    RUBY_FL_UNUSED6      = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have
@@ -236,21 +224,6 @@ ruby_fl_type {
      * know.  Might better be hidden.
      */
     RUBY_FL_FINALIZE     = (1<<7),
-
-    /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_TAINT
-
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_TAINT)
-#endif
-
-                         = 0,
 
     /**
      * @deprecated  This flag was an implementation detail that should never have
@@ -279,27 +252,12 @@ ruby_fl_type {
      */
     RUBY_FL_SHAREABLE    = (1<<8),
 
-    /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_UNTRUSTED
-
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("trustedness turned out to be a wrong idea."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_UNTRUSTED)
-#endif
-
-                         = 0,
-
    /**
-    * This flag is no longer in use
+    * This object weakly refers to other objects.
     *
     * @internal
     */
-    RUBY_FL_UNUSED9  = (1<<9),
+    RUBY_FL_WEAK_REFERENCE = (1<<9),
 
    /**
     * This flag is no longer in use
@@ -394,26 +352,11 @@ ruby_fl_type {
     RUBY_FL_SINGLETON = RUBY_FL_USER1,
 };
 
-enum {
-    /**
-     * @deprecated  This flag once was a thing  back in the old days, but makes
-     *              no  sense  any longer  today.   Exists  here for  backwards
-     *              compatibility only.  You can safely forget about it.
-     */
-    RUBY_FL_DUPPED
-
-#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
-    RBIMPL_ATTR_DEPRECATED(("It seems there is no actual usage of this enum."))
-#elif defined(_MSC_VER)
-# pragma deprecated(RUBY_FL_DUPPED)
-#endif
-
-    = (int)RUBY_T_MASK
-};
-
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
+
+RBIMPL_ATTR_DEPRECATED_EXT(("only for internal use"))
 /**
  * This is an  implementation detail of #RB_OBJ_FREEZE().  People  don't use it
  * directly.
@@ -422,6 +365,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @post        `klass` gets frozen.
  */
 void rb_freeze_singleton_class(VALUE klass);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -737,128 +681,6 @@ RB_FL_REVERSE(VALUE obj, VALUE flags)
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline bool
-RB_OBJ_TAINTABLE(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline VALUE
-RB_OBJ_TAINTED_RAW(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- * @return      false always.
- */
-static inline bool
-RB_OBJ_TAINTED(VALUE obj)
-{
-    (void)obj;
-    return false;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- */
-static inline void
-RB_OBJ_TAINT_RAW(VALUE obj)
-{
-    (void)obj;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   obj  Object in question.
- */
-static inline void
-RB_OBJ_TAINT(VALUE obj)
-{
-    (void)obj;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   dst  Victim object.
- * @param[in]   src  Infectant object.
- */
-static inline void
-RB_OBJ_INFECT_RAW(VALUE dst, VALUE src)
-{
-    (void)dst;
-    (void)src;
-    return;
-}
-
-RBIMPL_ATTR_ARTIFICIAL()
-RBIMPL_ATTR_DEPRECATED(("taintedness turned out to be a wrong idea."))
-/**
- * @deprecated  This function  once was a thing  in the old days,  but makes no
- *              sense   any   longer   today.   Exists   here   for   backwards
- *              compatibility only.  You can safely forget about it.
- *
- * @param[in]   dst  Victim object.
- * @param[in]   src  Infectant object.
- */
-static inline void
-RB_OBJ_INFECT(VALUE dst, VALUE src)
-{
-    (void)dst;
-    (void)src;
-    return;
-}
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
 /**
  * This is an  implementation detail of RB_OBJ_FROZEN().  3rd  parties need not
  * use this.  Just always use RB_OBJ_FROZEN().
@@ -922,6 +744,18 @@ static inline void
 RB_OBJ_FREEZE_RAW(VALUE obj)
 {
     rb_obj_freeze_inline(obj);
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Freeze the given object if it is not frozen yet.
+ *
+ * @param[out]  obj  Object in question.
+ */
+static inline void
+RB_OBJ_FREEZE(VALUE obj)
+{
+    if (!RB_OBJ_FROZEN(obj)) RB_OBJ_FREEZE_RAW(obj);
 }
 
 #endif /* RBIMPL_FL_TYPE_H */

@@ -59,7 +59,7 @@ class Gem::Package::Old < Gem::Package
       header = file_list io
       raise Gem::Exception, errstr unless header
 
-      # verify_extraction_dir expects an already-resolved destination dir
+      # install_location expects an already-resolved destination dir
       destination_dir = File.realpath(destination_dir)
 
       header.each do |entry|

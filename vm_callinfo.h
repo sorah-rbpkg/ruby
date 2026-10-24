@@ -71,7 +71,7 @@ static inline void
 rb_callinfo_kwarg_release(struct rb_callinfo_kwarg *kwarg)
 {
     if (kwarg && RUBY_ATOMIC_FETCH_SUB(kwarg->references, 1) == 1) {
-        ruby_sized_xfree(kwarg, rb_callinfo_kwarg_bytes(kwarg->keyword_len));
+        ruby_xfree_sized(kwarg, rb_callinfo_kwarg_bytes(kwarg->keyword_len));
     }
 }
 
@@ -80,8 +80,8 @@ struct rb_callinfo {
     VALUE flags;
     const struct rb_callinfo_kwarg *kwarg;
     VALUE mid;
-    VALUE flag;
-    VALUE argc;
+    unsigned int flag;
+    unsigned int argc;
 };
 
 #if !defined(USE_EMBED_CI) || (USE_EMBED_CI+0)
@@ -160,7 +160,7 @@ vm_ci_flag(const struct rb_callinfo *ci)
         return (unsigned int)((((VALUE)ci) >> CI_EMBED_FLAG_SHFT) & CI_EMBED_FLAG_MASK);
     }
     else {
-        return (unsigned int)ci->flag;
+        return ci->flag;
     }
 }
 
@@ -171,7 +171,7 @@ vm_ci_argc(const struct rb_callinfo *ci)
         return (unsigned int)((((VALUE)ci) >> CI_EMBED_ARGC_SHFT) & CI_EMBED_ARGC_MASK);
     }
     else {
-        return (unsigned int)ci->argc;
+        return ci->argc;
     }
 }
 
@@ -329,14 +329,6 @@ extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
 
 #define vm_cc_empty() rb_vm_empty_cc()
 
-static inline void vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id_t dest_shape_id);
-
-static inline void
-vm_cc_attr_index_initialize(const struct rb_callcache *cc, shape_id_t shape_id)
-{
-    vm_cc_attr_index_set(cc, (attr_index_t)-1, shape_id);
-}
-
 static inline VALUE
 cc_check_class(VALUE klass)
 {
@@ -348,6 +340,8 @@ VALUE rb_vm_cc_table_create(size_t capa);
 VALUE rb_vm_cc_table_dup(VALUE old_table);
 void rb_vm_cc_table_delete(VALUE table, ID mid);
 
+static inline void vm_cc_attr_index_set(const struct rb_callcache *cc, uint64_t packed_cache);
+
 static inline const struct rb_callcache *
 vm_cc_new(VALUE klass,
           const struct rb_callable_method_entry_struct *cme,
@@ -356,6 +350,8 @@ vm_cc_new(VALUE klass,
 {
     cc_check_class(klass);
     struct rb_callcache *cc = SHAREABLE_IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
+    rb_gc_declare_weak_references((VALUE)cc);
+
     *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
     *((vm_call_handler *)&cc->call_) = call;
 
@@ -372,8 +368,11 @@ vm_cc_new(VALUE klass,
     }
 
     if (cme) {
-        if (cme->def->type == VM_METHOD_TYPE_ATTRSET || cme->def->type == VM_METHOD_TYPE_IVAR) {
-            vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
+        if (cme->def->type == VM_METHOD_TYPE_ATTRSET) {
+            vm_cc_attr_index_set(cc, IVAR_CACHE_INIT);
+        }
+        else if (cme->def->type == VM_METHOD_TYPE_IVAR) {
+            vm_cc_attr_index_set(cc, rb_getivar_cache_pack(ROOT_SHAPE_ID, ATTR_INDEX_NOT_SET));
         }
     }
     else {
@@ -440,11 +439,26 @@ vm_cc_valid(const struct rb_callcache *cc)
     return !UNDEF_P(cc->klass);
 }
 
+/* Whether another ractor may have invalidated this cc mid-use (see
+ * vm_cc_invalidate()). Extensions cannot use rb_multi_ractor_p() here: with
+ * assertions enabled at -O0 (e.g. --enable-yjit=dev on macOS) the inline
+ * materializes references to core-internal globals (ruby_current_vm_ptr,
+ * ruby_single_main_ractor) that are not exported to them, and objspace.bundle
+ * fails to load. RUBY_EXPORT marks a core TU. */
+#ifdef RUBY_EXPORT
+# define VM_CC_RACED_P() rb_multi_ractor_p()
+#else
+# define VM_CC_RACED_P() true
+#endif
+
 static inline const struct rb_callable_method_entry_struct *
 vm_cc_cme(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    // VM_CC_RACED_P(): another ractor can invalidate this cc (klass = Qundef)
+    // while a call using it is in flight; cme_/call_ stay intact, so the call
+    // proceeds with the method resolved before the redefinition.
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || VM_CC_RACED_P());
     VM_ASSERT(cc_check_class(cc->klass));
     VM_ASSERT(cc->call_ == NULL   || // not initialized yet
               !vm_cc_markable(cc) ||
@@ -459,31 +473,32 @@ vm_cc_call(const struct rb_callcache *cc)
 {
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc->call_ != NULL);
-    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc));
+    VM_ASSERT(cc->klass != Qundef || !vm_cc_markable(cc) || vm_cc_invalid_super(cc) || VM_CC_RACED_P());
     VM_ASSERT(cc_check_class(cc->klass));
     return cc->call_;
 }
 
-static inline void
-vm_unpack_shape_and_index(const uint64_t cache_value, shape_id_t *shape_id, attr_index_t *index)
+static inline uint64_t
+vm_cc_atomic_cache_read(const struct rb_callcache *cc)
 {
-    union rb_attr_index_cache cache = {
-        .pack = cache_value,
-    };
-    *shape_id = cache.unpack.shape_id;
-    *index = cache.unpack.index - 1;
+    return ATOMIC_U64_LOAD_RELAXED(cc->aux_.attr.value);
 }
 
-static inline void
-vm_cc_atomic_shape_and_index(const struct rb_callcache *cc, shape_id_t *shape_id, attr_index_t *index)
+static inline uint64_t
+vm_ic_atomic_cache_read(const struct iseq_inline_iv_cache_entry *ic)
 {
-    vm_unpack_shape_and_index(ATOMIC_U64_LOAD_RELAXED(cc->aux_.attr.value), shape_id, index);
+    return ATOMIC_U64_LOAD_RELAXED(ic->value);
 }
 
-static inline void
-vm_ic_atomic_shape_and_index(const struct iseq_inline_iv_cache_entry *ic, shape_id_t *shape_id, attr_index_t *index)
+static inline uint64_t
+vm_cache_attr_index_atomic_read(bool is_attr, const struct iseq_inline_iv_cache_entry *ic, const struct rb_callcache *cc)
 {
-    vm_unpack_shape_and_index(ATOMIC_U64_LOAD_RELAXED(ic->value), shape_id, index);
+    if (is_attr) {
+        return vm_cc_atomic_cache_read(cc);
+    }
+    else {
+        return vm_ic_atomic_cache_read(ic);
+    }
 }
 
 static inline unsigned int
@@ -520,32 +535,6 @@ set_vm_cc_ivar(const struct rb_callcache *cc)
     *(VALUE *)&cc->flags |= VM_CALLCACHE_IVAR;
 }
 
-static inline uint64_t
-vm_pack_shape_and_index(shape_id_t shape_id, attr_index_t index)
-{
-    union rb_attr_index_cache cache = {
-        .unpack = {
-            .shape_id = shape_id,
-            .index = index + 1,
-        }
-    };
-    return cache.pack;
-}
-
-static inline void
-vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id_t dest_shape_id)
-{
-    uint64_t *attr_value = (uint64_t *)&cc->aux_.attr.value;
-    if (!vm_cc_markable(cc)) {
-        *attr_value = vm_pack_shape_and_index(INVALID_SHAPE_ID, ATTR_INDEX_NOT_SET);
-        return;
-    }
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc != vm_cc_empty());
-    *attr_value = vm_pack_shape_and_index(dest_shape_id, index);
-    set_vm_cc_ivar(cc);
-}
-
 static inline bool
 vm_cc_ivar_p(const struct rb_callcache *cc)
 {
@@ -553,15 +542,28 @@ vm_cc_ivar_p(const struct rb_callcache *cc)
 }
 
 static inline void
-vm_ic_attr_index_set(const rb_iseq_t *iseq, struct iseq_inline_iv_cache_entry *ic, attr_index_t index, shape_id_t dest_shape_id)
+vm_cc_attr_index_set(const struct rb_callcache *cc, uint64_t packed_cache)
 {
-    ATOMIC_U64_SET_RELAXED(ic->value, vm_pack_shape_and_index(dest_shape_id, index));
+    uint64_t *attr_value = (uint64_t *)&cc->aux_.attr.value;
+    if (!vm_cc_markable(cc)) {
+        *attr_value = IVAR_CACHE_INIT;
+        return;
+    }
+    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
+    VM_ASSERT(cc != vm_cc_empty());
+    *attr_value = packed_cache;
+    set_vm_cc_ivar(cc);
 }
 
 static inline void
-vm_ic_attr_index_initialize(struct iseq_inline_iv_cache_entry *ic, shape_id_t shape_id)
+vm_cache_attr_index_set(bool is_attr, struct iseq_inline_iv_cache_entry *ic, const struct rb_callcache *cc, uint64_t packed_cache)
 {
-    ATOMIC_U64_SET_RELAXED(ic->value, vm_pack_shape_and_index(shape_id, ATTR_INDEX_NOT_SET));
+    if (is_attr) {
+        vm_cc_attr_index_set(cc, packed_cache);
+    }
+    else {
+        ATOMIC_U64_SET_RELAXED(ic->value, packed_cache);
+    }
 }
 
 static inline void
@@ -646,12 +648,23 @@ vm_ccs_p(const struct rb_class_cc_entries *ccs)
 }
 
 static inline bool
+vm_cc_check_cme_unlocked(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
+{
+    return vm_cc_cme(cc) == cme ||
+        (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
+}
+
+static inline bool
 vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t *cme)
 {
     bool valid;
-    RB_VM_LOCKING_NO_BARRIER() {
-        valid = vm_cc_cme(cc) == cme ||
-            (cme->def->iseq_overload && vm_cc_cme(cc) == rb_vm_lookup_overloaded_cme(cme));
+    if (rb_current_execution_context(false) == NULL) {
+        valid = vm_cc_check_cme_unlocked(cc, cme);
+    }
+    else {
+        RB_VM_LOCKING_NO_BARRIER() {
+            valid = vm_cc_check_cme_unlocked(cc, cme);
+        }
     }
     if (valid) {
         return true;
@@ -661,8 +674,8 @@ vm_cc_check_cme(const struct rb_callcache *cc, const rb_callable_method_entry_t 
 
         fprintf(stderr, "iseq_overload:%d, cme:%p (def:%p), cm_cc_cme(cc):%p (def:%p)\n",
                 (int)cme->def->iseq_overload,
-                cme, cme->def,
-                vm_cc_cme(cc), vm_cc_cme(cc)->def);
+                (void *)cme, (void *)cme->def,
+                (void *)vm_cc_cme(cc), (void *)vm_cc_cme(cc)->def);
         rp(cme);
         rp(vm_cc_cme(cc));
         rp(rb_vm_lookup_overloaded_cme(cme));

@@ -54,6 +54,12 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_raise_for_string_argument
+    assert_raise(NoMethodError) do
+      Timeout.timeout("1") { sleep(0.01) }
+    end
+  end
+
   def test_included
     c = Class.new do
       include Timeout
@@ -122,8 +128,8 @@ class TestTimeout < Test::Unit::TestCase
   def test_nested_timeout_which_error_bubbles_up
     raised_exception = nil
     begin
-      Timeout.timeout(0.1) {
-        Timeout.timeout(1) {
+      Timeout.timeout(1) {
+        Timeout.timeout(10) {
           raise Timeout::ExitException.new("inner message")
         }
       }
@@ -458,10 +464,12 @@ class TestTimeout < Test::Unit::TestCase
     # Stubs Fiber.current_scheduler for the duration of the block, then restores it.
     def with_mock_scheduler(mock)
       original = Fiber.method(:current_scheduler)
+      Fiber.singleton_class.remove_method(:current_scheduler)
       Fiber.define_singleton_method(:current_scheduler) { mock }
       begin
         yield
       ensure
+        Fiber.singleton_class.remove_method(:current_scheduler)
         Fiber.define_singleton_method(:current_scheduler, original)
       end
     end

@@ -70,7 +70,10 @@ module Bundler
 
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = Hash.new do |versions, version|
-          versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
+          deps = version.dependencies.reject {|d| d.name == package.name }
+          deps = Override.rewrite_dependencies(@base.overrides, package.name, deps)
+          deps = apply_metadata_overrides(deps, package.name)
+          versions[version] = to_dependency_hash(deps, @packages)
         end
       end
 
@@ -83,13 +86,15 @@ module Bundler
     end
 
     def solve_versions(root:, logger:)
-      solver = PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
+      solver = Gem::PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      check_replaced_gems(resolved_specs)
+      Override.attach(resolved_specs, @base.overrides)
       spec_set = SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
       @cooldown_skipped = cooldown_skipped_summary(spec_set)
       spec_set
-    rescue PubGrub::SolveFailure => e
+    rescue Gem::PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
       names_to_unlock, names_to_allow_prereleases_for, names_to_allow_remote_specs_for, extended_explanation = find_names_to_relax(incompatibility)
@@ -128,7 +133,45 @@ module Bundler
         explanation << extended_explanation
       end
 
+      override_summary = override_diagnostic_summary
+      explanation << override_summary if override_summary
+
       raise SolveFailure.new(explanation)
+    end
+
+    # A replacement is only useful when it provides the files of the gem it
+    # replaces, so the two cannot be loaded side by side.
+    def check_replaced_gems(specs)
+      names = specs.map(&:name)
+
+      @base.overrides.each do |override|
+        next unless override.from && override.operation
+        next unless names.include?(override.target) && names.include?(override.operation)
+        next unless specs.any? {|s| s.name == override.from && s.dependencies.any? {|d| d.name == override.target } }
+
+        dependents = specs.select do |spec|
+          Override.rewrite_dependencies(@base.overrides, spec.name, spec.dependencies).any? {|d| d.name == override.target }
+        end.map(&:name).uniq
+
+        lines = ["#{override} would leave both #{override.target} and #{override.operation} in the bundle because #{override.target} is still required by:"]
+        lines << "  the Gemfile" if @base.requirements.any? {|d| d.name == override.target }
+        lines.concat(dependents.map {|name| "  #{name}" })
+        if dependents.any?
+          lines << "Replace it for each of them, for example:"
+          lines << "  #{Override.new(override.target, :to, override.operation, from: dependents.first)}"
+        end
+        raise GemfileError, lines.join("\n")
+      end
+    end
+
+    def override_diagnostic_summary
+      return nil if @base.overrides.empty?
+
+      lines = ["Bundler applied the following overrides while resolving:"]
+      @base.overrides.each do |override|
+        lines << "  #{override}"
+      end
+      "\n\n#{lines.join("\n")}"
     end
 
     def find_names_to_relax(incompatibility)
@@ -153,7 +196,7 @@ module Bundler
             names_to_allow_remote_specs_for << name
           end
 
-          no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(PubGrub::Incompatibility::NoVersions) }
+          no_versions_incompat = [cause.incompatibility, cause.satisfier].find {|incompat| incompat.cause.is_a?(Gem::PubGrub::Incompatibility::NoVersions) }
           next unless no_versions_incompat
 
           extended_explanation = no_versions_incompat.extended_explanation
@@ -165,12 +208,12 @@ module Bundler
 
     def parse_dependency(package, dependency)
       range = if repository_for(package).is_a?(Source::Gemspec)
-        PubGrub::VersionRange.any
+        Gem::PubGrub::VersionRange.any
       else
         requirement_to_range(dependency)
       end
 
-      PubGrub::VersionConstraint.new(package, range: range)
+      Gem::PubGrub::VersionConstraint.new(package, range: range)
     end
 
     def versions_for(package, range = VersionRange.any)
@@ -178,7 +221,7 @@ module Bundler
     end
 
     def no_versions_incompatibility_for(package, unsatisfied_term)
-      cause = PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
+      cause = Gem::PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
       name = package.name
       constraint = unsatisfied_term.constraint
       constraint_string = constraint.constraint_string
@@ -239,24 +282,24 @@ module Bundler
             sorted_versions[high]
           end
 
-        range = PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
+        range = Gem::PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
 
-        self_constraint = PubGrub::VersionConstraint.new(package, range: range)
+        self_constraint = Gem::PubGrub::VersionConstraint.new(package, range: range)
 
-        dep_term = PubGrub::Term.new(dep_constraint, false)
-        self_term = PubGrub::Term.new(self_constraint, true)
+        dep_term = Gem::PubGrub::Term.new(dep_constraint, false)
+        self_term = Gem::PubGrub::Term.new(self_constraint, true)
 
         custom_explanation = if dep_package.meta? && package.root?
           "current #{dep_package} version is #{dep_constraint.constraint_string}"
         end
 
-        PubGrub::Incompatibility.new([self_term, dep_term], cause: :dependency, custom_explanation: custom_explanation)
+        Gem::PubGrub::Incompatibility.new([self_term, dep_term], cause: :dependency, custom_explanation: custom_explanation)
       end
     end
 
     def all_versions_for(package)
       name = package.name
-      results = (@base[name] + filter_specs(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform] }
+      results = (@base[name] + filter_specs(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform, spec.content_address] }
 
       if name == "bundler" && !bundler_pinned_to_current_version?
         bundler_spec = Gem.loaded_specs["bundler"]
@@ -294,10 +337,14 @@ module Bundler
           next groups if package.force_ruby_platform?
         end
 
-        platform_group = Resolver::SpecGroup.new(platform_specs.flatten.uniq)
+        platform_specs = platform_specs.flatten.uniq
+        platform_group = Resolver::SpecGroup.new((platform_specs + ruby_specs).uniq)
         next groups if platform_group == ruby_group
 
         groups << Resolver::Candidate.new(version, group: platform_group, priority: 1)
+
+        platform_only_group = Resolver::SpecGroup.new(platform_specs)
+        groups << Resolver::Candidate.new(version, group: platform_only_group, priority: 0) unless platform_only_group == platform_group
 
         groups
       end
@@ -446,9 +493,9 @@ module Bundler
     def cooldown_excluded?(spec)
       return false unless spec.respond_to?(:created_at) && spec.created_at
       return false unless spec.respond_to?(:remote) && spec.remote
-      return false if locked_by_lockfile?(spec)
       days = spec.remote.effective_cooldown
       return false if days.nil? || days <= 0
+      return false if locked_by_lockfile?(spec)
       (cooldown_now - spec.created_at) < (days * 86_400)
     end
 
@@ -602,19 +649,19 @@ module Bundler
         when "~>"
           name = "~> #{ver}"
           bump = Resolver::Candidate.new(version.bump.to_s + ".A")
-          PubGrub::VersionRange.new(name: name, min: ver, max: bump, include_min: true)
+          Gem::PubGrub::VersionRange.new(name: name, min: ver, max: bump, include_min: true)
         when ">"
-          PubGrub::VersionRange.new(min: platform_ver)
+          Gem::PubGrub::VersionRange.new(min: platform_ver)
         when ">="
-          PubGrub::VersionRange.new(min: ver, include_min: true)
+          Gem::PubGrub::VersionRange.new(min: ver, include_min: true)
         when "<"
-          PubGrub::VersionRange.new(max: ver)
+          Gem::PubGrub::VersionRange.new(max: ver)
         when "<="
-          PubGrub::VersionRange.new(max: platform_ver, include_max: true)
+          Gem::PubGrub::VersionRange.new(max: platform_ver, include_max: true)
         when "="
-          PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true)
+          Gem::PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true)
         when "!="
-          PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true).invert
+          Gem::PubGrub::VersionRange.new(min: ver, max: platform_ver, include_min: true, include_max: true).invert
         else
           raise "bad version specifier: #{op}"
         end
@@ -624,7 +671,7 @@ module Bundler
     end
 
     def to_dependency_hash(dependencies, packages)
-      dependencies.inject({}) do |deps, dep|
+      apply_overrides(dependencies).inject({}) do |deps, dep|
         package = packages[dep.name]
 
         current_req = deps[package]
@@ -637,6 +684,33 @@ module Bundler
         end
 
         deps
+      end
+    end
+
+    def apply_overrides(dependencies)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        override = Override.find_for(@base.overrides, dep.name, :version)
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
+      end
+    end
+
+    METADATA_DEP_FIELD = {
+      "Ruby\0" => :required_ruby_version,
+      "RubyGems\0" => :required_rubygems_version,
+    }.freeze
+
+    def apply_metadata_overrides(dependencies, name)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        field = METADATA_DEP_FIELD[dep.name]
+        next dep unless field
+        override = Override.find_for(@base.overrides, name, field)
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
       end
     end
 

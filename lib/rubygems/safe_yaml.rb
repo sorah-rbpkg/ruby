@@ -35,11 +35,28 @@ module Gem
     end
 
     def self.safe_load(input)
-      ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: @aliases_enabled)
+      # Psych rejects legacy metadata bytes, so preserve them with the internal parser.
+      if Gem.use_psych? && valid_encoding?(input)
+        ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES,
+                                 permitted_symbols: PERMITTED_SYMBOLS, aliases: @aliases_enabled)
+      else
+        Gem::YAMLSerializer.load(
+          input,
+          permitted_classes: PERMITTED_CLASSES,
+          permitted_symbols: PERMITTED_SYMBOLS,
+          aliases: aliases_enabled?
+        )
+      end
     end
 
-    def self.load(input)
-      ::Psych.safe_load(input, permitted_classes: [::Symbol])
+    class << self
+      alias_method :load, :safe_load
+    end
+
+    private_class_method def self.valid_encoding?(input)
+      return true unless input.is_a?(String)
+
+      input.dup.force_encoding(Encoding::UTF_8).valid_encoding?
     end
   end
 end

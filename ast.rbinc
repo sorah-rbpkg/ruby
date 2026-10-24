@@ -33,6 +33,11 @@ void Init_builtin_ast(void)
     RB_BUILTIN_FUNCTION(17, ast_location_last_lineno, ast_location_last_lineno, 0),
     RB_BUILTIN_FUNCTION(18, ast_location_last_column, ast_location_last_column, 0),
     RB_BUILTIN_FUNCTION(19, ast_location_inspect, ast_location_inspect, 0),
+    RB_BUILTIN_FUNCTION(20, iseq_compiled_by_prism_p, iseq_compiled_by_prism_p, 0),
+    RB_BUILTIN_FUNCTION(21, source_hash_of, source_hash_of, 1),
+    RB_BUILTIN_FUNCTION(22, ast_node_source_hash, ast_node_source_hash, 1),
+    RB_BUILTIN_FUNCTION(23, ast_node_find, ast_node_find, 2),
+    RB_BUILTIN_FUNCTION(24, iseq_of_backtrace_location, iseq_of_backtrace_location, 1),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -61,6 +66,11 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(ast_location_last_lineno);
   if (0) rb_builtin_function_check_arity0(ast_location_last_column);
   if (0) rb_builtin_function_check_arity0(ast_location_inspect);
+  if (0) rb_builtin_function_check_arity0(iseq_compiled_by_prism_p);
+  if (0) rb_builtin_function_check_arity1(source_hash_of);
+  if (0) rb_builtin_function_check_arity1(ast_node_source_hash);
+  if (0) rb_builtin_function_check_arity2(ast_node_find);
+  if (0) rb_builtin_function_check_arity1(iseq_of_backtrace_location);
 COMPILER_WARNING_POP
 
   // load

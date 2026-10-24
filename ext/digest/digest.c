@@ -13,7 +13,12 @@
 
 ************************************************/
 
+#define RB_DIGEST_WRAP_METADATA_LINKAGE RUBY_FUNC_EXPORTED
 #include "digest.h"
+
+#ifndef HAVE_RB_LEN_T
+# define LEN2NUM LONG2NUM
+#endif
 
 static VALUE rb_mDigest;
 static VALUE rb_mDigest_Instance;
@@ -406,7 +411,7 @@ rb_digest_instance_digest_length(VALUE self)
 
     /* never blindly assume that #digest() returns a string */
     StringValue(digest);
-    return LONG2NUM(RSTRING_LEN(digest));
+    return LEN2NUM(RSTRING_LEN(digest));
 }
 
 /*
@@ -543,7 +548,7 @@ static const rb_data_type_t metadata_type = {
     {0},
 };
 
-RUBY_FUNC_EXPORTED VALUE
+RB_DIGEST_WRAP_METADATA_LINKAGE VALUE
 rb_digest_wrap_metadata(const rb_digest_metadata_t *meta)
 {
     return rb_obj_freeze(TypedData_Wrap_Struct(0, &metadata_type, (void *)meta));
@@ -571,7 +576,7 @@ static rb_digest_metadata_t *
 get_digest_base_metadata(VALUE klass)
 {
     VALUE p;
-    VALUE obj;
+    VALUE obj = Qnil;
     rb_digest_metadata_t *algo;
 
     for (p = klass; !NIL_P(p); p = rb_class_superclass(p)) {

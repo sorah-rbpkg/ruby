@@ -1,0 +1,21 @@
+# -*- encoding: utf-8 -*-
+# stub: date 3.6.0 ruby lib
+# default: ./ext/date/date.gemspec 1791726996.000000000
+
+Gem::Specification.new do |s|
+  s.name = "date".freeze
+  s.version = "3.6.0"
+
+  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
+  s.metadata = { "changelog_uri" => "https://github.com/ruby/date/releases" } if s.respond_to? :metadata=
+  s.require_paths = ["lib".freeze]
+  s.authors = ["Tadayoshi Funaba".freeze]
+  s.date = "2026-10-11"
+  s.description = "The official date library for Ruby.".freeze
+  s.email = [nil]
+  s.homepage = "https://github.com/ruby/date".freeze
+  s.licenses = ["Ruby".freeze, "BSD-2-Clause".freeze]
+  s.required_ruby_version = Gem::Requirement.new(">= 2.6.0".freeze)
+  s.rubygems_version = "3.4.20".freeze
+  s.summary = "The official date library for Ruby.".freeze
+end

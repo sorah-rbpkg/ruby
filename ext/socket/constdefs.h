@@ -2405,31 +2405,31 @@
 # endif
 #endif
 
-int rsock_family_to_int(const char *str, long len, int *valp);
+int rsock_family_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_socktype_to_int(const char *str, long len, int *valp);
+int rsock_socktype_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_ipproto_to_int(const char *str, long len, int *valp);
+int rsock_ipproto_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_unknown_level_to_int(const char *str, long len, int *valp);
+int rsock_unknown_level_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_ip_level_to_int(const char *str, long len, int *valp);
+int rsock_ip_level_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_so_optname_to_int(const char *str, long len, int *valp);
+int rsock_so_optname_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_ip_optname_to_int(const char *str, long len, int *valp);
+int rsock_ip_optname_to_int(const char *str, rb_len_t len, int *valp);
 
 #ifdef IPPROTO_IPV6
-int rsock_ipv6_optname_to_int(const char *str, long len, int *valp);
+int rsock_ipv6_optname_to_int(const char *str, rb_len_t len, int *valp);
 #endif
 
-int rsock_tcp_optname_to_int(const char *str, long len, int *valp);
+int rsock_tcp_optname_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_udp_optname_to_int(const char *str, long len, int *valp);
+int rsock_udp_optname_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_shutdown_how_to_int(const char *str, long len, int *valp);
+int rsock_shutdown_how_to_int(const char *str, rb_len_t len, int *valp);
 
-int rsock_scm_optname_to_int(const char *str, long len, int *valp);
+int rsock_scm_optname_to_int(const char *str, rb_len_t len, int *valp);
 
 ID rsock_intern_family(int val);
 

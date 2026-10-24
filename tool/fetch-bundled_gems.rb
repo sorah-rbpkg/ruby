@@ -28,19 +28,21 @@ unless File.exist?("#{n}/.git")
   system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or abort
 end
 
-if r
-  puts "fetching #{color.notice(r)} ..."
-  system("git", "fetch", "origin", r, chdir: n) or abort
-  c = r
-else
-  c = ["v#{v}", v].find do |c|
-    puts "fetching #{color.notice(c)} ..."
-    system("git", "fetch", "origin", "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
-  end or abort
+candidates = r ? [r] : ["v#{v}", v]
+
+# Skip fetching from the remote when the target ref already exists locally
+# (e.g. restored from cache), so a transient network failure does not abort.
+c = candidates.find do |c|
+  system("git", "rev-parse", "-q", "--verify", "#{c}^{commit}", out: File::NULL, err: File::NULL, chdir: n)
 end
 
+c ||= candidates.find do |c|
+  puts "fetching #{n} #{color.notice(c)} ..."
+  system("git", "fetch", "origin", r || "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
+end or abort
+
 checkout = %w"git -c advice.detachedHead=false checkout"
-info = %[, r=#{color.info(r)}] if r
+info = (%[, r=#{color.info(r)}] if r)
 puts "checking out #{color.notice(c)} (v=#{color.info(v)}#{info}) ..."
 unless system(*checkout, c, "--", chdir: n)
   abort if r or !system(*checkout, v, "--", chdir: n)

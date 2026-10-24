@@ -11,8 +11,7 @@ struct rb_execution_context_struct; /* in vm_core.h */
 
 static VALUE builtin_inline_class_53(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const category__ptr = (VALUE *)&ec->cfp->ep[-4];
-MAYBE_UNUSED(const VALUE) category = *category__ptr;
+MAYBE_UNUSED(const VALUE) category = ec->cfp->ep[-4];
 #line 53 "warning.rb"
 return NIL_P(category);
 #line 18 "warning.rbinc"
@@ -20,8 +19,7 @@ return NIL_P(category);
 
 static VALUE builtin_inline_class_55(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const category__ptr = (VALUE *)&ec->cfp->ep[-4];
-MAYBE_UNUSED(const VALUE) category = *category__ptr;
+MAYBE_UNUSED(const VALUE) category = ec->cfp->ep[-4];
 #line 55 "warning.rb"
 return rb_to_symbol_type(category);
 #line 26 "warning.rbinc"

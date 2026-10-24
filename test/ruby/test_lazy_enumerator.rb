@@ -281,6 +281,32 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([5, nil], a.lazy.zip("a".."c").force.last)
   end
 
+  def test_zip_array_convertible_before_enumerable
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+
+    zip = (1..3).lazy.zip(array_like, 10..12)
+    expected = [[1, :a, 10], [2, :b, 11], [3, nil, 12]]
+    assert_equal(expected, zip.force)
+    assert_equal(expected, zip.force)
+  end
+
+  def test_zip_array_conversion_precedes_each
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+    def array_like.each
+      yield :c
+      yield :d
+    end
+
+    assert_equal([[1, :a, 10], [2, :b, 11]],
+                 (1..2).lazy.zip(array_like, 10..11).force)
+  end
+
   def test_zip_without_arg
     a = Step.new(1..3)
     assert_equal([1], a.zip.first)
@@ -634,7 +660,7 @@ EOS
   end
 
   def test_require_block
-    %i[select reject drop_while take_while map flat_map].each do |method|
+    %i[select reject drop_while take_while map flat_map tap_each].each do |method|
       assert_raise(ArgumentError){ [].lazy.send(method) }
     end
   end
@@ -736,9 +762,31 @@ EOS
 
     ary = (0..Float::INFINITY).lazy.with_index.take(2).to_a
     assert_equal([[0, 0], [1, 1]], ary)
+
+    ary = 100.times.lazy.take(0).each_with_index.to_a
+    assert_equal([], ary)
   end
 
   def test_with_index_size
     assert_equal(3, Enumerator::Lazy.new([1, 2, 3], 3){|y, v| y << v}.with_index.size)
+  end
+
+  def test_tap_each
+    out = []
+
+    e = (1..Float::INFINITY).lazy
+                            .tap_each { |x| out << x }
+                            .select(&:even?)
+                            .first(5)
+
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], out)
+    assert_equal([2, 4, 6, 8, 10], e)
+  end
+
+  def test_tap_each_is_not_intrusive
+    s = Step.new(1..3)
+
+    assert_equal(2, s.lazy.tap_each { |x| x }.map { |x| x * 2 }.first)
+    assert_equal(1, s.current)
   end
 end

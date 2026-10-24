@@ -9,30 +9,175 @@
 #include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
 struct rb_execution_context_struct; /* in vm_core.h */
 
-static VALUE builtin_inline_class_84(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_89(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 84 "thread_sync.rb"
+MAYBE_UNUSED(const VALUE) object = ec->cfp->ep[-3];
+#line 89 "thread_sync.rb"
+return queue_do_push(self, queue_ptr(self), object);
+#line 18 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_124(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 124 "thread_sync.rb"
+
+        if (!queue_closed_p(self)) {
+            FL_SET_RAW(self, QUEUE_CLOSED);
+
+            wakeup_all(&queue_ptr(self)->waitq);
+        }
+
+        return self;
+#line 32 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_139(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 139 "thread_sync.rb"
+return RBOOL(FL_TEST_RAW(self, QUEUE_CLOSED));
+#line 39 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_148(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 148 "thread_sync.rb"
+return LEN2NUM(queue_ptr(self)->len);
+#line 46 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_156(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 156 "thread_sync.rb"
+return RBOOL(queue_ptr(self)->len == 0);
+#line 53 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_161(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 161 "thread_sync.rb"
+
+        queue_clear(queue_ptr(self));
+        return self;
+#line 62 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_172(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 172 "thread_sync.rb"
+return INT2NUM(queue_ptr(self)->num_waiting);
+#line 69 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_255(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 255 "thread_sync.rb"
+
+        if (!queue_closed_p(self)) {
+            struct rb_szqueue *sq = szqueue_ptr(self);
+
+            FL_SET(self, QUEUE_CLOSED);
+            wakeup_all(szqueue_waitq(sq));
+            wakeup_all(szqueue_pushq(sq));
+        }
+        return self;
+#line 84 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_269(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 269 "thread_sync.rb"
+
+        struct rb_szqueue *sq = szqueue_ptr(self);
+        queue_clear(&sq->q);
+        wakeup_all(szqueue_pushq(sq));
+        return self;
+#line 95 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_279(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 279 "thread_sync.rb"
+
+        struct rb_szqueue *sq = szqueue_ptr(self);
+        return INT2NUM(sq->q.num_waiting + sq->num_waiting_push);
+#line 104 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_287(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 287 "thread_sync.rb"
+return LEN2NUM(szqueue_ptr(self)->max);
+#line 111 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_294(struct rb_execution_context_struct *ec, const VALUE self)
+{
+MAYBE_UNUSED(const VALUE) vmax = ec->cfp->ep[-3];
+#line 294 "thread_sync.rb"
+
+        rb_len_t max = NUM2LEN(vmax);
+        if (max <= 0) {
+            rb_raise(rb_eArgError, "queue size must be positive");
+        }
+
+        rb_len_t diff = 0;
+        struct rb_szqueue *sq = szqueue_ptr(self);
+
+        if (max > sq->max) {
+            diff = max - sq->max;
+        }
+        sq->max = max;
+        sync_wakeup(szqueue_pushq(sq), diff);
+        return vmax;
+#line 133 "thread_sync.rbinc"
+}
+
+static VALUE builtin_inline_class_344(struct rb_execution_context_struct *ec, const VALUE self)
+{
+#line 344 "thread_sync.rb"
 return  RBOOL(mutex_locked_p(mutex_ptr(self)));
-#line 17 "thread_sync.rbinc"
+#line 140 "thread_sync.rbinc"
 }
 
 void Init_builtin_thread_sync(void)
 {
   // table definition
   static const struct rb_builtin_function thread_sync_table[] = {
-    RB_BUILTIN_FUNCTION(0, rb_queue_pop, rb_queue_pop, 2),
-    RB_BUILTIN_FUNCTION(1, rb_szqueue_pop, rb_szqueue_pop, 2),
-    RB_BUILTIN_FUNCTION(2, rb_szqueue_push, rb_szqueue_push, 3),
-    RB_BUILTIN_FUNCTION(3, _bi84, builtin_inline_class_84, 0),
-    RB_BUILTIN_FUNCTION(4, rb_mut_owned_p, rb_mut_owned_p, 0),
-    RB_BUILTIN_FUNCTION(5, rb_mut_lock, rb_mut_lock, 0),
-    RB_BUILTIN_FUNCTION(6, rb_mut_trylock, rb_mut_trylock, 0),
-    RB_BUILTIN_FUNCTION(7, rb_mut_unlock, rb_mut_unlock, 0),
-    RB_BUILTIN_FUNCTION(8, rb_mut_synchronize, rb_mut_synchronize, 0),
-    RB_BUILTIN_FUNCTION(9, rb_mut_sleep, rb_mut_sleep, 1),
-    RB_BUILTIN_FUNCTION(10, rb_condvar_signal, rb_condvar_signal, 0),
-    RB_BUILTIN_FUNCTION(11, rb_condvar_broadcast, rb_condvar_broadcast, 0),
-    RB_BUILTIN_FUNCTION(12, rb_condvar_wait, rb_condvar_wait, 2),
+    RB_BUILTIN_FUNCTION(0, queue_initialize, queue_initialize, 1),
+    RB_BUILTIN_FUNCTION(1, rb_queue_pop, rb_queue_pop, 2),
+    RB_BUILTIN_FUNCTION(2, _bi89, builtin_inline_class_89, 0),
+    RB_BUILTIN_FUNCTION(3, _bi124, builtin_inline_class_124, 0),
+    RB_BUILTIN_FUNCTION(4, _bi139, builtin_inline_class_139, 0),
+    RB_BUILTIN_FUNCTION(5, _bi148, builtin_inline_class_148, 0),
+    RB_BUILTIN_FUNCTION(6, _bi156, builtin_inline_class_156, 0),
+    RB_BUILTIN_FUNCTION(7, _bi161, builtin_inline_class_161, 0),
+    RB_BUILTIN_FUNCTION(8, _bi172, builtin_inline_class_172, 0),
+    RB_BUILTIN_FUNCTION(9, szqueue_initialize, szqueue_initialize, 1),
+    RB_BUILTIN_FUNCTION(10, rb_szqueue_pop, rb_szqueue_pop, 2),
+    RB_BUILTIN_FUNCTION(11, rb_szqueue_push, rb_szqueue_push, 3),
+    RB_BUILTIN_FUNCTION(12, _bi255, builtin_inline_class_255, 0),
+    RB_BUILTIN_FUNCTION(13, _bi269, builtin_inline_class_269, 0),
+    RB_BUILTIN_FUNCTION(14, _bi279, builtin_inline_class_279, 0),
+    RB_BUILTIN_FUNCTION(15, _bi287, builtin_inline_class_287, 0),
+    RB_BUILTIN_FUNCTION(16, _bi294, builtin_inline_class_294, 0),
+    RB_BUILTIN_FUNCTION(17, _bi344, builtin_inline_class_344, 0),
+    RB_BUILTIN_FUNCTION(18, rb_mut_owned_p, rb_mut_owned_p, 0),
+    RB_BUILTIN_FUNCTION(19, rb_mut_lock, rb_mut_lock, 0),
+    RB_BUILTIN_FUNCTION(20, rb_mut_trylock, rb_mut_trylock, 0),
+    RB_BUILTIN_FUNCTION(21, rb_mut_unlock, rb_mut_unlock, 0),
+    RB_BUILTIN_FUNCTION(22, rb_mut_synchronize, rb_mut_synchronize, 0),
+    RB_BUILTIN_FUNCTION(23, rb_mut_sleep, rb_mut_sleep, 1),
+    RB_BUILTIN_FUNCTION(24, rb_condvar_signal, rb_condvar_signal, 0),
+    RB_BUILTIN_FUNCTION(25, rb_condvar_broadcast, rb_condvar_broadcast, 0),
+    RB_BUILTIN_FUNCTION(26, rb_condvar_wait, rb_condvar_wait, 2),
+    RB_BUILTIN_FUNCTION(27, rb_monitor_synchronize, rb_monitor_synchronize, 0),
+    RB_BUILTIN_FUNCTION(28, rb_monitor_try_enter, rb_monitor_try_enter, 0),
+    RB_BUILTIN_FUNCTION(29, rb_monitor_enter, rb_monitor_enter, 0),
+    RB_BUILTIN_FUNCTION(30, rb_monitor_exit, rb_monitor_exit, 0),
+    RB_BUILTIN_FUNCTION(31, rb_monitor_check_owner, rb_monitor_check_owner, 0),
+    RB_BUILTIN_FUNCTION(32, rb_monitor_locked_p, rb_monitor_locked_p, 0),
+    RB_BUILTIN_FUNCTION(33, rb_monitor_owned_p, rb_monitor_owned_p, 0),
+    RB_BUILTIN_FUNCTION(34, rb_monitor_wait_for_cond, rb_monitor_wait_for_cond, 2),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -41,10 +186,24 @@ COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
+  if (0) rb_builtin_function_check_arity1(queue_initialize);
   if (0) rb_builtin_function_check_arity2(rb_queue_pop);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_89);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_124);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_139);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_148);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_156);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_161);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_172);
+  if (0) rb_builtin_function_check_arity1(szqueue_initialize);
   if (0) rb_builtin_function_check_arity2(rb_szqueue_pop);
   if (0) rb_builtin_function_check_arity3(rb_szqueue_push);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_84);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_255);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_269);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_279);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_287);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_294);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_344);
   if (0) rb_builtin_function_check_arity0(rb_mut_owned_p);
   if (0) rb_builtin_function_check_arity0(rb_mut_lock);
   if (0) rb_builtin_function_check_arity0(rb_mut_trylock);
@@ -54,6 +213,14 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
   if (0) rb_builtin_function_check_arity0(rb_condvar_signal);
   if (0) rb_builtin_function_check_arity0(rb_condvar_broadcast);
   if (0) rb_builtin_function_check_arity2(rb_condvar_wait);
+  if (0) rb_builtin_function_check_arity0(rb_monitor_synchronize);
+  if (0) rb_builtin_function_check_arity0(rb_monitor_try_enter);
+  if (0) rb_builtin_function_check_arity0(rb_monitor_enter);
+  if (0) rb_builtin_function_check_arity0(rb_monitor_exit);
+  if (0) rb_builtin_function_check_arity0(rb_monitor_check_owner);
+  if (0) rb_builtin_function_check_arity0(rb_monitor_locked_p);
+  if (0) rb_builtin_function_check_arity0(rb_monitor_owned_p);
+  if (0) rb_builtin_function_check_arity2(rb_monitor_wait_for_cond);
 COMPILER_WARNING_POP
 
   // load

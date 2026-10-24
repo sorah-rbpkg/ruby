@@ -84,11 +84,14 @@ module Bundler
       platforms.delete(Bundler.local_platform) if less_specific_platform
     end
 
-    def validate_deps(s)
-      s.runtime_dependencies.each do |dep|
+    def validate_deps(s, overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : [])
+      Override.rewrite_dependencies(overrides, s.name, s.runtime_dependencies).each do |dep|
         next if dep.name == "bundler"
 
         return :missing unless names.include?(dep.name)
+
+        override = Override.find_for(overrides, dep.name, :version)
+        dep = Gem::Dependency.new(dep.name, override.apply_to(dep.requirement)) if override
         return :invalid if none? {|spec| dep.matches_spec?(spec) }
       end
 
@@ -178,7 +181,7 @@ module Bundler
     end
 
     def find_by_name_and_platform(name, platform)
-      @specs.detect {|spec| spec.name == name && spec.installable_on_platform?(platform) }
+      lookup[name]&.detect {|spec| spec.installable_on_platform?(platform) }
     end
 
     def specs_with_additional_variants_from(other)
@@ -274,13 +277,25 @@ module Bundler
 
       valid_platform = lookup.all? do |_, specs|
         spec = specs.first
+        # The matching candidates returned by source.specs.search are remote
+        # specs that do not carry the override list themselves. Borrow it from
+        # the LazySpec we are validating so platform-variant validation honors
+        # the same overrides the install/resolve path already applies.
+        overrides = spec.is_a?(LazySpecification) ? Array(spec.overrides) : []
         matching_specs = spec.source.specs.search([spec.name, spec.version])
         platform_spec = MatchPlatform.select_best_platform_match(matching_specs, platform).find do |s|
-          valid?(s)
+          s.matches_current_metadata_with_overrides?(overrides) && validate_deps(s, overrides) == :valid
         end
 
         if platform_spec
-          new_specs << LazySpecification.from_spec(platform_spec) unless specs.include?(platform_spec)
+          unless specs.include?(platform_spec)
+            new_lazy = LazySpecification.from_spec(platform_spec)
+            # Carry the overrides forward so a follow-up complete_platform
+            # call that picks this synthesized variant as its exemplar still
+            # honors the user's override list.
+            new_lazy.overrides = overrides if overrides.any?
+            new_specs << new_lazy
+          end
           true
         else
           false
@@ -314,7 +329,7 @@ module Bundler
     end
 
     def sorted
-      @sorted ||= ([@specs.find {|s| s.name == "rake" }] + tsort).compact.uniq
+      @sorted ||= ([lookup["rake"]&.first] + tsort).compact.uniq
     rescue Gem::TSort::Cyclic => error
       cgems = extract_circular_gems(error)
       raise CyclicDependencyError, "Your bundle requires gems that depend" \
@@ -342,7 +357,8 @@ module Bundler
     end
 
     def tsort_each_child(s)
-      s.dependencies.sort_by(&:name).each do |d|
+      dependencies = s.is_a?(LazySpecification) ? Override.rewrite_dependencies(s.overrides, s.name, s.dependencies) : s.dependencies
+      dependencies.sort_by(&:name).each do |d|
         next if d.type == :development
 
         specs_for_name = lookup[d.name]

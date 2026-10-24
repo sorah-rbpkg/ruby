@@ -1,4 +1,4 @@
-/* A Bison parser, made by Lrama 0.7.1.  */
+/* A Bison parser, made by Lrama 0.8.0.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -190,7 +190,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 2671 "parse.y"
+#line 2683 "parse.y"
 
     NODE *node;
     rb_node_fcall_t *node_fcall;

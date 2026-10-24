@@ -905,6 +905,9 @@ module Prism
     def test_AndNode
       assert_prism_eval("true && 1")
       assert_prism_eval("false && 1")
+      assert_prism_eval("true && 1 && 2")
+      assert_prism_eval("true && nil && 2")
+      assert_prism_eval("a = []; a.push(1) && a.push(2) && nil && a.push(3); a")
     end
 
     def test_CaseNode
@@ -1000,6 +1003,9 @@ module Prism
     def test_OrNode
       assert_prism_eval("true || 1")
       assert_prism_eval("false || 1")
+      assert_prism_eval("nil || false || 1")
+      assert_prism_eval("nil || 1 || 2")
+      assert_prism_eval("a = []; a.push(1).empty? || nil || a.push(2) || a.push(3); a")
     end
 
     def test_UnlessNode
@@ -2702,7 +2708,7 @@ end
     # Errors                                                                   #
     ############################################################################
 
-    def test_MissingNode
+    def test_ErrorRecoveryNode
       # TODO
     end
 
@@ -2728,6 +2734,12 @@ end
 
       assert_raise TypeError do
         RubyVM::InstructionSequence.compile_file_prism(nil)
+      end
+
+      assert_nothing_raised(Errno::EMFILE, Errno::ENFILE) do
+        10000.times do
+          RubyVM::InstructionSequence.compile_file_prism(File::NULL)
+        end
       end
     end
 

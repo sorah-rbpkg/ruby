@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'rbconfig/sizeof'
 
 class TestSprintf < Test::Unit::TestCase
   def test_positional
@@ -288,6 +289,20 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_modify_argument_array
+    count = 1_000
+    obj = Object.new
+    ary = [obj, *Array.new(count - 1) { "x" }]
+    obj.define_singleton_method(:to_s) do
+      ary.replace([])
+      "X"
+    end
+    str = "%s" * count
+    assert_raise_with_message(RuntimeError, /array modified during formatting/) do
+      str % ary
+    end
+  end
+
   def test_float
     assert_equal("36893488147419111424",
                  sprintf("%20.0f", 36893488147419107329.0))
@@ -539,6 +554,11 @@ class TestSprintf < Test::Unit::TestCase
   def test_width_underflow
     bug = 'https://github.com/mruby/mruby/issues/3347'
     assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
+
+    int_max = RbConfig::LIMITS["INT_MAX"]
+    assert_raise_with_message(ArgumentError, /width too big/) {
+      sprintf "%*c", int_max, 0x80
+    }
   end
 
   def test_negative_width_overflow

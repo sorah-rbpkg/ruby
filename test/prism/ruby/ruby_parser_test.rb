@@ -13,7 +13,7 @@ rescue LoadError
   return
 end
 
-module Prism
+module Ruby::Prism
   class RubyParserTest < TestCase
     todos = [
       "character_literal.txt",
@@ -37,6 +37,8 @@ module Prism
       "alias.txt",
       "dsym_str.txt",
       "dos_endings.txt",
+      "endless_method_rescue_modifier.txt",
+      "heredoc_dedent_line_continuation.txt",
       "heredoc_percent_q_newline_delimiter.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
@@ -45,6 +47,7 @@ module Prism
       "multi_write.txt",
       "not.txt",
       "patterns.txt",
+      "percent_array_newline_delimiter.txt",
       "regex.txt",
       "seattlerb/and_multi.txt",
       "seattlerb/heredoc__backslash_dos_format.txt",
@@ -83,16 +86,13 @@ module Prism
       "3.3-3.3/keyword_args_in_array_assignment.txt",
       "3.3-3.3/return_in_sclass.txt",
 
-      "3.4/circular_parameters.txt",
-
-      "4.0/endless_methods_command_call.txt",
-      "4.0/leading_logical.txt",
+      "3.3-4.0/void_value.txt",
 
       # https://bugs.ruby-lang.org/issues/21168#note-5
       "command_method_call_2.txt",
     ]
 
-    Fixture.each(except: failures) do |fixture|
+    Fixture.each_for_version(version: "3.3", except: failures) do |fixture|
       define_method(fixture.test_name) do
         assert_ruby_parser(fixture, todos.include?(fixture.path))
       end
@@ -103,7 +103,7 @@ module Prism
     def assert_ruby_parser(fixture, allowed_failure)
       source = fixture.read
       expected = ignore_warnings { ::RubyParser.new.parse(source, fixture.path) }
-      actual = Prism::Translation::RubyParser.new.parse(source, fixture.path)
+      actual = Ruby::Prism::Translation::RubyParser.new.parse(source, fixture.path)
       on_failure = -> { message(expected, actual) }
 
       if !allowed_failure

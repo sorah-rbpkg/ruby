@@ -23,7 +23,6 @@ splits at every character:
 
   'abracadabra'.split('') # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a"]
   ''.split('')            # => []
-  'тест'.split('')        # => ["т", "е", "с", "т"]
   'こんにちは'.split('')   # => ["こ", "ん", "に", "ち", "は"]
 
 When +field_sep+ is a non-empty string and different from <tt>' '</tt> (a single space),
@@ -32,7 +31,6 @@ uses that string as the separator:
   'abracadabra'.split('a')  # => ["", "br", "c", "d", "br"]
   'abracadabra'.split('ab') # => ["", "racad", "ra"]
   ''.split('a')             # => []
-  'тест'.split('т')         # => ["", "ес"]
   'こんにちは'.split('に')    # => ["こん", "ちは"]
 
 When +field_sep+ is a Regexp,
@@ -70,7 +68,7 @@ and trailing empty strings are included:
 
 When +limit+ is negative,
 there is no limit on the size of the array,
-and trailing empty strings are omitted:
+and trailing empty strings are included:
 
   'abracadabra'.split('', -1)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a", ""]
   'abracadabra'.split('a', -1) # => ["", "br", "c", "d", "br", ""]
@@ -100,4 +98,4 @@ But the latter:
 - Has poorer performance because it creates an intermediate array.
 - Returns an array (instead of +self+).
 
-Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].
