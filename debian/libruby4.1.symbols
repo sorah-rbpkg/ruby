@@ -22,7 +22,10 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  OnigSyntaxPython@Base 4.1.0~preview1-0nkmi1
  OnigSyntaxRuby@Base 4.1.0~preview1-0nkmi1
  RUBY_IO_BUFFER_DEFAULT_SIZE@Base 4.1.0~preview1-0nkmi1
+ RUBY_IO_BUFFER_MAP_ALIGNMENT@Base 4.1.0~preview1-0nkmi1
  RUBY_IO_BUFFER_PAGE_SIZE@Base 4.1.0~preview1-0nkmi1
+ (arch=amd64)coroutine_initialize_shadow_stack@Base 4.1.0~preview1-0nkmi1
+ (arch=amd64)coroutine_start_trampoline@Base 4.1.0~preview1-0nkmi1
  coroutine_transfer@Base 4.1.0~preview1-0nkmi1
  dln_find_exe_r@Base 4.1.0~preview1-0nkmi1
  dln_find_file_r@Base 4.1.0~preview1-0nkmi1
@@ -84,6 +87,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  onig_parse_make_tree@Base 4.1.0~preview1-0nkmi1
  onig_reduce_nested_quantifier@Base 4.1.0~preview1-0nkmi1
  onig_reg_copy@Base 4.1.0~preview1-0nkmi1
+ onig_reg_copy_body@Base 4.1.0~preview1-0nkmi1
  onig_reg_init@Base 4.1.0~preview1-0nkmi1
  onig_region_clear@Base 4.1.0~preview1-0nkmi1
  onig_region_copy@Base 4.1.0~preview1-0nkmi1
@@ -314,6 +318,8 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_cHash@Base 4.1.0~preview1-0nkmi1
  rb_cIO@Base 4.1.0~preview1-0nkmi1
  rb_cIOBuffer@Base 4.1.0~preview1-0nkmi1
+ rb_cIOBufferSlice@Base 4.1.0~preview1-0nkmi1
+ rb_cIOBufferStorage@Base 4.1.0~preview1-0nkmi1
  rb_cISeq@Base 4.1.0~preview1-0nkmi1
  rb_cInteger@Base 4.1.0~preview1-0nkmi1
  rb_cMatch@Base 4.1.0~preview1-0nkmi1
@@ -422,10 +428,13 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_const_get_at@Base 4.1.0~preview1-0nkmi1
  rb_const_get_from@Base 4.1.0~preview1-0nkmi1
  rb_const_list@Base 4.1.0~preview1-0nkmi1
+ rb_const_missing@Base 4.1.0~preview1-0nkmi1
  rb_const_remove@Base 4.1.0~preview1-0nkmi1
  rb_const_set@Base 4.1.0~preview1-0nkmi1
  rb_convert_type@Base 4.1.0~preview1-0nkmi1
  rb_copy_generic_ivar@Base 4.1.0~preview1-0nkmi1
+ rb_coverage_each_method@Base 4.1.0~preview1-0nkmi1
+ rb_coverage_method_data_of@Base 4.1.0~preview1-0nkmi1
  rb_cstr2inum@Base 4.1.0~preview1-0nkmi1
  rb_cstr_to_dbl@Base 4.1.0~preview1-0nkmi1
  rb_cstr_to_inum@Base 4.1.0~preview1-0nkmi1
@@ -528,6 +537,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_eTypeError@Base 4.1.0~preview1-0nkmi1
  rb_eZeroDivError@Base 4.1.0~preview1-0nkmi1
  rb_each@Base 4.1.0~preview1-0nkmi1
+ rb_ec_newobj_of@Base 4.1.0~preview1-0nkmi1
  rb_econv_append@Base 4.1.0~preview1-0nkmi1
  rb_econv_asciicompat_encoding@Base 4.1.0~preview1-0nkmi1
  rb_econv_binmode@Base 4.1.0~preview1-0nkmi1
@@ -780,64 +790,96 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_gc_count@Base 4.1.0~preview1-0nkmi1
  rb_gc_cr_lock@Base 4.1.0~preview1-0nkmi1
  rb_gc_cr_unlock@Base 4.1.0~preview1-0nkmi1
+ rb_gc_declare_weak_references@Base 4.1.0~preview1-0nkmi1
  rb_gc_disable@Base 4.1.0~preview1-0nkmi1
  rb_gc_disable_no_rest@Base 4.1.0~preview1-0nkmi1
+ rb_gc_each_registered_addr@Base 4.1.0~preview1-0nkmi1
  rb_gc_enable@Base 4.1.0~preview1-0nkmi1
  rb_gc_event_hook@Base 4.1.0~preview1-0nkmi1
  rb_gc_event_hook_required_p@Base 4.1.0~preview1-0nkmi1
+ rb_gc_ever_multi_ractor_p@Base 4.1.0~preview1-0nkmi1
  rb_gc_for_fd@Base 4.1.0~preview1-0nkmi1
+ rb_gc_gc_disabled_global_p@Base 4.1.0~preview1-0nkmi1
  rb_gc_get_objspace@Base 4.1.0~preview1-0nkmi1
  rb_gc_get_ractor_newobj_cache@Base 4.1.0~preview1-0nkmi1
  rb_gc_get_shape@Base 4.1.0~preview1-0nkmi1
+ rb_gc_handle_weak_references@Base 4.1.0~preview1-0nkmi1
+ rb_gc_handle_weak_references_alive_p@Base 4.1.0~preview1-0nkmi1
  rb_gc_initialize_vm_context@Base 4.1.0~preview1-0nkmi1
  rb_gc_latest_gc_info@Base 4.1.0~preview1-0nkmi1
+ rb_gc_local_disable_no_rest@Base 4.1.0~preview1-0nkmi1
+ rb_gc_local_enable@Base 4.1.0~preview1-0nkmi1
  rb_gc_location@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark_children@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark_locations@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark_maybe@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark_movable@Base 4.1.0~preview1-0nkmi1
+ rb_gc_mark_registered_addrs@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark_roots@Base 4.1.0~preview1-0nkmi1
+ rb_gc_mark_set_no_pin@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark_values@Base 4.1.0~preview1-0nkmi1
  rb_gc_mark_vm_stack_values@Base 4.1.0~preview1-0nkmi1
  rb_gc_modular_gc_loaded_p@Base 4.1.0~preview1-0nkmi1
+ rb_gc_move_obj_during_marking@Base 4.1.0~preview1-0nkmi1
  rb_gc_multi_ractor_p@Base 4.1.0~preview1-0nkmi1
+ rb_gc_obj_changed_slot_size@Base 4.1.0~preview1-0nkmi1
  rb_gc_obj_free@Base 4.1.0~preview1-0nkmi1
  rb_gc_obj_free_vm_weak_references@Base 4.1.0~preview1-0nkmi1
+ rb_gc_obj_needs_cleanup_p@Base 4.1.0~preview1-0nkmi1
  rb_gc_obj_optimal_size@Base 4.1.0~preview1-0nkmi1
  rb_gc_obj_shareable_p@Base 4.1.0~preview1-0nkmi1
  rb_gc_obj_slot_size@Base 4.1.0~preview1-0nkmi1
  rb_gc_object_metadata@Base 4.1.0~preview1-0nkmi1
  rb_gc_pointer_to_heap_p@Base 4.1.0~preview1-0nkmi1
  rb_gc_prepare_heap_process_object@Base 4.1.0~preview1-0nkmi1
+ rb_gc_print_backtrace@Base 4.1.0~preview1-0nkmi1
  rb_gc_ractor_newobj_cache_foreach@Base 4.1.0~preview1-0nkmi1
  rb_gc_rebuild_shape@Base 4.1.0~preview1-0nkmi1
  rb_gc_register_address@Base 4.1.0~preview1-0nkmi1
  rb_gc_register_mark_object@Base 4.1.0~preview1-0nkmi1
+ rb_gc_registered_addr_owned_by_registrant_p@Base 4.1.0~preview1-0nkmi1
+ rb_gc_registered_addrs_enroll_without_gc@Base 4.1.0~preview1-0nkmi1
+ rb_gc_registered_addrs_unenroll_without_gc@Base 4.1.0~preview1-0nkmi1
+ rb_gc_reset_absorbed_since_global_gc@Base 4.1.0~preview1-0nkmi1
  rb_gc_rp@Base 4.1.0~preview1-0nkmi1
  rb_gc_run_obj_finalizer@Base 4.1.0~preview1-0nkmi1
  rb_gc_save_machine_context@Base 4.1.0~preview1-0nkmi1
  rb_gc_set_pending_interrupt@Base 4.1.0~preview1-0nkmi1
  rb_gc_set_shape@Base 4.1.0~preview1-0nkmi1
  rb_gc_shutdown_call_finalizer_p@Base 4.1.0~preview1-0nkmi1
+ rb_gc_single_objspace_p@Base 4.1.0~preview1-0nkmi1
  rb_gc_start@Base 4.1.0~preview1-0nkmi1
  rb_gc_stat@Base 4.1.0~preview1-0nkmi1
+ rb_gc_trigger_finalize_deferred@Base 4.1.0~preview1-0nkmi1
+ rb_gc_trigger_postponed_job_on_main@Base 4.1.0~preview1-0nkmi1
  rb_gc_unregister_address@Base 4.1.0~preview1-0nkmi1
  rb_gc_unset_pending_interrupt@Base 4.1.0~preview1-0nkmi1
+ rb_gc_update_moved@Base 4.1.0~preview1-0nkmi1
  rb_gc_update_object_references@Base 4.1.0~preview1-0nkmi1
+ rb_gc_update_set_refs@Base 4.1.0~preview1-0nkmi1
  rb_gc_update_tbl_refs@Base 4.1.0~preview1-0nkmi1
  rb_gc_update_values@Base 4.1.0~preview1-0nkmi1
  rb_gc_update_vm_references@Base 4.1.0~preview1-0nkmi1
  rb_gc_verify_shareable@Base 4.1.0~preview1-0nkmi1
  rb_gc_vm_barrier@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_each_objspace@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_generic_fields_drain_dead@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_generic_fields_mark_foreach@Base 4.1.0~preview1-0nkmi1
  rb_gc_vm_lock@Base 4.1.0~preview1-0nkmi1
  rb_gc_vm_lock_no_barrier@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_ractor_count@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_refresh_zombie_pages@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_top_self@Base 4.1.0~preview1-0nkmi1
  rb_gc_vm_unlock@Base 4.1.0~preview1-0nkmi1
  rb_gc_vm_unlock_no_barrier@Base 4.1.0~preview1-0nkmi1
  rb_gc_vm_weak_table_foreach@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_zombie_objspace_p@Base 4.1.0~preview1-0nkmi1
+ rb_gc_vm_zombie_total_pages@Base 4.1.0~preview1-0nkmi1
  rb_gc_worker_thread_set_vm_context@Base 4.1.0~preview1-0nkmi1
  rb_gc_worker_thread_unset_vm_context@Base 4.1.0~preview1-0nkmi1
  rb_gc_writebarrier@Base 4.1.0~preview1-0nkmi1
+ rb_gc_writebarrier_remember@Base 4.1.0~preview1-0nkmi1
  rb_gc_writebarrier_unprotect@Base 4.1.0~preview1-0nkmi1
  rb_gcd@Base 4.1.0~preview1-0nkmi1
  rb_gcd_gmp@Base 4.1.0~preview1-0nkmi1
@@ -889,6 +931,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_hash_size_num@Base 4.1.0~preview1-0nkmi1
  rb_hash_start@Base 4.1.0~preview1-0nkmi1
  rb_hash_stlike_foreach@Base 4.1.0~preview1-0nkmi1
+ rb_hash_stlike_foreach_with_replace@Base 4.1.0~preview1-0nkmi1
  rb_hash_tbl@Base 4.1.0~preview1-0nkmi1
  rb_hash_update_by@Base 4.1.0~preview1-0nkmi1
  rb_id2name@Base 4.1.0~preview1-0nkmi1
@@ -897,6 +940,8 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_id_attrset@Base 4.1.0~preview1-0nkmi1
  rb_id_table_size@Base 4.1.0~preview1-0nkmi1
  rb_ident_hash_new@Base 4.1.0~preview1-0nkmi1
+ rb_imemo_callcache_get_data@Base 4.1.0~preview1-0nkmi1
+ rb_imemo_callinfo_mid@Base 4.1.0~preview1-0nkmi1
  rb_imemo_name@Base 4.1.0~preview1-0nkmi1
  rb_include_module@Base 4.1.0~preview1-0nkmi1
  rb_init_ractor_selector@Base 4.1.0~preview1-0nkmi1
@@ -926,18 +971,26 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_io_binmode@Base 4.1.0~preview1-0nkmi1
  rb_io_blocking_region@Base 4.1.0~preview1-0nkmi1
  rb_io_blocking_region_wait@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_advance@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_clear@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_for_reading@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_for_writing@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_free@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_free_locked@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_get_bytes@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_get_bytes_for_reading@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_get_bytes_for_writing@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_lock@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_locked_for_reading@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_locked_for_writing@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_map@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_new@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_new_locked@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_p@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_pread@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_pwrite@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_read@Base 4.1.0~preview1-0nkmi1
+ rb_io_buffer_readonly_p@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_resize@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_transfer@Base 4.1.0~preview1-0nkmi1
  rb_io_buffer_try_unlock@Base 4.1.0~preview1-0nkmi1
@@ -1019,6 +1072,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_iseq_label@Base 4.1.0~preview1-0nkmi1
  rb_iseq_line_no@Base 4.1.0~preview1-0nkmi1
  rb_iseq_load@Base 4.1.0~preview1-0nkmi1
+ rb_iseq_load_from_binary@Base 4.1.0~preview1-0nkmi1
  rb_iseq_local_variables@Base 4.1.0~preview1-0nkmi1
  rb_iseq_mark_and_move_insn_storage@Base 4.1.0~preview1-0nkmi1
  rb_iseq_method_name@Base 4.1.0~preview1-0nkmi1
@@ -1049,6 +1103,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_ivar_foreach@Base 4.1.0~preview1-0nkmi1
  rb_ivar_get@Base 4.1.0~preview1-0nkmi1
  rb_ivar_set@Base 4.1.0~preview1-0nkmi1
+ rb_jit_call_threshold@Base 4.1.0~preview1-0nkmi1
  rb_jump_tag@Base 4.1.0~preview1-0nkmi1
  rb_keyword_given_p@Base 4.1.0~preview1-0nkmi1
  rb_last_status_get@Base 4.1.0~preview1-0nkmi1
@@ -1089,6 +1144,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_marshal_dump@Base 4.1.0~preview1-0nkmi1
  rb_marshal_load@Base 4.1.0~preview1-0nkmi1
  rb_match_busy@Base 4.1.0~preview1-0nkmi1
+ rb_match_ensure_onig@Base 4.1.0~preview1-0nkmi1
  rb_maygvl_fd_fix_cloexec@Base 4.1.0~preview1-0nkmi1
  rb_mem_clear@Base 4.1.0~preview1-0nkmi1
  rb_memcicmp@Base 4.1.0~preview1-0nkmi1
@@ -1125,6 +1181,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_mod_const_at@Base 4.1.0~preview1-0nkmi1
  rb_mod_const_of@Base 4.1.0~preview1-0nkmi1
  rb_mod_constants@Base 4.1.0~preview1-0nkmi1
+ rb_mod_descendants@Base 4.1.0~preview1-0nkmi1
  rb_mod_include_p@Base 4.1.0~preview1-0nkmi1
  rb_mod_included_modules@Base 4.1.0~preview1-0nkmi1
  rb_mod_init_copy@Base 4.1.0~preview1-0nkmi1
@@ -1166,6 +1223,8 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_nativethread_lock_unlock@Base 4.1.0~preview1-0nkmi1
  rb_nativethread_self@Base 4.1.0~preview1-0nkmi1
  rb_need_block@Base 4.1.0~preview1-0nkmi1
+ rb_newobj@Base 4.1.0~preview1-0nkmi1
+ rb_newobj_of@Base 4.1.0~preview1-0nkmi1
  rb_node_dregx_string_val@Base 4.1.0~preview1-0nkmi1
  rb_node_dstr_string_val@Base 4.1.0~preview1-0nkmi1
  rb_node_encoding_val@Base 4.1.0~preview1-0nkmi1
@@ -1229,17 +1288,22 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_obj_remove_instance_variable@Base 4.1.0~preview1-0nkmi1
  rb_obj_respond_to@Base 4.1.0~preview1-0nkmi1
  rb_obj_reveal@Base 4.1.0~preview1-0nkmi1
+ rb_obj_set_shareable@Base 4.1.0~preview1-0nkmi1
  rb_obj_setup@Base 4.1.0~preview1-0nkmi1
  rb_obj_shape_id@Base 4.1.0~preview1-0nkmi1
  rb_obj_singleton_methods@Base 4.1.0~preview1-0nkmi1
  rb_objspace_data_type_name@Base 4.1.0~preview1-0nkmi1
  rb_objspace_each_objects@Base 4.1.0~preview1-0nkmi1
+ rb_objspace_foreign_object_p@Base 4.1.0~preview1-0nkmi1
  rb_objspace_garbage_object_p@Base 4.1.0~preview1-0nkmi1
  rb_objspace_internal_object_p@Base 4.1.0~preview1-0nkmi1
+ rb_objspace_live_object_p@Base 4.1.0~preview1-0nkmi1
  rb_objspace_reachable_objects_from@Base 4.1.0~preview1-0nkmi1
  rb_objspace_reachable_objects_from_root@Base 4.1.0~preview1-0nkmi1
+ rb_objspace_reachable_objects_from_unlocked@Base 4.1.0~preview1-0nkmi1
  rb_opts_exception_p@Base 4.1.0~preview1-0nkmi1
  rb_out_of_int@Base 4.1.0~preview1-0nkmi1
+ rb_out_of_long@Base 4.1.0~preview1-0nkmi1
  rb_output_fs@Base 4.1.0~preview1-0nkmi1
  rb_output_rs@Base 4.1.0~preview1-0nkmi1
  rb_p@Base 4.1.0~preview1-0nkmi1
@@ -1314,6 +1378,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_postponed_job_register@Base 4.1.0~preview1-0nkmi1
  rb_postponed_job_register_one@Base 4.1.0~preview1-0nkmi1
  rb_postponed_job_trigger@Base 4.1.0~preview1-0nkmi1
+ rb_postponed_job_trigger_for_ractor@Base 4.1.0~preview1-0nkmi1
  rb_prepend_module@Base 4.1.0~preview1-0nkmi1
  rb_proc_arity@Base 4.1.0~preview1-0nkmi1
  rb_proc_call@Base 4.1.0~preview1-0nkmi1
@@ -1328,6 +1393,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_proc_new@Base 4.1.0~preview1-0nkmi1
  rb_proc_ractor_make_shareable@Base 4.1.0~preview1-0nkmi1
  rb_proc_times@Base 4.1.0~preview1-0nkmi1
+ rb_process_status_for@Base 4.1.0~preview1-0nkmi1
  rb_process_status_wait@Base 4.1.0~preview1-0nkmi1
  rb_profile_frame_absolute_path@Base 4.1.0~preview1-0nkmi1
  rb_profile_frame_base_label@Base 4.1.0~preview1-0nkmi1
@@ -1458,6 +1524,9 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_singleton_class_attached@Base 4.1.0~preview1-0nkmi1
  rb_singleton_class_clone@Base 4.1.0~preview1-0nkmi1
  rb_size_mul_or_raise@Base 4.1.0~preview1-0nkmi1
+ rb_source_hash_finalize@Base 4.1.0~preview1-0nkmi1
+ rb_source_hash_init@Base 4.1.0~preview1-0nkmi1
+ rb_source_hash_update@Base 4.1.0~preview1-0nkmi1
  rb_sourcefile@Base 4.1.0~preview1-0nkmi1
  rb_sourceline@Base 4.1.0~preview1-0nkmi1
  rb_spawn@Base 4.1.0~preview1-0nkmi1
@@ -1561,6 +1630,8 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_str_new_shared@Base 4.1.0~preview1-0nkmi1
  rb_str_new_static@Base 4.1.0~preview1-0nkmi1
  rb_str_new_with_class@Base 4.1.0~preview1-0nkmi1
+ rb_str_no_gvl_safe_acquire@Base 4.1.0~preview1-0nkmi1
+ rb_str_no_gvl_safe_release@Base 4.1.0~preview1-0nkmi1
  rb_str_offset@Base 4.1.0~preview1-0nkmi1
  rb_str_plus@Base 4.1.0~preview1-0nkmi1
  rb_str_replace@Base 4.1.0~preview1-0nkmi1
@@ -1708,7 +1779,9 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_undef_alloc_func@Base 4.1.0~preview1-0nkmi1
  rb_undef_method@Base 4.1.0~preview1-0nkmi1
  rb_undefine_finalizer@Base 4.1.0~preview1-0nkmi1
+ rb_unexpected_object_type@Base 4.1.0~preview1-0nkmi1
  rb_unexpected_type@Base 4.1.0~preview1-0nkmi1
+ rb_unexpected_typeddata@Base 4.1.0~preview1-0nkmi1
  rb_update_max_fd@Base 4.1.0~preview1-0nkmi1
  rb_usascii_encindex@Base 4.1.0~preview1-0nkmi1
  rb_usascii_encoding@Base 4.1.0~preview1-0nkmi1
@@ -1733,6 +1806,8 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_wait_for_single_fd@Base 4.1.0~preview1-0nkmi1
  rb_waitpid@Base 4.1.0~preview1-0nkmi1
  rb_warn@Base 4.1.0~preview1-0nkmi1
+ rb_warn_deprecated_to_remove@Base 4.1.0~preview1-0nkmi1
+ rb_warn_to_remove@Base 4.1.0~preview1-0nkmi1
  rb_warning@Base 4.1.0~preview1-0nkmi1
  rb_wb_protected_newobj_of@Base 4.1.0~preview1-0nkmi1
  rb_wb_unprotected_newobj_of@Base 4.1.0~preview1-0nkmi1
@@ -1755,6 +1830,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_yjit_cold_threshold@Base 4.1.0~preview1-0nkmi1
  rb_yjit_collect_binding_alloc@Base 4.1.0~preview1-0nkmi1
  rb_yjit_collect_binding_set@Base 4.1.0~preview1-0nkmi1
+ rb_yjit_compiling_p@Base 4.1.0~preview1-0nkmi1
  rb_yjit_constant_ic_update@Base 4.1.0~preview1-0nkmi1
  rb_yjit_constant_state_changed@Base 4.1.0~preview1-0nkmi1
  rb_yjit_count_side_exit_op@Base 4.1.0~preview1-0nkmi1
@@ -1767,9 +1843,11 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_yjit_get_stats@Base 4.1.0~preview1-0nkmi1
  rb_yjit_incr_counter@Base 4.1.0~preview1-0nkmi1
  rb_yjit_init@Base 4.1.0~preview1-0nkmi1
+ rb_yjit_init_builtin_cmes@Base 4.1.0~preview1-0nkmi1
  rb_yjit_insns_compiled@Base 4.1.0~preview1-0nkmi1
  rb_yjit_invalidate_ep_is_bp@Base 4.1.0~preview1-0nkmi1
  rb_yjit_invalidate_no_singleton_class@Base 4.1.0~preview1-0nkmi1
+ rb_yjit_invalidate_single_ractor@Base 4.1.0~preview1-0nkmi1
  rb_yjit_iseq_alloc_count@Base 4.1.0~preview1-0nkmi1
  rb_yjit_iseq_free@Base 4.1.0~preview1-0nkmi1
  rb_yjit_iseq_gen_entry_point@Base 4.1.0~preview1-0nkmi1
@@ -1780,6 +1858,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_yjit_log_enabled_p@Base 4.1.0~preview1-0nkmi1
  rb_yjit_mark_all_executable@Base 4.1.0~preview1-0nkmi1
  rb_yjit_mark_all_writeable@Base 4.1.0~preview1-0nkmi1
+ rb_yjit_max_compile_time_ns@Base 4.1.0~preview1-0nkmi1
  rb_yjit_option_disable@Base 4.1.0~preview1-0nkmi1
  rb_yjit_parse_option@Base 4.1.0~preview1-0nkmi1
  rb_yjit_print_stats_p@Base 4.1.0~preview1-0nkmi1
@@ -1790,8 +1869,10 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_yjit_show_usage@Base 4.1.0~preview1-0nkmi1
  rb_yjit_simulate_oom_bang@Base 4.1.0~preview1-0nkmi1
  rb_yjit_stats_enabled_p@Base 4.1.0~preview1-0nkmi1
+ rb_yjit_total_compile_time_ns@Base 4.1.0~preview1-0nkmi1
  rb_yjit_trace_exit_locations_enabled_p@Base 4.1.0~preview1-0nkmi1
  rb_yjit_tracing_invalidate_all@Base 4.1.0~preview1-0nkmi1
+ rb_yjit_update_max_compile_time_ns@Base 4.1.0~preview1-0nkmi1
  rb_yytnamerr@Base 4.1.0~preview1-0nkmi1
  rb_zjit_assert_compiles@Base 4.1.0~preview1-0nkmi1
  rb_zjit_before_ractor_spawn@Base 4.1.0~preview1-0nkmi1
@@ -1799,19 +1880,27 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_zjit_call_threshold@Base 4.1.0~preview1-0nkmi1
  rb_zjit_cme_free@Base 4.1.0~preview1-0nkmi1
  rb_zjit_cme_invalidate@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_compiling_p@Base 4.1.0~preview1-0nkmi1
  rb_zjit_constant_state_changed@Base 4.1.0~preview1-0nkmi1
  rb_zjit_enable@Base 4.1.0~preview1-0nkmi1
  rb_zjit_entry@Base 4.1.0~preview1-0nkmi1
  rb_zjit_get_exit_locations@Base 4.1.0~preview1-0nkmi1
  rb_zjit_get_stats_file_path_p@Base 4.1.0~preview1-0nkmi1
  rb_zjit_init@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_init_builtin_cmes@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_invalidate_newobj_hook@Base 4.1.0~preview1-0nkmi1
  rb_zjit_invalidate_no_ep_escape@Base 4.1.0~preview1-0nkmi1
  rb_zjit_invalidate_no_singleton_class@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_invalidate_root_box@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_invalidate_single_ractor@Base 4.1.0~preview1-0nkmi1
  rb_zjit_iseq_free@Base 4.1.0~preview1-0nkmi1
  rb_zjit_iseq_gen_entry_point@Base 4.1.0~preview1-0nkmi1
  rb_zjit_iseq_mark@Base 4.1.0~preview1-0nkmi1
  rb_zjit_iseq_update_references@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_jit_frame_update_references@Base 4.1.0~preview1-0nkmi1
  rb_zjit_klass_free@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_mark_all_executable@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_mark_all_writable@Base 4.1.0~preview1-0nkmi1
  rb_zjit_option_enable@Base 4.1.0~preview1-0nkmi1
  rb_zjit_parse_option@Base 4.1.0~preview1-0nkmi1
  rb_zjit_prepare_options@Base 4.1.0~preview1-0nkmi1
@@ -1819,6 +1908,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_zjit_profile_insn@Base 4.1.0~preview1-0nkmi1
  rb_zjit_profile_threshold@Base 4.1.0~preview1-0nkmi1
  rb_zjit_record_exit_stack@Base 4.1.0~preview1-0nkmi1
+ rb_zjit_record_fallback_stack@Base 4.1.0~preview1-0nkmi1
  rb_zjit_reset_stats_bang@Base 4.1.0~preview1-0nkmi1
  rb_zjit_root_mark@Base 4.1.0~preview1-0nkmi1
  rb_zjit_root_update_references@Base 4.1.0~preview1-0nkmi1
@@ -1827,6 +1917,7 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  rb_zjit_stats_enabled_p@Base 4.1.0~preview1-0nkmi1
  rb_zjit_trace_exit_locations_enabled_p@Base 4.1.0~preview1-0nkmi1
  rb_zjit_tracing_invalidate_all@Base 4.1.0~preview1-0nkmi1
+ rbimpl_enc_str_coderange_scan@Base 4.1.0~preview1-0nkmi1
  ruby_Init_Continuation_body@Base 4.1.0~preview1-0nkmi1
  ruby_api_version@Base 4.1.0~preview1-0nkmi1
  ruby_brace_glob@Base 4.1.0~preview1-0nkmi1
@@ -1907,8 +1998,11 @@ libruby-4.1.so.4.1 libruby4.1 #MINVER#
  ruby_vsnprintf@Base 4.1.0~preview1-0nkmi1
  ruby_xcalloc@Base 4.1.0~preview1-0nkmi1
  ruby_xfree@Base 4.1.0~preview1-0nkmi1
+ ruby_xfree_sized@Base 4.1.0~preview1-0nkmi1
  ruby_xmalloc2@Base 4.1.0~preview1-0nkmi1
  ruby_xmalloc@Base 4.1.0~preview1-0nkmi1
  ruby_xrealloc2@Base 4.1.0~preview1-0nkmi1
+ ruby_xrealloc2_sized@Base 4.1.0~preview1-0nkmi1
  ruby_xrealloc@Base 4.1.0~preview1-0nkmi1
+ ruby_xrealloc_sized@Base 4.1.0~preview1-0nkmi1
  setproctitle@Base 4.1.0~preview1-0nkmi1
