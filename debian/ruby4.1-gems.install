@@ -46,6 +46,7 @@
 /usr/lib/ruby/gems/*.0/specifications/fiddle-*
 /usr/lib/ruby/gems/*.0/specifications/prism-*
 /usr/lib/ruby/gems/*.0/specifications/tsort-*
+/usr/lib/ruby/gems/*.0/specifications/win32-registry-*
 /usr/lib/ruby/gems/*.0/cache/*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/debug-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/racc-*
@@ -93,4 +94,5 @@
 /usr/lib/ruby/gems/*.0/gems/fiddle-*
 /usr/lib/ruby/gems/*.0/gems/prism-*
 /usr/lib/ruby/gems/*.0/gems/tsort-*
+/usr/lib/ruby/gems/*.0/gems/win32-registry-*
 /usr/lib/ruby/gems/*.0/plugins/rdoc_plugin.rb
