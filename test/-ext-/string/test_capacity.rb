@@ -6,14 +6,14 @@ require 'objspace'
 
 class Test_StringCapacity < Test::Unit::TestCase
   def test_capacity_embedded
-    assert_equal GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] - embed_header_size - 1, capa('foo')
+    assert_equal pool_slot_size(0) - embed_header_size - 1, capa('foo')
     assert_equal max_embed_len, capa('1' * max_embed_len)
-    assert_equal max_embed_len, capa('1' * (max_embed_len - 1))
+    assert_include ((max_embed_len - 1)..max_embed_len), capa('1' * (max_embed_len - 1))
   end
 
   def test_capacity_shared
-    sym = ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).to_sym
-    assert_equal 0, capa(sym.to_s)
+    source = ("a" * pool_slot_size(0)).freeze
+    assert_equal 0, capa(Bug::String.rb_str_new_shared(source))
   end
 
   def test_capacity_normal
@@ -48,7 +48,7 @@ class Test_StringCapacity < Test::Unit::TestCase
 
   def test_capacity_frozen
     s = String.new("I am testing", capacity: 1000)
-    s << "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    s << "a" * pool_slot_size(0)
     s.freeze
     assert_equal(s.length, capa(s))
   end
@@ -71,6 +71,18 @@ class Test_StringCapacity < Test::Unit::TestCase
     assert_operator(capacity, :>=, s.bytesize)
 
     Bug::String.tmp_frozen_acquire_release(s)
+
+    assert_equal(capacity, capa(s))
+  end
+
+  def test_frozen_root_no_embed_capacity_with_multibyte_terminator
+    # This approximates heap strings returned by C extensions: non-embedded,
+    # not shared, and with an exactly-sized external buffer.
+    s = Bug::String.cstr_noembed(multibyte_terminator_string)
+    capacity = capa(s)
+    assert_operator(capacity, :>=, s.bytesize)
+
+    Bug::String.no_gvl_safe_acquire_release(s)
 
     assert_equal(capacity, capa(s))
   end

@@ -69,11 +69,11 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(['z', 42, nil], [:a, 'b', 'z', :c, 42, nil].grep_v(/[a-d]/), bug17030)
     assert_equal('match', $1, bug17030)
 
-    regexp = Regexp.new('x')
-    assert_equal([], @obj.grep(regexp), bug17030) # sanity check
-    def regexp.===(other)
-      true
-    end
+    regexp = Class.new(Regexp) {
+      def ===(other)
+        true
+      end
+    }.new('x')
     assert_equal([1, 2, 3, 1, 2], @obj.grep(regexp), bug17030)
 
     o = Object.new
@@ -1346,6 +1346,15 @@ class TestEnumerable < Test::Unit::TestCase
                  olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
+
+    b = Struct.new(:block) do
+      def each(&blk)
+        self.block = blk
+        nil
+      end
+    end.new
+    b.uniq {|x| x}
+    assert_nil(b.block.call(:foo))
   end
 
   def test_compact

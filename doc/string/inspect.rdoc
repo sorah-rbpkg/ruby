@@ -6,10 +6,9 @@ Most printable characters are rendered simply as themselves:
   '012'.inspect        # => "\"012\""
   ''.inspect           # => "\"\""
   "\u000012".inspect   # => "\"\\u000012\""
-  'тест'.inspect       # => "\"тест\""
   'こんにちは'.inspect  # => "\"こんにちは\""
 
-But printable characters double-quote (<tt>'"'</tt>) and backslash and (<tt>'\\'</tt>) are escaped:
+But printable characters double-quote (<tt>'"'</tt>) and backslash (<tt>'\\'</tt>) are escaped:
 
   '"'.inspect  # => "\"\\\"\""
   '\\'.inspect # => "\"\\\\\""
@@ -36,4 +35,4 @@ A few, however, have special renderings:
   13.chr.inspect # => "\"\\r\""  # CR
   27.chr.inspect # => "\"\\e\""  # ESC
 
-Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non-String].

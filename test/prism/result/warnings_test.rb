@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.1"
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class WarningsTest < TestCase
     def test_ambiguous_uminus
       assert_warning("a -b", "ambiguous first argument")
@@ -73,8 +73,77 @@ module Prism
       assert_warning("{ a: 1, **{ a: 2 } }", "duplicated and overwritten")
     end
 
+    def test_duplicated_hash_key_splatted_literal_position
+      assert_warning("{ **{ a: 1 }, a: 2 }", "duplicated and overwritten", compare: false)
+      assert_warning("{ **{}, a: 1, **{ a: 2 } }", "duplicated and overwritten", compare: false)
+      assert_warning("{ **z, a: 1, **{ a: 1 } }", "duplicated and overwritten", compare: false)
+      assert_warning("foo(**{ a: 1 }, a: 2)", "duplicated and overwritten", compare: false)
+    end
+
+    def test_duplicated_hash_key_splatted_literal_nested
+      assert_warning("{ a: 1, **{ **{ a: 2 } } }", "duplicated and overwritten", compare: false)
+      assert_warning("{ a: 1,\n**{ a: 2,\n**{ a: 3 } } }", "on line 3", "on line 2", compare: false)
+    end
+
+    def test_duplicated_hash_key_splatted_expression
+      refute_warning("{ a: 1, **{ a: 2 }.dup }", compare: false)
+      refute_warning("{ a: 1, **({ a: 2 }) }", compare: false)
+      refute_warning("foo(a: 1, **{ a: 2 }.dup)", compare: false)
+    end
+
     def test_duplicated_when_clause
       assert_warning("case 1; when 1, 1; end", "when' clause")
+    end
+
+    # Two literals with the same bytes are the same key only when they also end
+    # up in the same encoding. An escape that locks the encoding to UTF-8 sets
+    # FORCED_UTF8 whether or not the file is already UTF-8, so the flag has to
+    # be resolved against the source encoding before literals are compared.
+    #
+    # In a binary file the raw bytes stay BINARY while the escape resolves to
+    # UTF-8, so these are genuinely different keys and must not warn.
+    def test_duplicated_literals_distinct_encodings
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+
+      refute_warning("#{binary}{\"\xC3\xA9\" => 1, \"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}{:\"\xC3\xA9\" => 1, :\"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}case foo\nwhen \"\xC3\xA9\"\nwhen \"\\u00E9\"\nend".b)
+
+      # Written as two escapes rather than raw bytes, the pair still resolves to
+      # BINARY and UTF-8 respectively, and the hash really does hold two keys.
+      refute_warning("#{binary}{\"\\xC3\\xA9\" => 1, \"\\u00E9\" => 2}".b)
+      refute_warning("#{binary}{:\"\\xC3\\xA9\" => 1, :\"\\u00E9\" => 2}".b)
+
+      # A US-ASCII source is the only one that emits FORCED_BINARY, and BINARY
+      # is not the source encoding there, so the pair stays distinct.
+      us_ascii = "# -*- encoding: us-ascii -*-\n"
+
+      refute_warning("#{us_ascii}{\"\\xC3\\xA9\" => 1, \"\\u00E9\" => 2}")
+      refute_warning("#{us_ascii}{:\"\\xC3\\xA9\" => 1, :\"\\u00E9\" => 2}")
+    end
+
+    # The mirror image: in a UTF-8 file the escape resolves to the very same
+    # string, so the pair is a duplicate and still has to be reported.
+    def test_duplicated_literals_matching_encodings
+      assert_warning("{\"\xC3\xA9\" => 1, \"\\u00E9\" => 2}", "duplicated and overwritten")
+      assert_warning("{:\"\xC3\xA9\" => 1, :\"\\u00E9\" => 2}", "duplicated and overwritten")
+      assert_warning("case foo\nwhen \"\xC3\xA9\"\nwhen \"\\u00E9\"\nend", "when' clause")
+
+      # Same bytes and same encoding are duplicates in a binary file too.
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+
+      assert_warning("#{binary}{\"\xC3\xA9\" => 1, \"\xC3\xA9\" => 2}".b, "duplicated and overwritten")
+      assert_warning("#{binary}{\"\\u00E9\" => 1, \"\\u00E9\" => 2}".b, "duplicated and overwritten")
+    end
+
+    # Hash patterns raise rather than warn, and resolve encodings the same way.
+    def test_duplicated_pattern_keys_resolve_encoding
+      binary = "# -*- encoding: ascii-8bit -*-\n"
+      distinct = "#{binary}case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend".b
+      duplicate = "case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend"
+
+      assert_empty Ruby::Prism.parse(distinct).errors.map(&:message)
+      assert_equal ["duplicated key name"], Ruby::Prism.parse(duplicate).errors.map(&:message)
     end
 
     def test_float_out_of_range
@@ -231,6 +300,8 @@ module Prism
       refute_warning("foo = 1", compare: false, command_line: "e")
       refute_warning("foo = 1", compare: false, scopes: [[]])
 
+      refute_warning("foo(bar = 1)")
+
       assert_warning("def foo; bar = 1; end", "unused")
       assert_warning("def foo; bar, = 1; end", "unused")
 
@@ -262,6 +333,23 @@ module Prism
       refute_warning("def foo; bar = 1; tap { baz = bar; baz }; end")
 
       refute_warning("def foo; bar = 1; end", line: -2, compare: false)
+    end
+
+    def test_unused_local_variable_or_assign_with_begin_node
+      assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
+        var ||= begin
+          foo = bar
+          baz
+        end
+      RUBY
+
+      assert_warning(<<~RUBY, "assigned but unused variable - foo", compare: false)
+        foo = false
+        var ||= begin
+          foo = true
+          bar
+        end
+      RUBY
     end
 
     def test_void_statements
@@ -386,11 +474,11 @@ module Prism
     end
 
     def test_warnings_verbosity
-      warning = Prism.parse("def foo; END { }; end").warnings.first
+      warning = Ruby::Prism.parse("def foo; END { }; end").warnings.first
       assert_equal "END in method; use at_exit", warning.message
       assert_equal :default, warning.level
 
-      warning = Prism.parse("foo +1").warnings.first
+      warning = Ruby::Prism.parse("foo +1").warnings.first
       assert_equal "ambiguous first argument; put parentheses or a space even after `+` operator", warning.message
       assert_equal :verbose, warning.level
     end
@@ -398,7 +486,7 @@ module Prism
     private
 
     def assert_warning(source, *messages, compare: true, **options)
-      warnings = Prism.parse(source, **options).warnings
+      warnings = Ruby::Prism.parse(source, **options).warnings
       assert_equal messages.length, warnings.length, "Expected #{messages.length} warning(s) in #{source.inspect}, got #{warnings.map(&:message).inspect}"
 
       warnings.zip(messages).each do |warning, message|
@@ -412,7 +500,7 @@ module Prism
     end
 
     def refute_warning(source, compare: true, **options)
-      assert_empty Prism.parse(source, **options).warnings
+      assert_empty Ruby::Prism.parse(source, **options).warnings
 
       if compare && defined?(RubyVM::AbstractSyntaxTree)
         assert_empty capture_stderr { RubyVM::AbstractSyntaxTree.parse(source) }

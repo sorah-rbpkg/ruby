@@ -16,182 +16,158 @@ return RBOOL(ruby_single_main_ractor);
 #line 17 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_245(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_246(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 245 "ractor.rb"
+#line 246 "ractor.rb"
 return 
       rb_ractor_self(rb_ec_ractor_ptr(ec));;
 #line 25 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_259(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_261(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 259 "ractor.rb"
+#line 261 "ractor.rb"
 return 
       ULONG2NUM(GET_VM()->ractor.cnt);;
 #line 33 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_375(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_394(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const loc__ptr = (VALUE *)&ec->cfp->ep[-6];
-MAYBE_UNUSED(const VALUE) loc = *loc__ptr;
-#line 375 "ractor.rb"
+MAYBE_UNUSED(const VALUE) loc = ec->cfp->ep[-6];
+#line 394 "ractor.rb"
 return  RACTOR_PTR(self)->loc;
 #line 41 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_376(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_395(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const name__ptr = (VALUE *)&ec->cfp->ep[-5];
-MAYBE_UNUSED(const VALUE) name = *name__ptr;
-#line 376 "ractor.rb"
+MAYBE_UNUSED(const VALUE) name = ec->cfp->ep[-5];
+#line 395 "ractor.rb"
 return  RACTOR_PTR(self)->name;
 #line 49 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_377(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_396(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 377 "ractor.rb"
-return  UINT2NUM(rb_ractor_id(RACTOR_PTR(self)));
+#line 396 "ractor.rb"
+return  ULL2NUM(rb_ractor_id(RACTOR_PTR(self)));
 #line 56 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_378(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_397(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 378 "ractor.rb"
+#line 397 "ractor.rb"
 return 
-      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_));
+      rb_str_new2(RACTOR_PTR(self)->status_ == ractor_terminated ? "terminated" : "running");
 #line 64 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_388(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_408(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 388 "ractor.rb"
+#line 408 "ractor.rb"
 return RACTOR_PTR(self)->name;
 #line 71 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_419(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_439(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const obj__ptr = (VALUE *)&ec->cfp->ep[-3];
-MAYBE_UNUSED(const VALUE) obj = *obj__ptr;
-#line 419 "ractor.rb"
+MAYBE_UNUSED(const VALUE) obj = ec->cfp->ep[-3];
+#line 439 "ractor.rb"
 return 
       RBOOL(rb_ractor_shareable_p(obj));;
 #line 80 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_461(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_481(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const obj__ptr = (VALUE *)&ec->cfp->ep[-5];
-MAYBE_UNUSED(const VALUE) obj = *obj__ptr;
-#line 461 "ractor.rb"
+MAYBE_UNUSED(const VALUE) obj = ec->cfp->ep[-5];
+#line 481 "ractor.rb"
 return 
         rb_ractor_make_shareable_copy(obj);;
 #line 89 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_465(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_485(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const obj__ptr = (VALUE *)&ec->cfp->ep[-5];
-MAYBE_UNUSED(const VALUE) obj = *obj__ptr;
-#line 465 "ractor.rb"
+MAYBE_UNUSED(const VALUE) obj = ec->cfp->ep[-5];
+#line 485 "ractor.rb"
 return 
         rb_ractor_make_shareable(obj);;
 #line 98 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_520(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_541(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 520 "ractor.rb"
+#line 541 "ractor.rb"
 return 
       rb_ractor_self(GET_VM()->ractor.main_ractor);;
 #line 106 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_527(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_549(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 527 "ractor.rb"
+#line 549 "ractor.rb"
 return 
       RBOOL(GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec));
 #line 114 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_567(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_595(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 567 "ractor.rb"
+#line 595 "ractor.rb"
 return 
       ractor_default_port_value(RACTOR_PTR(self));
 #line 122 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_670(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_794(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const self__ptr = (VALUE *)&ec->cfp->ep[-4];
-#line 670 "ractor.rb"
+MAYBE_UNUSED(const VALUE) timeout = ec->cfp->ep[-4];
+#line 794 "ractor.rb"
 return 
-      ractor_shareable_proc(ec, *LOCAL_PTR(self), false);
+        ractor_port_receive(ec, self, timeout);
 #line 131 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_684(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_837(struct rb_execution_context_struct *ec, const VALUE self)
 {
-VALUE *const self__ptr = (VALUE *)&ec->cfp->ep[-4];
-#line 684 "ractor.rb"
-return 
-      ractor_shareable_proc(ec, *LOCAL_PTR(self), true);
-#line 140 "ractor.rbinc"
-}
-
-static VALUE builtin_inline_class_742(struct rb_execution_context_struct *ec, const VALUE self)
-{
-#line 742 "ractor.rb"
-return 
-        ractor_port_receive(ec, self);
-#line 148 "ractor.rbinc"
-}
-
-static VALUE builtin_inline_class_785(struct rb_execution_context_struct *ec, const VALUE self)
-{
-VALUE *const move__ptr = (VALUE *)&ec->cfp->ep[-4];
-MAYBE_UNUSED(const VALUE) move = *move__ptr;
-VALUE *const obj__ptr = (VALUE *)&ec->cfp->ep[-5];
-MAYBE_UNUSED(const VALUE) obj = *obj__ptr;
-#line 785 "ractor.rb"
+MAYBE_UNUSED(const VALUE) move = ec->cfp->ep[-4];
+MAYBE_UNUSED(const VALUE) obj = ec->cfp->ep[-5];
+#line 837 "ractor.rb"
 return 
         ractor_port_send(ec, self, obj, move);
-#line 158 "ractor.rbinc"
+#line 141 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_807(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_864(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 807 "ractor.rb"
+#line 864 "ractor.rb"
 return 
         ractor_port_close(ec, self);
-#line 166 "ractor.rbinc"
+#line 149 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_818(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_875(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 818 "ractor.rb"
+#line 875 "ractor.rb"
 return 
         ractor_port_closed_p(ec, self);;
-#line 174 "ractor.rbinc"
+#line 157 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_828(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_885(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 828 "ractor.rb"
-return SIZET2NUM(rb_ractor_id((RACTOR_PORT_PTR(self)->r)));
-#line 181 "ractor.rbinc"
+#line 885 "ractor.rb"
+return ULL2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r));
+#line 164 "ractor.rbinc"
 }
 
-static VALUE builtin_inline_class_830(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_887(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 830 "ractor.rb"
+#line 887 "ractor.rb"
 return SIZET2NUM(ractor_port_id(RACTOR_PORT_PTR(self)));
-#line 188 "ractor.rbinc"
+#line 171 "ractor.rbinc"
 }
 
 void Init_builtin_ractor(void)
@@ -200,35 +176,35 @@ void Init_builtin_ractor(void)
   static const struct rb_builtin_function ractor_table[] = {
     RB_BUILTIN_FUNCTION(0, _bi232, builtin_inline_class_232, 0),
     RB_BUILTIN_FUNCTION(1, ractor_create, ractor_create, 4),
-    RB_BUILTIN_FUNCTION(2, _bi245, builtin_inline_class_245, 0),
-    RB_BUILTIN_FUNCTION(3, _bi259, builtin_inline_class_259, 0),
-    RB_BUILTIN_FUNCTION(4, ractor_select_internal, ractor_select_internal, 1),
-    RB_BUILTIN_FUNCTION(5, _bi375, builtin_inline_class_375, 0),
-    RB_BUILTIN_FUNCTION(6, _bi376, builtin_inline_class_376, 0),
-    RB_BUILTIN_FUNCTION(7, _bi377, builtin_inline_class_377, 0),
-    RB_BUILTIN_FUNCTION(8, _bi378, builtin_inline_class_378, 0),
-    RB_BUILTIN_FUNCTION(9, _bi388, builtin_inline_class_388, 0),
-    RB_BUILTIN_FUNCTION(10, _bi419, builtin_inline_class_419, 0),
-    RB_BUILTIN_FUNCTION(11, _bi461, builtin_inline_class_461, 0),
-    RB_BUILTIN_FUNCTION(12, _bi465, builtin_inline_class_465, 0),
+    RB_BUILTIN_FUNCTION(2, _bi246, builtin_inline_class_246, 0),
+    RB_BUILTIN_FUNCTION(3, _bi261, builtin_inline_class_261, 0),
+    RB_BUILTIN_FUNCTION(4, ractor_select_internal, ractor_select_internal, 2),
+    RB_BUILTIN_FUNCTION(5, _bi394, builtin_inline_class_394, 0),
+    RB_BUILTIN_FUNCTION(6, _bi395, builtin_inline_class_395, 0),
+    RB_BUILTIN_FUNCTION(7, _bi396, builtin_inline_class_396, 0),
+    RB_BUILTIN_FUNCTION(8, _bi397, builtin_inline_class_397, 0),
+    RB_BUILTIN_FUNCTION(9, _bi408, builtin_inline_class_408, 0),
+    RB_BUILTIN_FUNCTION(10, _bi439, builtin_inline_class_439, 0),
+    RB_BUILTIN_FUNCTION(11, _bi481, builtin_inline_class_481, 0),
+    RB_BUILTIN_FUNCTION(12, _bi485, builtin_inline_class_485, 0),
     RB_BUILTIN_FUNCTION(13, ractor_local_value, ractor_local_value, 1),
     RB_BUILTIN_FUNCTION(14, ractor_local_value_set, ractor_local_value_set, 2),
     RB_BUILTIN_FUNCTION(15, ractor_local_value_store_if_absent, ractor_local_value_store_if_absent, 1),
-    RB_BUILTIN_FUNCTION(16, _bi520, builtin_inline_class_520, 0),
-    RB_BUILTIN_FUNCTION(17, _bi527, builtin_inline_class_527, 0),
+    RB_BUILTIN_FUNCTION(16, _bi541, builtin_inline_class_541, 0),
+    RB_BUILTIN_FUNCTION(17, _bi549, builtin_inline_class_549, 0),
     RB_BUILTIN_FUNCTION(18, ractor_require, ractor_require, 1),
-    RB_BUILTIN_FUNCTION(19, _bi567, builtin_inline_class_567, 0),
+    RB_BUILTIN_FUNCTION(19, _bi595, builtin_inline_class_595, 0),
     RB_BUILTIN_FUNCTION(20, ractor_value, ractor_value, 0),
     RB_BUILTIN_FUNCTION(21, ractor_monitor, ractor_monitor, 1),
     RB_BUILTIN_FUNCTION(22, ractor_unmonitor, ractor_unmonitor, 1),
-    RB_BUILTIN_FUNCTION(23, _bi670, builtin_inline_class_670, 0),
-    RB_BUILTIN_FUNCTION(24, _bi684, builtin_inline_class_684, 0),
-    RB_BUILTIN_FUNCTION(25, _bi742, builtin_inline_class_742, 0),
-    RB_BUILTIN_FUNCTION(26, _bi785, builtin_inline_class_785, 0),
-    RB_BUILTIN_FUNCTION(27, _bi807, builtin_inline_class_807, 0),
-    RB_BUILTIN_FUNCTION(28, _bi818, builtin_inline_class_818, 0),
-    RB_BUILTIN_FUNCTION(29, _bi828, builtin_inline_class_828, 0),
-    RB_BUILTIN_FUNCTION(30, _bi830, builtin_inline_class_830, 0),
+    RB_BUILTIN_FUNCTION(23, rb_builtin_shareable_proc, rb_builtin_shareable_proc, 1),
+    RB_BUILTIN_FUNCTION(24, rb_builtin_shareable_lambda, rb_builtin_shareable_lambda, 1),
+    RB_BUILTIN_FUNCTION(25, _bi794, builtin_inline_class_794, 0),
+    RB_BUILTIN_FUNCTION(26, _bi837, builtin_inline_class_837, 0),
+    RB_BUILTIN_FUNCTION(27, _bi864, builtin_inline_class_864, 0),
+    RB_BUILTIN_FUNCTION(28, _bi875, builtin_inline_class_875, 0),
+    RB_BUILTIN_FUNCTION(29, _bi885, builtin_inline_class_885, 0),
+    RB_BUILTIN_FUNCTION(30, _bi887, builtin_inline_class_887, 0),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -239,35 +215,35 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_232);
   if (0) rb_builtin_function_check_arity4(ractor_create);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_245);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_259);
-  if (0) rb_builtin_function_check_arity1(ractor_select_internal);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_375);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_376);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_377);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_378);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_388);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_419);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_461);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_465);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_246);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_261);
+  if (0) rb_builtin_function_check_arity2(ractor_select_internal);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_394);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_395);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_396);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_397);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_408);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_439);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_481);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_485);
   if (0) rb_builtin_function_check_arity1(ractor_local_value);
   if (0) rb_builtin_function_check_arity2(ractor_local_value_set);
   if (0) rb_builtin_function_check_arity1(ractor_local_value_store_if_absent);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_520);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_527);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_541);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_549);
   if (0) rb_builtin_function_check_arity1(ractor_require);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_567);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_595);
   if (0) rb_builtin_function_check_arity0(ractor_value);
   if (0) rb_builtin_function_check_arity1(ractor_monitor);
   if (0) rb_builtin_function_check_arity1(ractor_unmonitor);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_670);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_684);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_742);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_785);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_807);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_818);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_828);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_830);
+  if (0) rb_builtin_function_check_arity1(rb_builtin_shareable_proc);
+  if (0) rb_builtin_function_check_arity1(rb_builtin_shareable_lambda);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_794);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_837);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_864);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_875);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_885);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_887);
 COMPILER_WARNING_POP
 
   // load

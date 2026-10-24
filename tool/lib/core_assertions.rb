@@ -18,11 +18,11 @@ module Test
 
       unless $DEBUG then
         bt.each do |line|
-          break if pattern.match?(line)
+          break if pattern =~ line
           new_bt << line
         end
 
-        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
+        new_bt = bt.reject { |line| pattern =~ line } if new_bt.empty?
         new_bt = bt.dup if new_bt.empty?
       else
         new_bt = bt.dup
@@ -33,6 +33,8 @@ module Test
   end
 
   self.backtrace_filter = BacktraceFilter.new
+
+  Ractor.make_shareable(backtrace_filter) if defined?(Ractor.make_shareable)
 
   def self.filter_backtrace bt # :nodoc:
     backtrace_filter.filter bt
@@ -299,13 +301,52 @@ module Test
         assert(status.success?, desc)
       end
 
-      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
+      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM").freeze
 
       def separated_runner(token, out = nil)
         include(*Test::Unit::TestCase.ancestors.select {|c| !c.is_a?(Class) })
+
         out = out ? IO.new(out, 'w') : STDOUT
+
+        # avoid method redefinitions
+        out_write = out.method(:write)
+        integer_to_s = Integer.instance_method(:to_s)
+        array_pack = Array.instance_method(:pack)
+        marshal_dump = Marshal.method(:dump)
+        assertions_ivar_get = Test::Unit::Assertions.method(:instance_variable_get)
+        Test::Unit::Assertions.module_eval do
+          @_assertions = 0
+
+          # These need to be defined with def (not define_method with a
+          # Proc) so that they can be called from non-main Ractors, where
+          # instance variables of modules are not accessible; assertions
+          # made in non-main Ractors are counted separately and merged by
+          # assert_in_ractor instead.
+          undef _assertions=
+          def _assertions=(n)
+            if !defined?(Ractor) || Ractor.main?
+              Test::Unit::Assertions.instance_variable_set(:@_assertions, n)
+            end
+          end
+
+          undef _assertions
+          def _assertions
+            if !defined?(Ractor) || Ractor.main?
+              Test::Unit::Assertions.instance_variable_get(:@_assertions)
+            else
+              0
+            end
+          end
+        end
+        # assume Method#call and UnboundMethod#bind_call need to work as the original
+
         at_exit {
-          out.puts "#{token}<error>", [Marshal.dump($!)].pack('m'), "#{token}</error>", "#{token}assertions=#{self._assertions}"
+          assertions = assertions_ivar_get.call(:@_assertions)
+          out_write.call <<~OUT
+          <error id="#{token}" assertions=#{integer_to_s.bind(assertions).call}>
+          #{array_pack.bind([marshal_dump.call($!)]).call('m0')}
+          </error id="#{token}">
+          OUT
         }
         if defined?(Test::Unit::Runner)
           Test::Unit::Runner.class_variable_set(:@@stop_auto_run, true)
@@ -337,10 +378,13 @@ BEGIN {
 #{line -= __LINE__; src}
 eom
         args = args.dup
-        args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
+        # -W:no-experimental after the -w, which would otherwise turn the category
+        # back on.  The option itself needs 2.7 or later.
+        warn_opts = RUBY_VERSION >= "2.7." ? ["-w", "-W:no-experimental"] : ["-w"]
+        args.insert((Hash === args.first ? 1 : 0), *warn_opts, "--disable=gems", *$:.map {|l| "-I#{l}"})
         args << "--debug" if RUBY_ENGINE == 'jruby' # warning: tracing (e.g. set_trace_func) will not capture all events without --debug flag
         # power_assert 3 requires ruby 3.1 or later
-        args << "-W:no-experimental" if RUBY_VERSION < "3.1."
+        args << "-W:no-experimental" if ("2.7."..."3.1.").cover?(RUBY_VERSION)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
 
         if sanitizers&.lsan_enabled?
@@ -359,27 +403,30 @@ eom
         end
         raise if $!
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
+        marshal_error = nil
         assert(!abort, FailDesc[status, nil, stderr])
-        self._assertions += res[/^#{token_re}assertions=(\d+)/, 1].to_i
-        begin
-          res = Marshal.load(res[/^#{token_re}<error>\n\K.*\n(?=#{token_re}<\/error>$)/m].unpack1("m"))
-        rescue => marshal_error
-          ignore_stderr = nil
-          res = nil
-        end
-        if res and !(SystemExit === res)
-          if bt = res.backtrace
-            bt.each do |l|
-              l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
-            end
-            bt.concat(caller)
+        res.scan(/^<error id="#{token_re}" assertions=(\d+)>\n(.*?)\n(?=<\/error id="#{token_re}">$)/m) do
+          self._assertions += $1.to_i
+          begin
+            res = Marshal.load($2.unpack1("m")) or next
+          rescue => marshal_error
+            ignore_stderr = nil
+            res = nil
           else
-            res.set_backtrace(caller)
+            next if SystemExit === res
+            if bt = res.backtrace
+              bt.each do |l|
+                l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
+              end
+              bt.concat(caller)
+            else
+              res.set_backtrace(caller)
+            end
+            raise res
           end
-          raise res
         end
 
-        # really is it succeed?
+        # really did it succeed?
         unless ignore_stderr
           # the body of assert_separately must not output anything to detect error
           assert(stderr.empty?, FailDesc[status, "assert_separately failed with error message", stderr])
@@ -578,7 +625,7 @@ eom
         e
       end
 
-      TEST_DIR = File.join(__dir__, "test/unit") #:nodoc:
+      TEST_DIR = File.join(__dir__, "test/unit").freeze #:nodoc:
 
       # :call-seq:
       #   assert(test, [failure_message])
@@ -845,10 +892,15 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
-      %w[
+      clocks = %w[
         CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
         CLOCK_MONOTONIC
-      ].find do |c|
+      ]
+      # CLOCK_THREAD_CPUTIME_ID is per native thread, and an M:N thread moves
+      # between native threads, so it can go backwards and yield a negative
+      # elapsed time.  Measure process CPU time there instead.
+      clocks.shift if RUBY_DESCRIPTION.include?("+MN")
+      clocks.find do |c|
         if Process.const_defined?(c)
           [c.to_sym, Process.const_get(c)].find do |clk|
             begin
@@ -885,10 +937,11 @@ eom
 
         first = seq.first
         *arg = pre.call(first)
-        times = (0..(rehearsal || (2 * first))).map do
+        raw_times = (0..(rehearsal || (2 * first))).map do
           measure[arg, "rehearsal"].nonzero?
         end
-        times.compact!
+        times = raw_times.compact
+        raise "all measurements are zero: #{raw_times.inspect}" if times.empty?
         tmin, tmax = times.minmax
 
         # safe_factor * tmax * rehearsal_time_variance_factor(equals to 1 when variance is small)

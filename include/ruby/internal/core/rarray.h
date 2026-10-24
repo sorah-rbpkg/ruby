@@ -20,7 +20,7 @@
  *             extension libraries.  They could be written in C++98.
  * @brief      Defines struct ::RArray.
  */
-#include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/arithmetic/len_t.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/constexpr.h"
 #include "ruby/internal/attr/maybe_unused.h"
@@ -45,7 +45,6 @@
 /** @cond INTERNAL_MACRO */
 #define RARRAY_EMBED_FLAG      RARRAY_EMBED_FLAG
 #define RARRAY_EMBED_LEN_MASK  RARRAY_EMBED_LEN_MASK
-#define RARRAY_EMBED_LEN_MAX   RARRAY_EMBED_LEN_MAX
 #define RARRAY_EMBED_LEN_SHIFT RARRAY_EMBED_LEN_SHIFT
 /** @endcond */
 #define RARRAY_LEN                 rb_array_len                 /**< @alias{rb_array_len} */
@@ -140,7 +139,7 @@ struct RArray {
         struct {
 
             /** Number of elements of the array. */
-            long len;
+            rb_len_t len;
 
             /** Auxiliary info. */
             union {
@@ -150,7 +149,7 @@ struct RArray {
                  * `capa` elements is expected to exist at `*ptr`.  This can be
                  * bigger than `len`.
                  */
-                long capa;
+                rb_len_t capa;
 
                 /**
                  * Parent  of  the  array.   Nowadays arrays  can  share  their
@@ -231,7 +230,7 @@ RBIMPL_ATTR_ARTIFICIAL()
  * @shyouhei thinks  it could  just be  eliminated, hidden  into implementation
  * details.
  */
-static inline long
+static inline rb_len_t
 RARRAY_EMBED_LEN(VALUE ary)
 {
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
@@ -240,7 +239,7 @@ RARRAY_EMBED_LEN(VALUE ary)
     VALUE f = RBASIC(ary)->flags;
     f &= RARRAY_EMBED_LEN_MASK;
     f >>= RARRAY_EMBED_LEN_SHIFT;
-    return RBIMPL_CAST((long)f);
+    return RBIMPL_CAST((rb_len_t)f);
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -251,7 +250,7 @@ RBIMPL_ATTR_PURE_UNLESS_DEBUG()
  * @return     Its number of elements.
  * @pre        `a` must be an instance of ::RArray.
  */
-static inline long
+static inline rb_len_t
 rb_array_len(VALUE a)
 {
     RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
@@ -280,7 +279,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 RARRAY_LENINT(VALUE ary)
 {
-    return rb_long2int(RARRAY_LEN(ary));
+    return rb_len2int(RARRAY_LEN(ary));
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -367,7 +366,7 @@ RARRAY_PTR(VALUE ary)
 {
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
-    VALUE tmp = RB_OBJ_WB_UNPROTECT_FOR(ARRAY, ary);
+    VALUE tmp = RB_OBJ_WB_UNPROTECT(ary);
     return RBIMPL_CAST((VALUE *)RARRAY_CONST_PTR(tmp));
 }
 
@@ -383,7 +382,7 @@ RARRAY_PTR(VALUE ary)
  * @post        `ary`'s `i`th element is set to `v`.
  */
 static inline void
-RARRAY_ASET(VALUE ary, long i, VALUE v)
+RARRAY_ASET(VALUE ary, rb_len_t i, VALUE v)
 {
     RARRAY_PTR_USE(ary, ptr,
         RB_OBJ_WRITE(ary, &ptr[i], v));

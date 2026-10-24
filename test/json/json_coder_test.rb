@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require_relative 'test_helper'
@@ -11,12 +10,43 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_equal %(["[Object object]"]), coder.dump([Object.new])
   end
 
+  def test_json_coder_with_as_json_option
+    callback = ->(object, is_key) { 42 }
+    [callback, callback.method(:call)].each do |as_json|
+      coder = JSON::Coder.new(as_json: as_json)
+      assert_equal '[42]', coder.dump([Object.new])
+    end
+  end
+
+  def test_json_coder_block_overrides_as_json_option
+    coder = JSON::Coder.new(as_json: ->(object) { 1 }) { 2 }
+    assert_equal '[2]', coder.dump([Object.new])
+  end
+
+  def test_json_coder_as_json_invalid_type
+    assert_raise(TypeError) { JSON::Coder.new(as_json: 'x') }
+  end
+
+  def test_json_coder_rejects_disabling_strict_mode
+    [false, nil].each do |strict|
+      error = assert_raise(ArgumentError) { JSON::Coder.new(strict: strict) }
+      assert_equal 'JSON::Coder requires strict mode', error.message
+    end
+    assert_raise(JSON::GeneratorError) { JSON::Coder.new.dump(Object.new) }
+    assert_raise(JSON::GeneratorError) { JSON::Coder.new(strict: true).dump(Object.new) }
+  end
+
   def test_json_coder_with_proc_with_unsupported_value
     coder = JSON::Coder.new do |object, is_key|
       assert_equal false, is_key
       Object.new
     end
     assert_raise(JSON::GeneratorError) { coder.dump([Object.new]) }
+  end
+
+  def test_json_coder_with_proc_returning_symbol
+    coder = JSON::Coder.new { _1 }
+    assert_equal %({"sym":"sym"}), coder.dump({ sym: :sym })
   end
 
   def test_json_coder_hash_key
@@ -50,6 +80,16 @@ class JSONCoderTest < Test::Unit::TestCase
   def test_json_coder_load_options
     coder = JSON::Coder.new(symbolize_names: true)
     assert_equal({a: 1}, coder.load('{"a":1}'))
+  end
+
+  def test_json_coder_load_with_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    coder = JSON::Coder.new(on_load: on_load)
+    assert_equal [2], coder.load('[1]')
+  end
+
+  def test_json_coder_on_load_invalid_type
+    assert_raise(TypeError) { JSON::Coder.new(on_load: 'x') }
   end
 
   def test_json_coder_dump_NaN_or_Infinity
@@ -130,6 +170,33 @@ class JSONCoderTest < Test::Unit::TestCase
 
     assert_equal '{"/w==\\n":1}', coder.dump({ "\xFF" => 1 })
     assert_equal 2, calls
+  end
+
+  def test_json_coder_symbol_invalid_encoding
+    symbol = "\xFF".b.to_sym
+
+    calls = 0
+    coder = JSON::Coder.new do |object, is_key|
+      calls += 1
+      object.bytes
+    end
+
+    assert_equal "[[255]]", coder.dump([symbol])
+    assert_equal 1, calls
+
+    coder = JSON::Coder.new { |object, is_key| nil }
+    assert_equal "[null]", coder.dump([symbol])
+
+    coder = JSON::Coder.new { |object, is_key| Object.new }
+    assert_raise(JSON::GeneratorError) { coder.dump([symbol]) }
+
+    if RUBY_ENGINE == "ruby"
+      coder = JSON::Coder.new { |object, is_key| symbol }
+      error = assert_raise JSON::GeneratorError do
+        coder.dump([symbol])
+      end
+      assert_equal "source sequence is illegal/malformed utf-8", error.message
+    end
   end
 
   def test_depth

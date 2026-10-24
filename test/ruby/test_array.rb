@@ -1031,6 +1031,12 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5)
   end
 
+  def test_flatten_bang_does_not_freeze_nested_array
+    child = []
+    [child].flatten!
+    assert_not_predicate(child, :frozen?)
+  end
+
   def test_flatten_empty!
     assert_nil(@cls[].flatten!)
     assert_equal(@cls[],
@@ -1426,6 +1432,28 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[@cls[1,2], nil, 'dog', 'cat'], a.prepend(@cls[1, 2]))
   end
 
+  def test_tolerant_to_redefinition
+    *code = __FILE__, __LINE__+1, "#{<<-"{#"}\n#{<<-'};'}"
+    {#
+      module M
+        def <<(a)
+          super(a * 2)
+        end
+      end
+      class Array; prepend M; end
+      ary = [*1..10]
+      mapped = ary.map {|i| i}
+      selected = ary.select {true}
+      module M
+        remove_method :<<
+      end
+      assert_equal(ary, mapped)
+      assert_equal(ary, selected)
+    };
+    assert_separately(%w[--disable-yjit], *code)
+    assert_separately(%w[--enable-yjit], *code)
+  end
+
   def test_push
     a = @cls[1, 2, 3]
     assert_equal(@cls[1, 2, 3, 4, 5], a.push(4, 5))
@@ -1805,8 +1833,34 @@ class TestArray < Test::Unit::TestCase
     assert_equal([100], a.slice(-1, 1_000_000_000))
   end
 
+  def test_slice_shrinking_array_by_to_int
+    bug22325 = '[Bug #22325]'
+    cls = Class.new(Numeric) do
+      attr_reader :val
+      def initialize(ary, val)
+        @ary = ary
+        @val = val
+      end
+      def <=>(other)
+        val <=> (other.is_a?(self.class) ? other.val : other)
+      end
+      def to_int
+        @ary.clear
+        val
+      end
+      def coerce(other)
+        [other, val]
+      end
+    end
+
+    ary = @cls[*(1..100).to_a]
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60))], bug22325)
+
+    ary.replace((1..100).to_a)
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60)).step(2)], bug22325)
+  end
+
   def test_slice_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal([1, 2, 3, 4, 5], (0..10).to_a[1, 5]) }
     EnvUtil.under_gc_compact_stress do
       a = [0, 1, 2, 3, 4, 5]
@@ -1914,19 +1968,21 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4], a)
   end
 
-  def test_freeze_inside_sort!
+  def test_freeze_inside_sort_bang
     array = [1, 2, 3, 4, 5]
     frozen_array = nil
     assert_raise(FrozenError) do
       count = 0
       array.sort! do |a, b|
-        array.freeze if (count += 1) == 6
+        array.freeze if (count += 1) == 3
         frozen_array ||= array.map.to_a if array.frozen?
         b <=> a
       end
     end
     assert_equal(frozen_array, array)
+  end
 
+  def test_freeze_inside_sort_bang_non_numeric_block
     object = Object.new
     array = [1, 2, 3, 4, 5]
     object.define_singleton_method(:>){|_| array.freeze; true}
@@ -1935,7 +1991,9 @@ class TestArray < Test::Unit::TestCase
         object
       end
     end
+  end
 
+  def test_freeze_inside_sort_bang_non_numeric_no_block
     object = Object.new
     array = [object, object]
     object.define_singleton_method(:>){|_| array.freeze; true}
@@ -2575,6 +2633,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
   end
 
+  def test_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 2], [2, 1]], ary.permutation(obj).to_a)
+  end
+
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
@@ -2616,6 +2685,17 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+  end
+
+  def test_repeated_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 1], [1, 2], [2, 1], [2, 2]], ary.repeated_permutation(obj).to_a)
   end
 
   def test_repeated_permutation_stack_error
@@ -2722,6 +2802,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 1, 1], Array.new(3, 1))
     assert_equal([1, 1, 1], Array.new(3) { 1 })
     assert_equal([1, 1, 1], assert_warning(/block supersedes default value argument/) {Array.new(3, 1) { 1 }})
+    assert_equal([], [1].instance_eval { initialize(0) })
   end
 
   def test_aset_error
@@ -2874,6 +2955,60 @@ class TestArray < Test::Unit::TestCase
     end
     x.ary = Array.new(1023) {"a"*1} << x
     assert_equal("b", x.ary.join(""))
+  end
+
+  def test_join_encoding
+    # Multibyte UTF-8 elements: result is UTF-8, valid, not ASCII-only.
+    r = @cls["caf\u00e9", "na\u00efve"].join(" ")
+    assert_equal("caf\u00e9 na\u00efve", r)
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal(true, r.valid_encoding?)
+    assert_equal(false, r.ascii_only?)
+
+    # All 7-bit content stays ASCII-only.
+    r = @cls["abc", "def"].join(",")
+    assert_equal("abc,def", r)
+    assert_equal(true, r.ascii_only?)
+
+    # Multibyte separator (same encoding as the elements).
+    r = @cls["a", "b", "c"].join("\u2014")
+    assert_equal("a\u2014b\u2014c", r)
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal(false, r.ascii_only?)
+    assert_equal(true, r.valid_encoding?)
+
+    # Mixed ASCII-compatible encodings, all 7-bit: result takes element 0's encoding.
+    r = @cls["abc".dup.force_encoding("US-ASCII"), "def".dup.force_encoding("UTF-8")].join(" ")
+    assert_equal("abc def", r)
+    assert_equal(Encoding::US_ASCII, r.encoding)
+    assert_equal(true, r.ascii_only?)
+
+    # 7-bit content in a non-ASCII encoding (Shift_JIS).
+    r = @cls["abc".encode("Shift_JIS"), "def".encode("Shift_JIS")].join(" ")
+    assert_equal(Encoding::Shift_JIS, r.encoding)
+    assert_equal("abc def".b, r.b)
+
+    # Same-encoding multibyte (Shift_JIS): byte-for-byte concatenation.
+    s = "\u65e5\u672c".encode("Shift_JIS")
+    sep = "/".encode("Shift_JIS")
+    r = @cls[s, s].join(sep)
+    assert_equal(Encoding::Shift_JIS, r.encoding)
+    assert_equal((s + sep + s).b, r.b)
+
+    # Broken bytes: result keeps them and reports invalid.
+    bad = "\xff\xfe".dup.force_encoding("UTF-8")
+    r = @cls[bad, bad].join(" ")
+    assert_equal((bad + " " + bad).b, r.b)
+    assert_equal(false, r.valid_encoding?)
+
+    # Incompatible element/separator encodings still raise.
+    assert_raise(Encoding::CompatibilityError) do
+      @cls["a".dup.force_encoding("UTF-8"), "b".encode("UTF-16LE")].join(" ")
+    end
+
+    # Bulk copy: large array, verified against a non-join oracle.
+    big = @cls.new(500) { "ab" }
+    assert_equal(("ab," * 500).chomp(","), big.join(","))
   end
 
   def test_to_a2
@@ -3282,6 +3417,29 @@ class TestArray < Test::Unit::TestCase
     }
   end
 
+  def test_sample_modify_array_out_of_bounds
+    ary = (1..1_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace((1..50).to_a)
+      10
+    end
+    gen = Object.new
+    # 49 will be out-of-bounds when ary.replace is called
+    def gen.rand(lim) = 49
+    assert_equal([], ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(Array.new(10) { :x })
+      10
+    end
+    gen = Object.new
+    gen.define_singleton_method(:rand) { |lim| 8 }
+    assert_equal([], ary.sample(obj, random: gen))
+  end
+
   def test_cycle
     a = []
     [0, 1, 2].cycle do |i|
@@ -3518,30 +3676,6 @@ class TestArray < Test::Unit::TestCase
     assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
-  def test_shared_marking
-    reduce = proc do |s|
-      s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\((proc|T_NONE)\)\n
-             \K(?:\1\S+\s\(\2\)\n)*/x) do
-        "...(snip #{$&.count("\n")} lines)...\n"
-      end
-    end
-    begin
-      assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
-      queue = []
-      50.times do
-        10_000.times do
-          queue << lambda{}
-        end
-        GC.start(full_mark: false, immediate_sweep: true)
-        GC.verify_internal_consistency
-        queue.shift.call
-      end
-    EOS
-    rescue Timeout::Error => e
-      omit e.message
-    end
-  end
-
   sizeof_long = [0].pack("l!").size
   sizeof_voidp = [""].pack("p").size
   if sizeof_long < sizeof_voidp
@@ -3639,6 +3773,15 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(8.5, [3.5, 5].sum)
     assert_float_equal(10.5, [2, 8.5].sum)
     assert_float_equal(1_000 * 0.1, Array.new(1_000, 0.1).sum(0.0))
+
+    # Init with a float, but start with some fixnums in the array.
+    # Tests compensated summation fallthrough in array.c
+    assert_float_equal(5.0, [1, 1, 1.0, 1.0, 1.0].sum(0.0))
+
+    assert_float_equal(11.5, [1.5].sum(10.0))
+    assert_float_equal(16.5, [1, 2, 3.5].sum(10.0))
+    assert_complex_equal(11.0 + 2i, [Complex(1, 2)].sum(10.0))
+
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
 
@@ -3656,7 +3799,22 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(12.0, ary.sum {|x| yielded << x; x * 2 })
     assert_equal(ary, yielded)
 
+    yielded_ctr = 0
+    result = %w[a b].sum(0) do
+      yielded_ctr += 1
+    end
+    assert_equal(result, 3)
+
+    yielded_ctr = 0.0
+    result = %w[a b].sum(0.0) do
+      yielded_ctr += 1
+      yielded_ctr.to_f
+    end
+    assert_equal(result, 3.0)
+
     assert_raise(TypeError) { [Object.new].sum }
+    assert_raise(TypeError) { [nil].sum(10.0) }
+    assert_raise(TypeError) { ["hello"].sum(10.0) }
 
     large_number = 100000000
     small_number = 1e-9

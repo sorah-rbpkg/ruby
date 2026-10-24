@@ -9,11 +9,12 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include <signal.h>
 
 // GETADDRINFO_IMPL == 0 : call getaddrinfo/getnameinfo directly
 // GETADDRINFO_IMPL == 1 : call getaddrinfo/getnameinfo without gvl (but uncancellable)
 // GETADDRINFO_IMPL == 2 : call getaddrinfo/getnameinfo in a dedicated pthread
-//                         (and if the call is interrupted, the pthread is left running)
+//                         (and if the call is interrupted, the pthread is detached)
 
 #ifndef GETADDRINFO_IMPL
 #  ifdef GETADDRINFO_EMU
@@ -456,8 +457,6 @@ do_getaddrinfo(void *ptr)
 
     if (need_free) free_getaddrinfo_arg(arg);
 
-    rb_thread_register_exiting();
-
     return 0;
 }
 
@@ -497,7 +496,6 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
-// start_routine must call rb_thread_register_exiting(), or the thread is never joined.
 int
 raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
@@ -518,7 +516,7 @@ retry_attr_init:
         }
         return err;
     }
-    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_JOINABLE)) != 0) {
+    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
         saved_errno = errno;
         pthread_attr_destroy(attr_p);
         errno = saved_errno;
@@ -539,6 +537,10 @@ retry_attr_init:
     pthread_attr_destroy(attr_p);
     if (ret != 0) {
         errno = saved_errno;
+    }
+#else
+    if (ret == 0) {
+        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
     }
 #endif
     return ret;
@@ -655,13 +657,6 @@ nogvl_getnameinfo(void *arg)
                                       ptr->serv, (socklen_t)ptr->servlen,
                                       ptr->flags);
 }
-
-static void *
-fork_safe_getnameinfo(void *arg)
-{
-    return rb_thread_prevent_fork(nogvl_getnameinfo, arg);
-}
-
 int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
@@ -680,7 +675,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.serv = serv;
     arg.servlen = servlen;
     arg.flags = flags;
-    ret = (int)(VALUE)rb_thread_call_without_gvl(fork_safe_getnameinfo, &arg, RUBY_UBF_IO, 0);
+    ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getnameinfo, &arg, RUBY_UBF_IO, 0);
     return ret;
 }
 
@@ -765,8 +760,6 @@ do_getnameinfo(void *ptr)
 
     if (need_free) free_getnameinfo_arg(arg);
 
-    rb_thread_register_exiting();
-
     return 0;
 }
 
@@ -792,12 +785,6 @@ cancel_getnameinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
-static void *
-fork_safe_do_getnameinfo(void *ptr)
-{
-    return rb_thread_prevent_fork(do_getnameinfo, ptr);
-}
-
 int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
@@ -820,7 +807,7 @@ start:
     }
 
     pthread_t th;
-    if (raddrinfo_pthread_create(&th, fork_safe_do_getnameinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
@@ -988,7 +975,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
     const struct addrinfo *hints, struct rb_addrinfo **res)
 {
     int error, res_allocated = 0, _additional_flags = 0;
-    long i, len;
+    rb_len_t i, len;
     struct addrinfo *ai, *ai_tail = NULL;
     char *hostp;
     char _hbuf[NI_MAXHOST];
@@ -1305,7 +1292,7 @@ addrinfo_memsize(const void *ptr)
 static const rb_data_type_t addrinfo_type = {
     "socket/addrinfo",
     {addrinfo_mark, addrinfo_free, addrinfo_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1909,15 +1896,12 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
 
 #if defined(AF_LINK) && defined(HAVE_TYPE_STRUCT_SOCKADDR_DL)
           /* AF_LINK is defined in 4.4BSD derivations since Net2.
-             link_ntoa is also defined at Net2.
-             However Debian GNU/kFreeBSD defines AF_LINK but
-             don't have link_ntoa.  */
+             link_ntoa is also defined at Net2.  */
           case AF_LINK:
           {
             /*
              * Simple implementation using link_ntoa():
-             * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
-             * Also, the format is bit different.
+             * The format is bit different.
              *
              * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
              * break;
@@ -3185,7 +3169,6 @@ do_fast_fallback_getaddrinfo(void *ptr)
         IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
         if (shared->notify != -1 && (write(shared->notify, &notification, 1)) < 0) {
-            entry->err = errno;
             entry->has_syserr = true;
         }
         if (--(entry->refcount) == 0) {
@@ -3200,8 +3183,6 @@ do_fast_fallback_getaddrinfo(void *ptr)
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }
-
-    rb_thread_register_exiting();
 
     return 0;
 }

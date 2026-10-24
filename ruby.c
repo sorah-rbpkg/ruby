@@ -44,7 +44,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/cmdlineopt.h"
-#include "internal/cont.h"
+#include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/inits.h"
@@ -56,6 +56,7 @@
 #include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
+#include "prism_compile.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -458,11 +459,12 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
     if (path == 0) return;
     p = path;
     while (*p) {
-        long len;
+        rb_len_t len;
         while (is_path_sep(*p))
             p++;
         if (!*p) break;
-        for (s = p; *s && !is_path_sep(*s); s = CharNext(s));
+        /* separators never appear inside a multibyte character */
+        for (s = p; *s && !is_path_sep(*s); s++);
         len = s - p;
 #undef is_path_sep
 
@@ -523,7 +525,7 @@ expand_include_path(VALUE path)
     return rb_file_expand_path(path, Qnil);
 }
 
-void
+static void
 ruby_incpush_expand(const char *path)
 {
     ruby_push_include(path, expand_include_path);
@@ -827,7 +829,7 @@ static int
 process_sflag(int sflag)
 {
     if (sflag > 0) {
-        long n;
+        rb_len_t n;
         const VALUE *args;
         VALUE argv = rb_argv;
 
@@ -893,11 +895,11 @@ static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, in
 static void
 moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 {
-    long argc, i, len;
+    long argc, i;
+    rb_len_t len;
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
-    void *ptr;
 
     VALUE src_enc_name = opt->src.enc.name;
     VALUE ext_enc_name = opt->ext.enc.name;
@@ -934,7 +936,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
 
     VALUE ptr_obj;
-    argv = ptr = RB_ALLOCV_N(char *, ptr_obj, argc);
+    argv = RB_ALLOCV_N(char *, ptr_obj, argc);
     MEMMOVE(argv, RSTRING_PTR(argary), char *, argc);
 
     while ((i = proc_options(argc, argv, opt, envopt)) > 1 && envopt && (argc -= i) > 0) {
@@ -1175,7 +1177,7 @@ dump_option(const char *str, int len, void *arg)
 }
 
 static void
-set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen)
+set_option_encoding_once(const char *type, VALUE *name, const char *e, rb_len_t elen)
 {
     VALUE ename;
 
@@ -1501,7 +1503,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         setup_yjit_options(s);
 #else
         rb_warn("Ruby was built without YJIT support."
-                " You may need to install rustc to build Ruby with YJIT.");
+                " You may need to install rustc and configure with --enable-yjit to build Ruby with YJIT.");
 #endif
     }
     else if (is_option_with_optarg("zjit", '-', true, false, false)) {
@@ -1791,6 +1793,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 }
 
 VALUE rb_define_gem_modules(VALUE, VALUE);
+void rb_prism_init_autoload(void);
 void Init_builtin_features(void);
 
 static void
@@ -1818,13 +1821,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (opt->dump & dump_exit_bits) return;
 
-    /* [Feature #19785] Warning for removed GC environment variable.
-     * Remove this in Ruby 3.4. */
-    if (getenv("RUBY_GC_HEAP_INIT_SLOTS")) {
-        rb_warn_deprecated("The environment variable RUBY_GC_HEAP_INIT_SLOTS",
-                           "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
-    }
-
     Init_ext(); /* load statically linked extensions before rubygems */
     Init_extra_exts();
 
@@ -1842,6 +1838,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     extern void rb_zjit_init_builtin_cmes(void);
     rb_zjit_init_builtin_cmes();
 #endif
+
+    // Ruby::Prism is the parser that parsed the program; it is not
+    // exposed when parse.y is selected by --parser.
+    if (rb_ruby_prism_p()) {
+        rb_prism_init_autoload();
+    }
 
     /**
      * Initialize the root/main boxes before loading libraries to run them
@@ -2227,16 +2229,14 @@ prism_script_shebang_callback(pm_options_t *options, const uint8_t *source, size
 static void
 prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 {
-    memset(result, 0, sizeof(pm_parse_result_t));
-
-    pm_options_t *options = &result->options;
-    pm_options_line_set(options, 1);
+    pm_parse_result_init(result);
+    pm_options_t *options = result->options;
     pm_options_main_script_set(options, true);
 
     const bool read_stdin = (strcmp(opt->script, "-") == 0);
 
     if (read_stdin) {
-        pm_options_encoding_set(options, rb_enc_name(rb_locale_encoding()));
+        pm_options_encoding_set(options, rb_enc_name(IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding())));
     }
     if (opt->src.enc.name != 0) {
         pm_options_encoding_set(options, StringValueCStr(opt->src.enc.name));
@@ -2256,7 +2256,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.start != NULL) {
+        if (NIL_P(error) && pm_parser_data_loc(result->parser)->length != 0) {
             rb_define_global_const("DATA", rb_stdin);
         }
     }
@@ -2293,17 +2293,20 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.start != NULL) {
+        if (NIL_P(error) && pm_parser_data_loc(result->parser)->length != 0) {
             int xflag = opt->xflag;
             VALUE file = open_load_file(script_name, &xflag);
 
-            const pm_parser_t *parser = &result->parser;
-            size_t offset = parser->data_loc.start - parser->start + 7;
+            const pm_parser_t *parser = result->parser;
+            const pm_location_t *data_loc = pm_parser_data_loc(parser);
+            const uint8_t *start = pm_parser_start(parser);
+            const uint8_t *end = pm_parser_end(parser);
+            uint32_t offset = data_loc->start + 7;
 
-            if ((parser->start + offset < parser->end) && parser->start[offset] == '\r') offset++;
-            if ((parser->start + offset < parser->end) && parser->start[offset] == '\n') offset++;
+            if ((start + offset < end) && start[offset] == '\r') offset++;
+            if ((start + offset < end) && start[offset] == '\n') offset++;
 
-            rb_funcall(file, rb_intern_const("seek"), 2, SIZET2NUM(offset), INT2FIX(SEEK_SET));
+            rb_funcall(file, rb_intern_const("seek"), 2, UINT2NUM(offset), INT2FIX(SEEK_SET));
             rb_define_global_const("DATA", file);
         }
     }
@@ -2317,11 +2320,11 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 static VALUE
 prism_dump_tree(pm_parse_result_t *result)
 {
-    pm_buffer_t output_buffer = { 0 };
+    pm_buffer_t *output_buffer = pm_buffer_new();
 
-    pm_prettyprint(&output_buffer, &result->parser, result->node.ast_node);
-    VALUE tree = rb_str_new(output_buffer.value, output_buffer.length);
-    pm_buffer_free(&output_buffer);
+    pm_prettyprint(output_buffer, result->parser, result->node.ast_node);
+    VALUE tree = rb_str_new(pm_buffer_value(output_buffer), pm_buffer_length(output_buffer));
+    pm_buffer_free(output_buffer);
     return tree;
 }
 
@@ -2357,6 +2360,16 @@ process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t 
     rb_exec_event_hook_script_compiled(ec, iseq, script);
 }
 
+static bool
+has_dir_sep(const char *path)
+{
+    if (strchr(path, '/')) return true;
+#ifdef _WIN32
+    if (strchr(path, '\\')) return true;
+#endif
+    return false;
+}
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -2379,7 +2392,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     int i = (int)proc_options(argc, argv, opt, 0);
     unsigned int dump = opt->dump & dump_exit_bits;
     const rb_box_t *box = rb_root_box();
-    const long loaded_before_enc = RARRAY_LEN(box->loaded_features);
+    const rb_len_t loaded_before_enc = RARRAY_LEN(box->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
         const char *const progname =
@@ -2462,7 +2475,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             if (!opt->script || opt->script[0] == '\0') {
                 opt->script = "-";
             }
-            else if (opt->do_search) {
+            else if (opt->do_search && !has_dir_sep(opt->script)) {
                 const char *path = getenv("RUBYPATH");
 
                 opt->script = 0;
@@ -2531,12 +2544,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
-        long i;
+        rb_len_t i;
         VALUE load_path = box->load_path;
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
 
-        rb_get_expanded_load_path();
+        rb_get_expanded_load_path(NULL);
         for (i = 0; i < RARRAY_LEN(load_path); ++i) {
             VALUE path = RARRAY_AREF(load_path, i);
             int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
@@ -2561,7 +2574,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     {
         VALUE loaded_features = box->loaded_features;
         bool modified = false;
-        for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
+        for (rb_len_t i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
             VALUE path = RARRAY_AREF(loaded_features, i);
             if (!(path = copy_str(path, IF_UTF8_PATH(uenc, lenc), true))) continue;
             if (!modified) {
@@ -2723,7 +2736,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 #ifndef DOSISH
 static void
-warn_cr_in_shebang(const char *str, long len)
+warn_cr_in_shebang(const char *str, rb_len_t len)
 {
     if (len > 1 && str[len-1] == '\n' && str[len-2] == '\r') {
         rb_warn("shebang line ending with \\r may cause problems");
@@ -2764,7 +2777,7 @@ load_file_internal(VALUE argp_v)
         VALUE c = 1;		/* something not nil */
         VALUE line;
         char *p, *str;
-        long len;
+        rb_len_t len;
         int no_src_enc = !opt->src.enc.name;
         int no_ext_enc = !opt->ext.enc.name;
         int no_int_enc = !opt->intern.enc.name;
@@ -2840,7 +2853,7 @@ load_file_internal(VALUE argp_v)
         enc = rb_enc_from_index(opt->src.enc.index);
     }
     else if (f == rb_stdin) {
-        enc = rb_locale_encoding();
+        enc = IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding());
     }
     else {
         enc = rb_utf8_encoding();
@@ -2902,7 +2915,7 @@ open_load_file(VALUE fname_v, int *xflag)
 {
     const char *fname = (fname_v = rb_str_encode_ospath(fname_v),
                          StringValueCStr(fname_v));
-    long flen = RSTRING_LEN(fname_v);
+    rb_len_t flen = RSTRING_LEN(fname_v);
     VALUE f;
     int e;
 

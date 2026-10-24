@@ -98,6 +98,7 @@ static rb_encoding *global_enc_ascii,
                    *global_enc_us_ascii;
 
 static int filesystem_encindex = ENCINDEX_ASCII_8BIT;
+static rb_atomic_t locale_alias_registered;
 
 #define GLOBAL_ENC_TABLE_LOCKING(tbl) \
     for (struct enc_table *tbl = &global_enc_table, **locking = &tbl; \
@@ -122,11 +123,12 @@ static int filesystem_encindex = ENCINDEX_ASCII_8BIT;
 static const rb_data_type_t encoding_data_type = {
     "encoding",
     {0, 0, 0,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
-#define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
-#define is_obj_encoding(obj) (RB_TYPE_P((obj), T_DATA) && is_data_encoding(obj))
+#define is_encoding_type(obj) (RTYPEDDATA_TYPE(obj) == &encoding_data_type)
+#define is_data_encoding(obj) is_encoding_type(obj)
+#define is_obj_encoding(obj) (rbimpl_obj_typeddata_p(obj) && is_encoding_type(obj))
 
 int
 rb_data_is_encoding(VALUE obj)
@@ -156,7 +158,7 @@ enc_list_update(int index, rb_raw_encoding *encoding)
         /* initialize encoding data */
         rb_ary_store(new_list, index, enc_new(encoding));
         rb_ary_freeze(new_list);
-        FL_SET_RAW(new_list, RUBY_FL_SHAREABLE);
+        RB_OBJ_SET_SHAREABLE(new_list);
         RUBY_ATOMIC_VALUE_SET(rb_encoding_list, new_list);
     }
 }
@@ -915,7 +917,7 @@ rb_enc_find_index(const char *name)
 }
 
 int
-rb_enc_find_index2(const char *name, long len)
+rb_enc_find_index2(const char *name, rb_len_t len)
 {
     char buf[ENCODING_NAMELEN_MAX+1];
 
@@ -1196,6 +1198,47 @@ enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
     return 0;
 }
 
+rb_encoding *
+rb_enc_check_multi_str(rb_encoding *enc1, int *cr, VALUE str2)
+{
+    RUBY_ASSERT(*cr != ENC_CODERANGE_UNKNOWN);
+
+    if (RSTRING_LEN(str2) == 0) {
+        return enc1;
+    }
+
+    int idx2 = enc_get_index_str(str2);
+    rb_encoding *enc2 = rb_enc_from_index(idx2);
+
+    int cr1 = *cr;
+
+    if (enc1 == enc2) {
+        if (cr1 == ENC_CODERANGE_7BIT) {
+            *cr = rb_enc_str_coderange(str2);
+        }
+        return enc1;
+    }
+
+    if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
+        rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+                 rb_enc_inspect_name(enc1),
+                 rb_enc_inspect_name(enc2));
+    }
+
+    if (enc2 == global_enc_us_ascii || rb_enc_str_asciionly_p(str2)) {
+        return enc1;
+    }
+
+    if (enc1 == global_enc_us_ascii || cr1 == ENC_CODERANGE_7BIT) {
+        *cr = rb_enc_str_coderange(str2);
+        return enc2;
+    }
+
+    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+             rb_enc_inspect_name(enc1),
+             rb_enc_inspect_name(enc2));
+}
+
 static rb_encoding*
 enc_compatible_str(VALUE str1, VALUE str2)
 {
@@ -1345,7 +1388,7 @@ enc_inspect(VALUE self)
 {
     rb_encoding *enc;
 
-    if (!is_data_encoding(self)) {
+    if (!is_obj_encoding(self)) { /* do not resolve autoload */
         not_encoding(self);
     }
     if (!(enc = RTYPEDDATA_GET_DATA(self)) || rb_enc_from_index(rb_enc_to_index(enc)) != enc) {
@@ -1567,15 +1610,16 @@ rb_locale_encindex(void)
 
     if (idx < 0) idx = ENCINDEX_UTF_8;
 
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        if (enc_registered(enc_table, "locale") < 0) {
+    if (!RUBY_ATOMIC_LOAD(locale_alias_registered)) {
+        GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+            if (enc_registered(enc_table, "locale") < 0) {
 # if defined _WIN32
-            void Init_w32_codepage(void);
-            Init_w32_codepage();
+                void Init_w32_codepage(void);
+                Init_w32_codepage();
 # endif
-            GLOBAL_ENC_TABLE_LOCKING(enc_table) {
                 enc_alias_internal(enc_table, "locale", idx);
             }
+            RUBY_ATOMIC_SET(locale_alias_registered, 1);
         }
     }
 
@@ -1941,10 +1985,10 @@ static VALUE
 rb_enc_aliases(VALUE klass)
 {
     VALUE aliases[2];
-    aliases[0] = rb_hash_new();
     aliases[1] = rb_ary_new();
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        aliases[0] = rb_hash_new_capa(st_table_size(enc_table->names));
         st_foreach(enc_table->names, rb_enc_aliases_enc_i, (st_data_t)aliases);
     }
 

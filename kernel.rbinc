@@ -16,23 +16,23 @@ return rb_obj_class_must(self);
 #line 17 "kernel.rbinc"
 }
 
-static VALUE builtin_inline_class_69(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_59(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 69 "kernel.rb"
+#line 59 "kernel.rb"
 return rb_obj_frozen_p(self);
 #line 24 "kernel.rbinc"
 }
 
-static VALUE builtin_inline_class_124(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_114(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 124 "kernel.rb"
+#line 114 "kernel.rb"
 return SIZED_ENUMERATOR(self, 0, 0, rb_obj_size);
 #line 31 "kernel.rbinc"
 }
 
-static VALUE builtin_inline_class_164(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_154(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 164 "kernel.rb"
+#line 154 "kernel.rb"
 return SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size);
 #line 38 "kernel.rbinc"
 }
@@ -43,9 +43,9 @@ void Init_builtin_kernel(void)
   static const struct rb_builtin_function kernel_table[] = {
     RB_BUILTIN_FUNCTION(0, _bi20, builtin_inline_class_20, 0),
     RB_BUILTIN_FUNCTION(1, rb_obj_clone2, rb_obj_clone2, 1),
-    RB_BUILTIN_FUNCTION(2, _bi69, builtin_inline_class_69, 0),
-    RB_BUILTIN_FUNCTION(3, _bi124, builtin_inline_class_124, 0),
-    RB_BUILTIN_FUNCTION(4, _bi164, builtin_inline_class_164, 0),
+    RB_BUILTIN_FUNCTION(2, _bi59, builtin_inline_class_59, 0),
+    RB_BUILTIN_FUNCTION(3, _bi114, builtin_inline_class_114, 0),
+    RB_BUILTIN_FUNCTION(4, _bi154, builtin_inline_class_154, 0),
     RB_BUILTIN_FUNCTION(5, rb_f_float1, rb_f_float1, 1),
     RB_BUILTIN_FUNCTION(6, rb_f_float, rb_f_float, 2),
     RB_BUILTIN_FUNCTION(7, rb_f_integer1, rb_f_integer1, 1),
@@ -60,9 +60,9 @@ COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
   if (0) rb_builtin_function_check_arity0(builtin_inline_class_20);
   if (0) rb_builtin_function_check_arity1(rb_obj_clone2);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_69);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_124);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_164);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_59);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_114);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_154);
   if (0) rb_builtin_function_check_arity1(rb_f_float1);
   if (0) rb_builtin_function_check_arity2(rb_f_float);
   if (0) rb_builtin_function_check_arity1(rb_f_integer1);

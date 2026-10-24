@@ -300,10 +300,11 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
     });
 }
 
-/// Callback for when Ruby is about to spawn a ractor. In that case we need to
-/// invalidate every block that is assuming single ractor mode.
+/// Invalidate every block that assumes single-ractor mode. Called when Ruby
+/// transitions from single-ractor to multi-ractor mode (i.e. a second ractor
+/// is spawned).
 #[no_mangle]
-pub extern "C" fn rb_yjit_before_ractor_spawn() {
+pub extern "C" fn rb_yjit_invalidate_single_ractor() {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;
@@ -503,7 +504,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
 
         // This should come from a running iseq, so direct threading translation
         // should have been done
-        assert!(unsafe { FL_TEST(iseq.into(), VALUE(ISEQ_TRANSLATED)) } != VALUE(0));
+        assert!(unsafe { FL_TEST(iseq.into(), VALUE(YJIT_ISEQ_TRANSLATED as usize)) } != VALUE(0));
         assert!(u32::from(insn_idx) < unsafe { get_iseq_encoded_size(iseq) });
 
         // Ensure that the instruction the insn_idx is pointing to is in
@@ -572,11 +573,6 @@ pub extern "C" fn rb_yjit_invalidate_no_singleton_class(klass: VALUE) {
 /// equal to base pointer.
 #[no_mangle]
 pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
-    // Skip tracking EP escapes on boot. We don't need to invalidate anything during boot.
-    if unsafe { INVARIANTS.is_none() } {
-        return;
-    }
-
     with_vm_lock(src_loc!(), || {
         // If an EP escape for this ISEQ is detected for the first time, invalidate all blocks
         // associated to the ISEQ. The iseq flag records the escape, so the map keeps only

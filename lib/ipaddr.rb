@@ -41,7 +41,7 @@ require 'socket'
 
 class IPAddr
   # The version string
-  VERSION = "1.2.8"
+  VERSION = "1.2.9"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
@@ -164,6 +164,10 @@ class IPAddr
 
   # Returns true if two ipaddrs are equal.
   def ==(other)
+    if other.nil?
+      return false
+    end
+
     other = coerce_other(other)
   rescue
     false
@@ -203,7 +207,7 @@ class IPAddr
 
   # Returns a string containing the IP address representation.
   def to_s
-    str = to_string
+    str = _to_string(@addr)
     return str if ipv4?
 
     str.gsub!(/\b0{1,3}([\da-f]+)\b/i, '\1')
@@ -223,6 +227,7 @@ class IPAddr
       str = sprintf('::%s%d.%d.%d.%d', $1, $2.hex / 256, $2.hex % 256, $3.hex / 256, $3.hex % 256)
     end
 
+    str << @zone_id if @zone_id
     str
   end
 
@@ -290,11 +295,11 @@ class IPAddr
   def loopback?
     case @family
     when Socket::AF_INET
-      @addr & 0xff000000 == 0x7f000000 # 127.0.0.1/8
+      (@addr & 0xff000000 == 0x7f000000) && prefix >= 8 # 127.0.0.1/8
     when Socket::AF_INET6
       @addr == 1 || # ::1
-        (@addr & 0xffff_0000_0000 == 0xffff_0000_0000 && (
-          @addr & 0xff000000 == 0x7f000000 # ::ffff:127.0.0.1/8
+        (@addr >> 32 == 0xffff && (
+          (@addr & 0xff000000 == 0x7f000000) && prefix >= 104 # ::ffff:127.0.0.0/104 (127.0.0.1/8)
         ))
     else
       raise AddressFamilyError, "unsupported address family"
@@ -309,22 +314,22 @@ class IPAddr
   def private?
     case @family
     when Socket::AF_INET
-      @addr & 0xff000000 == 0x0a000000 ||    # 10.0.0.0/8
-        @addr & 0xfff00000 == 0xac100000 ||  # 172.16.0.0/12
-        @addr & 0xffff0000 == 0xc0a80000     # 192.168.0.0/16
+      (@addr & 0xff000000 == 0x0a000000) && prefix >= 8 ||    # 10.0.0.0/8
+        (@addr & 0xfff00000 == 0xac100000) && prefix >= 12 || # 172.16.0.0/12
+        (@addr & 0xffff0000 == 0xc0a80000) && prefix >= 16    # 192.168.0.0/16
     when Socket::AF_INET6
-      @addr & 0xfe00_0000_0000_0000_0000_0000_0000_0000 == 0xfc00_0000_0000_0000_0000_0000_0000_0000 ||
-        (@addr & 0xffff_0000_0000 == 0xffff_0000_0000 && (
-          @addr & 0xff000000 == 0x0a000000 ||  # ::ffff:10.0.0.0/8
-          @addr & 0xfff00000 == 0xac100000 ||  # ::ffff::172.16.0.0/12
-          @addr & 0xffff0000 == 0xc0a80000     # ::ffff::192.168.0.0/16
+      (@addr & 0xfe00_0000_0000_0000_0000_0000_0000_0000 == 0xfc00_0000_0000_0000_0000_0000_0000_0000) && prefix >= 7 || # fc00::/7
+        (@addr >> 32 == 0xffff && (
+          (@addr & 0xff000000 == 0x0a000000) && prefix >= 104 || # ::ffff:10.0.0.0/104 (10.0.0.0/8)
+          (@addr & 0xfff00000 == 0xac100000) && prefix >= 108 || # ::ffff:172.16.0.0/108 (172.16.0.0/12)
+          (@addr & 0xffff0000 == 0xc0a80000) && prefix >= 112    # ::ffff:192.168.0.0/112 (192.168.0.0/16)
         ))
     else
       raise AddressFamilyError, "unsupported address family"
     end
   end
 
-  # Returns true if the ipaddr is a link-local address.  IPv4
+  # Returns true if the ipaddr is a link-local unicast address.  IPv4
   # addresses in 169.254.0.0/16 reserved by RFC 3927 and link-local
   # IPv6 Unicast Addresses in fe80::/10 reserved by RFC 4291 are
   # considered link-local. Link-local IPv4 addresses in the
@@ -332,11 +337,49 @@ class IPAddr
   def link_local?
     case @family
     when Socket::AF_INET
-      @addr & 0xffff0000 == 0xa9fe0000 # 169.254.0.0/16
+      (@addr & 0xffff0000 == 0xa9fe0000) && prefix >= 16 # 169.254.0.0/16
     when Socket::AF_INET6
-      @addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000 || # fe80::/10
-        (@addr & 0xffff_0000_0000 == 0xffff_0000_0000 && (
-          @addr & 0xffff0000 == 0xa9fe0000 # ::ffff:169.254.0.0/16
+      (@addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000) && prefix >= 10 || # fe80::/10
+        (@addr >> 32 == 0xffff && (
+          (@addr & 0xffff0000 == 0xa9fe0000) && prefix >= 112 # ::ffff:169.254.0.0/112 (169.254.0.0/16)
+        ))
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  alias link_local_unicast? link_local?
+
+  # Returns true if the ipaddr is a multicast address. IPv4
+  # addresses in 224.0.0.0/4 and IPv6 multicast addresses
+  # in ff00::/8 are considered multicast. Multicast IPv4 addresses in the
+  # IPv4-mapped IPv6 address range are also considered multicast.
+  def multicast?
+    case @family
+    when Socket::AF_INET
+      (@addr & 0xf0000000 == 0xe0000000) && prefix >= 4 # 224.0.0.0/4
+    when Socket::AF_INET6
+      (@addr & 0xff00_0000_0000_0000_0000_0000_0000_0000 == 0xff00_0000_0000_0000_0000_0000_0000_0000) && prefix >= 8 || # ff00::/8
+        (@addr >> 32 == 0xffff &&
+          (@addr & 0xf0000000 == 0xe0000000) && prefix >= 100 # ::ffff:224.0.0.0/100 (224.0.0.0/4)
+        )
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  # Returns true if the ipaddr is a link-local multicast address. IPv4
+  # addresses in 224.0.0.0/24 and link-local IPv6 Multicast Addresses in ff02::/16
+  # are considered link-local multicast. Link-local multicast IPv4 addresses in the
+  # IPv4-mapped IPv6 address range are also considered link-local multicast.
+  def link_local_multicast?
+    case @family
+    when Socket::AF_INET
+      (@addr & 0xffffff00 == 0xe0000000) && prefix >= 24 # 224.0.0.0/24 Local Network Control Block
+    when Socket::AF_INET6
+      (@addr & 0xffff_0000_0000_0000_0000_0000_0000_0000 == 0xff02_0000_0000_0000_0000_0000_0000_0000) && prefix >= 16 || # ff02::/16
+        (@addr >> 32 == 0xffff && (
+          (@addr & 0xffffff00 == 0xe0000000) && prefix >= 120 # ::ffff:224.0.0.0/120 (224.0.0.0/24)
         ))
     else
       raise AddressFamilyError, "unsupported address family"
@@ -368,7 +411,7 @@ class IPAddr
   # into an IPv4-mapped IPv6 address.
   def ipv4_mapped
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv4 address: #{to_s}"
     end
     clone = self.clone.set(@addr | 0xffff00000000, Socket::AF_INET6)
     clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
@@ -380,7 +423,7 @@ class IPAddr
   def ipv4_compat
     warn "IPAddr\##{__callee__} is obsolete", uplevel: 1 if $VERBOSE
     if !ipv4?
-      raise InvalidAddressError, "not an IPv4 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv4 address: #{to_s}"
     end
     clone = self.clone.set(@addr, Socket::AF_INET6)
     clone.instance_variable_set(:@mask_addr, @mask_addr | 0xffffffffffffffffffffffff00000000)
@@ -413,7 +456,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC3172.
   def ip6_arpa
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv6 address: #{to_s}"
     end
     return _reverse + ".ip6.arpa"
   end
@@ -421,7 +464,7 @@ class IPAddr
   # Returns a string for DNS reverse lookup compatible with RFC1886.
   def ip6_int
     if !ipv6?
-      raise InvalidAddressError, "not an IPv6 address: #{@addr}"
+      raise InvalidAddressError, "not an IPv6 address: #{to_s}"
     end
     return _reverse + ".ip6.int"
   end
@@ -743,19 +786,19 @@ class IPAddr
       right = ''
     when RE_IPV6ADDRLIKE_COMPRESSED
       if $4
-        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{@addr}"
+        left.count(':') <= 6 or raise InvalidAddressError, "invalid address: #{left}"
         addr = in_addr($~[4,4])
         left = $1
         right = $3 + '0:0'
       else
         left.count(':') <= ($1.empty? || $2.empty? ? 8 : 7) or
-          raise InvalidAddressError, "invalid address: #{@addr}"
+          raise InvalidAddressError, "invalid address: #{left}"
         left = $1
         right = $2
         addr = 0
       end
     else
-      raise InvalidAddressError, "invalid address: #{@addr}"
+      raise InvalidAddressError, "invalid address: #{left}"
     end
     l = left.split(':')
     r = right.split(':')

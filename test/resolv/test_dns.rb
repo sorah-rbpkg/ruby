@@ -104,18 +104,54 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
-  # [ruby-core:65836]
-  def test_resolve_with_2_ndots
-    conf = Resolv::DNS::Config.new :nameserver => ['127.0.0.1'], :ndots => 2
-    assert conf.single?
+  def test_conf_ndots
+    # ndots defaults to 1
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com', candidates[0].to_s
+    assert_equal 'example.com.local', candidates[1].to_s
 
-    candidates = []
-    conf.resolv('example.com') { |candidate, *args|
-      candidates << candidate
-      raise Resolv::DNS::Config::NXDomain
-    }
-    n = Resolv::DNS::Name.create 'example.com.'
-    assert_equal n, candidates.last
+    # ndots is 2: search path is used first
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'], ndots: 2)
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com.local', candidates[0].to_s
+    assert_equal 'example.com', candidates[1].to_s
+  end
+
+  def test_conf_search
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1')
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal candidates.size, candidates.uniq.size
+    assert_equal 'example.com', candidates[0].to_s
+
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com', candidates[0].to_s
+    assert_equal 'example.com.local', candidates[1].to_s
+  end
+
+  def test_conf_search_root_domain
+    # Label.split turns both '.' and '' into the root label list
+    ['.', ''].each do |domain|
+      [0, 1, 2].each do |ndots|
+        conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: [domain], ndots: ndots)
+        conf.lazy_initialize
+        candidates = conf.generate_candidates('example.com')
+        assert_equal ['example.com'], candidates.map(&:to_s)
+      end
+    end
+
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['.', 'local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal ['example.com', 'example.com.local'], candidates.map(&:to_s)
   end
 
   def test_query_ipv4_address
@@ -525,8 +561,6 @@ class TestResolvDNS < Test::Unit::TestCase
       if RUBY_PLATFORM.match?(/mingw/)
         # cannot repo locally
         omit 'Timeout Error on MinGW CI'
-      elsif macos?([26,1]..[])
-        omit 'Timeout Error on macOS 26.1+'
       else
         raise Timeout::Error
       end
@@ -633,6 +667,22 @@ class TestResolvDNS < Test::Unit::TestCase
     too_long_address_message = [0, 0, 1, 0, 0, 0].pack("n*") + "\x01x" * 129 + [0, 0, 0].pack("cnn")
     assert_raise_with_message(Resolv::DNS::DecodeError, /name label data exceed 255 octets/) do
       Resolv::DNS::Message.decode too_long_address_message
+    end
+  end
+
+  # A pointer chain hidden in a carrier RR's opaque RDATA, with a second RR's
+  # name pointing at its top, decodes to no labels but follows many pointers.
+  def test_too_many_compression_pointers
+    hops = 130
+    header  = [0, 0, 0, 2, 0, 0].pack("n6")
+    carrier = "\x00" + [60000, 1, 0].pack("nnN")
+    chain = +"\x00"; prev = 23
+    hops.times { |j| chain << [0xC000 | prev].pack("n"); prev = 24 + 2 * j }
+    carrier << [chain.bytesize].pack("n") << chain
+    top = 24 + 2 * (hops - 1)
+    victim = [0xC000 | top].pack("n") + [60000, 1, 0, 0].pack("nnNn")
+    assert_raise_with_message(Resolv::DNS::DecodeError, /too many compression pointers/) do
+      Resolv::DNS::Message.decode(header + carrier + victim)
     end
   end
 
@@ -920,13 +970,14 @@ class TestResolvDNS < Test::Unit::TestCase
 
         client_thread = Thread.new do
           Resolv::DNS.open(nameserver_port: [[server1_address, server1_port], [server2_address, server2_port]]) do |dns|
-            dns.timeouts = [0.1, 0.2]
+            dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                            EnvUtil.apply_timeout_scale(1)]
             dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
           end
         end
 
         udp_server1_thread = Thread.new do
-          msg, (_, client_port, _, client_address) = Timeout.timeout(5) { u1.recvfrom(4096) }
+          msg, (_, client_port, _, client_address) = Timeout.timeout(EnvUtil.apply_timeout_scale(5)) { u1.recvfrom(4096) }
           id, word2, _qdcount, _ancount, _nscount, _arcount = msg.unpack('nnnnnn')
           opcode = (word2 & 0x7800) >> 11
           rd = (word2 & 0x0100) >> 8
@@ -1041,6 +1092,8 @@ class TestResolvDNS < Test::Unit::TestCase
           assert_raise(Resolv::ResolvTimeout) do
             requester.request(sender, 2)
           end
+          # The peer went away, so this connection cannot carry another request.
+          assert_equal(false, requester.reusable?)
         ensure
           requester.close
         end
@@ -1139,6 +1192,427 @@ class TestResolvDNS < Test::Unit::TestCase
 
       server_thread.join
       client_thread.join
+    end
+  end
+
+  def accept_within_timeout(t)
+    Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { t.accept }
+  end
+
+  # Closes +sock+ so that the peer sees a reset rather than an orderly close.
+  def reset_connection(sock)
+    sock.setsockopt(Socket::Option.linger(true, 0))
+    sock.close
+  end
+
+  # Answers one query on +u+ with an empty reply that has TC set, asking the
+  # client to retry the same nameserver over TCP.
+  def answer_truncated(u)
+    msg, (_, client_port, _, client_address) =
+      Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+    id, word2, = msg.unpack('nnnnnn')
+    opcode = (word2 & 0x7800) >> 11
+    rd = (word2 & 0x0100) >> 8
+    qr = 1
+    tc = 1
+    ra = 1
+    word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+    u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+  end
+
+  # Reads one length prefixed DNS message from +sock+.
+  def read_framed_query(sock)
+    len_data = sock.read(2)
+    flunk('the client closed the connection before sending a query') unless len_data&.bytesize == 2
+    Resolv::DNS::Message.decode(sock.read(len_data.unpack('n')[0]))
+  end
+
+  # Builds the encoded reply answering +query+ with a single A record.
+  def reply_for_query(query, address)
+    reply = Resolv::DNS::Message.new(query.id)
+    reply.qr = 1
+    reply.rd = query.rd
+    reply.ra = 1
+    query.each_question do |name, typeclass|
+      reply.add_question(name, typeclass)
+      reply.add_answer(name, 3600, Resolv::DNS::Resource::IN::A.new(address))
+    end
+    reply.encode
+  end
+
+  def framed(encoded)
+    [encoded.bytesize].pack('n') << encoded
+  end
+
+  # Runs a TCP server which replies with +reply+ and then keeps the connection
+  # open until the client side is done, so that only the timeout can end the
+  # request.
+  def with_tcp_server_keeping_connection_open(reply)
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.recv(512)
+          ct.write(reply)
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          yield server_address, server_port
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def request_over_tcp(server_address, server_port, tout)
+    requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+    begin
+      msg = Resolv::DNS::Message.new
+      msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+      sender = requester.sender(msg, msg)
+      Timeout.timeout(EnvUtil.apply_timeout_scale(10)) do
+        requester.request(sender, EnvUtil.apply_timeout_scale(tout))
+      end
+    ensure
+      requester.close
+    end
+  end
+
+  def test_tcp_partial_length_prefix_kept_open
+    with_tcp_server_keeping_connection_open("\x00") do |server_address, server_port|
+      assert_raise(Resolv::ResolvTimeout) do
+        request_over_tcp(server_address, server_port, 0.5)
+      end
+    end
+  end
+
+  def test_tcp_partial_message_body_kept_open
+    reply = [10].pack('n') << '12345' # 5 bytes of a 10 byte message
+    with_tcp_server_keeping_connection_open(reply) do |server_address, server_port|
+      assert_raise(Resolv::ResolvTimeout) do
+        request_over_tcp(server_address, server_port, 0.5)
+      end
+    end
+  end
+
+  def test_tcp_complete_reply_kept_open
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.write(framed(reply_for_query(read_framed_query(ct), '192.0.2.1')))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          reply, = request_over_tcp(server_address, server_port, 2)
+          assert_equal(1, reply.answer.length)
+          assert_equal('192.0.2.1', reply.answer[0][2].address.to_s)
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def test_tcp_reply_arriving_in_two_chunks
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          reply = framed(reply_for_query(read_framed_query(ct), '192.0.2.1'))
+          ct.write(reply.byteslice(0, 6))
+          sleep EnvUtil.apply_timeout_scale(0.2)
+          ct.write(reply.byteslice(6..-1))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          reply, = request_over_tcp(server_address, server_port, 2)
+          assert_equal(1, reply.answer.length)
+          assert_equal('192.0.2.1', reply.answer[0][2].address.to_s)
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def test_truncated_tcp_fallback_with_partial_message_body_kept_open
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+      done = Thread::Queue.new
+
+      client_thread = Thread.new do
+        begin
+          dns = Resolv::DNS.new(nameserver_port: [[server_address, server_port]],
+                                raise_timeout_errors: true)
+          begin
+            dns.timeouts = EnvUtil.apply_timeout_scale(0.5)
+            assert_raise(Resolv::ResolvError) do
+              Timeout.timeout(EnvUtil.apply_timeout_scale(10)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            dns.close
+          end
+        ensure
+          done.push(true)
+        end
+      end
+
+      udp_server_thread = Thread.new { answer_truncated(u) }
+
+      tcp_server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.recv(512)
+          ct.write([10].pack('n') << '12345') # 5 bytes of a 10 byte message
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+    end
+  end
+
+  # A frame read that gives up part way through a frame leaves the stream
+  # between frame boundaries, so the retry has to start from a new connection.
+  def test_truncated_tcp_fallback_retries_on_a_new_connection
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+
+      client_thread = Thread.new do
+        Resolv::DNS.open(nameserver_port: [[server_address, server_port]],
+                         raise_timeout_errors: true) do |dns|
+          dns.timeouts = [EnvUtil.apply_timeout_scale(1),
+                          EnvUtil.apply_timeout_scale(3)]
+          Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+            dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+          end
+        end
+      end
+
+      udp_server_thread = Thread.new { answer_truncated(u) }
+
+      tcp_server_thread = Thread.new do
+        partial = accept_within_timeout(t)
+        begin
+          read_framed_query(partial)
+          partial.write([45].pack('n') << 'abcdef') # 6 bytes of a 45 byte message
+          complete = accept_within_timeout(t)
+          begin
+            complete.write(framed(reply_for_query(read_framed_query(complete), '192.0.2.1')))
+          ensure
+            complete.close
+          end
+        ensure
+          partial.close
+        end
+      end
+
+      result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+      assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+    end
+  end
+
+  # A timeout with no bytes read leaves the stream on a frame boundary, so the
+  # retry keeps the connection.  The reply below only ever reaches the client if
+  # the second attempt reuses the socket the first one opened.
+  def test_truncated_tcp_fallback_keeps_the_connection_when_nothing_arrived
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+      done = Thread::Queue.new
+
+      client_thread = Thread.new do
+        begin
+          Resolv::DNS.open(nameserver_port: [[server_address, server_port]],
+                           raise_timeout_errors: true) do |dns|
+            dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                            EnvUtil.apply_timeout_scale(5)]
+            Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+              dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+            end
+          end
+        ensure
+          done.push(true)
+        end
+      end
+
+      udp_server_thread = Thread.new { answer_truncated(u) }
+
+      tcp_server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          query = read_framed_query(ct)
+          # Stay silent past the first interval, then answer on this connection.
+          # It has to stay open until the client is done: the retry resends the
+          # query, and closing with that still unread would discard the reply.
+          sleep EnvUtil.apply_timeout_scale(1)
+          ct.write(framed(reply_for_query(query, '192.0.2.1')))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+      assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+    end
+  end
+
+  # A peer that goes away while another nameserver is being tried leaves a
+  # socket nobody is watching, so the loss only surfaces when the next request
+  # is written to it.  That write has to be reported the way a timeout is, or
+  # the nameservers left to try never get their turn.
+  def test_tcp_peer_lost_while_idle_falls_back_to_the_next_nameserver
+    with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
+      with_udp_and_tcp('127.0.0.1', 0) do |u2, t2|
+        u2.close # only the TCP side of the second nameserver is used
+        _, server1_port, _, server1_address = u1.addr
+        _, server2_port, _, server2_address = t2.addr
+        moved_on = Thread::Queue.new
+        done = Thread::Queue.new
+
+        client_thread = Thread.new do
+          begin
+            Resolv::DNS.open(nameserver_port: [[server1_address, server1_port],
+                                               [server2_address, server2_port]],
+                             raise_timeout_errors: true) do |dns|
+              dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(5)]
+              Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            done.push(true)
+          end
+        end
+
+        udp_server1_thread = Thread.new { answer_truncated(u1) }
+
+        tcp_server1_thread = Thread.new do
+          ct = accept_within_timeout(t1)
+          read_framed_query(ct)
+          moved_on.pop # the client is waiting on the other nameserver by now
+          reset_connection(ct)
+        end
+
+        tcp_server2_thread = Thread.new do
+          ct = accept_within_timeout(t2)
+          begin
+            read_framed_query(ct)
+            moved_on.push(true)
+            # Answer the retry only, so that reaching this reply means the
+            # write to the first nameserver was survived rather than skipped.
+            query = Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { read_framed_query(ct) }
+            ct.write(framed(reply_for_query(query, '192.0.2.1')))
+            done.pop
+          ensure
+            ct.close
+          end
+        end
+
+        result, = assert_join_threads([client_thread, udp_server1_thread,
+                                       tcp_server1_thread, tcp_server2_thread])
+        assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+      end
+    end
+  end
+
+  # The write that failed leaves the socket dead, so the round after it has to
+  # start from a new connection.  The reply below only reaches the client if it
+  # does.
+  def test_tcp_peer_lost_while_idle_is_not_used_again
+    with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
+      with_udp_and_tcp('127.0.0.1', 0) do |u2, t2|
+        u2.close # only the TCP side of the second nameserver is used
+        _, server1_port, _, server1_address = u1.addr
+        _, server2_port, _, server2_address = t2.addr
+        moved_on = Thread::Queue.new
+        done = Thread::Queue.new
+
+        client_thread = Thread.new do
+          begin
+            Resolv::DNS.open(nameserver_port: [[server1_address, server1_port],
+                                               [server2_address, server2_port]],
+                             raise_timeout_errors: true) do |dns|
+              dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(5)]
+              Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            done.close
+          end
+        end
+
+        udp_server1_thread = Thread.new { answer_truncated(u1) }
+
+        tcp_server1_thread = Thread.new do
+          lost = accept_within_timeout(t1)
+          read_framed_query(lost)
+          moved_on.pop # the client is waiting on the other nameserver by now
+          reset_connection(lost)
+          fresh = accept_within_timeout(t1)
+          begin
+            fresh.write(framed(reply_for_query(read_framed_query(fresh), '192.0.2.1')))
+            done.pop
+          ensure
+            fresh.close
+          end
+        end
+
+        tcp_server2_thread = Thread.new do
+          ct = accept_within_timeout(t2)
+          begin
+            read_framed_query(ct)
+            moved_on.push(true)
+            done.pop # never answer, but stay open so the retries are read
+          ensure
+            ct.close
+          end
+        end
+
+        result, = assert_join_threads([client_thread, udp_server1_thread,
+                                       tcp_server1_thread, tcp_server2_thread])
+        assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+      end
     end
   end
 end

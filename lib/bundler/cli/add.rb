@@ -14,8 +14,7 @@ module Bundler
     def run
       Bundler.ui.level = "warn" if options[:quiet]
 
-      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
-      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+      Bundler::CLI::Common.configure_cooldown(options)
 
       validate_options!
       inject_dependencies
@@ -34,7 +33,7 @@ module Bundler
 
       Injector.inject(dependencies,
         conservative_versioning: options[:version].nil?, # Perform conservative versioning only when version is not specified
-        optimistic: options[:optimistic],
+        pessimistic: options[:pessimistic],
         strict: options[:strict])
     end
 
@@ -49,7 +48,7 @@ module Bundler
 
       raise InvalidOption, "You cannot specify `--branch` and `--ref` at the same time." if options["branch"] && options["ref"]
 
-      raise InvalidOption, "You cannot specify `--strict` and `--optimistic` at the same time." if options[:strict] && options[:optimistic]
+      raise InvalidOption, "You cannot specify `--strict` and `--pessimistic` at the same time." if options[:strict] && options[:pessimistic]
 
       # raise error when no gems are specified
       raise InvalidOption, "Please specify gems to add." if gems.empty?

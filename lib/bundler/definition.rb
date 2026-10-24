@@ -10,13 +10,14 @@ module Bundler
       attr_accessor :no_lock
     end
 
-    attr_writer :lockfile
+    attr_writer :lockfile, :overrides
 
     attr_reader(
       :dependencies,
       :locked_checksums,
       :locked_deps,
       :locked_gems,
+      :overrides,
       :platforms,
       :ruby_version,
       :lockfile,
@@ -37,7 +38,10 @@ module Bundler
 
       raise GemfileNotFound, "#{gemfile} not found" unless gemfile.file?
 
-      Dsl.evaluate(gemfile, lockfile, unlock)
+      Plugin.hook(Plugin::Events::GEM_BEFORE_EVAL, gemfile, lockfile)
+      Dsl.evaluate(gemfile, lockfile, unlock).tap do |definition|
+        Plugin.hook(Plugin::Events::GEM_AFTER_EVAL, definition)
+      end
     end
 
     #
@@ -58,7 +62,7 @@ module Bundler
     #   to be updated or true if all gems should be updated
     # @param ruby_version [Bundler::RubyVersion, nil] Requested Ruby Version
     # @param optional_groups [Array(String)] A list of optional groups
-    def initialize(lockfile, dependencies, sources, unlock, ruby_version = nil, optional_groups = [], gemfiles = [])
+    def initialize(lockfile, dependencies, sources, unlock, ruby_version = nil, optional_groups = [], gemfiles = [], overrides = [])
       unlock ||= {}
 
       if unlock == true
@@ -88,6 +92,7 @@ module Bundler
       @specs           = nil
       @ruby_version    = ruby_version
       @gemfiles        = gemfiles
+      @overrides       = overrides
 
       @lockfile               = lockfile
       @lockfile_contents      = String.new
@@ -109,6 +114,7 @@ module Bundler
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
         @locked_deps = @locked_gems.dependencies
+        Override.attach(@locked_gems.specs, @overrides)
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
         @originally_locked_sources = @locked_gems.sources
         @locked_checksums = @locked_gems.checksums
@@ -192,7 +198,7 @@ module Bundler
 
       sources.cached!
 
-      if options[:add_checksums] || (!options[:local] && install_needed?)
+      if options[:add_checksums] || (!options[:local] && (install_needed? || refetch_needed?(options) || @locked_spec_with_empty_checksums))
         sources.remote!
         true
       else
@@ -340,7 +346,9 @@ module Bundler
     #
     # @return [SpecSet] resolved dependencies
     def resolve
-      @resolve ||= if Bundler.frozen_bundle?
+      return @resolve if @resolve
+
+      @resolve = if Bundler.frozen_bundle?
         Bundler.ui.debug "Frozen, using resolution from the lockfile"
         @locked_specs
       elsif no_resolve_needed?
@@ -360,6 +368,8 @@ module Bundler
 
         start_resolution
       end
+      warn_inert_overrides(@resolve)
+      @resolve
     end
 
     def spec_git_paths
@@ -509,12 +519,6 @@ module Bundler
                 "Your Ruby version is #{actual}, but your Gemfile specified #{expected}"
               when :engine_version
                 "Your #{Bundler::RubyVersion.system.engine} version is #{actual}, but your Gemfile specified #{ruby_version.engine} #{expected}"
-              when :patchlevel
-                if !expected.is_a?(String)
-                  "The Ruby patchlevel in your Gemfile must be a string"
-                else
-                  "Your Ruby patchlevel is #{actual}, but your Gemfile specified #{expected}"
-                end
         end
 
         raise RubyVersionMismatch, msg
@@ -627,6 +631,17 @@ module Bundler
       resolve_needed? || missing_specs?
     end
 
+    # Reinstalling installs from the cached archive, and `bundle cache` copies it
+    # into the app cache, so a cache emptied by the `prune` setting or by hand has
+    # to go back to the remotes to refill it.
+    def refetch_needed?(options)
+      return false unless options[:force] || options["cache-archives"]
+
+      resolve.for(requested_dependencies, [Bundler.local_platform]).any? do |spec|
+        spec.source.is_a?(Source::Rubygems) && spec.source.uncached?(spec)
+      end
+    end
+
     def something_changed?
       return true unless lockfile_exists?
 
@@ -639,13 +654,23 @@ module Bundler
         @missing_lockfile_dep ||
         @unlocking_bundler ||
         @locked_spec_with_missing_checksums ||
-        @locked_spec_with_empty_checksums ||
+        empty_checksums_actionable? ||
         @locked_spec_with_missing_deps ||
         @locked_spec_with_invalid_deps
     end
 
     def resolve_needed?
       unlocking? || something_changed?
+    end
+
+    # Only a remote fetch can fill an empty CHECKSUMS entry, so it justifies a
+    # resolution only when one is coming. Resolving locally for it would repeat
+    # on every `Bundler.setup` without changing the lockfile. Frozen mode still
+    # has to refuse the entry.
+    def empty_checksums_actionable?
+      return false unless @locked_spec_with_empty_checksums
+
+      Bundler.frozen_bundle? || !sources.local_mode?
     end
 
     def should_add_extra_platforms?
@@ -661,7 +686,20 @@ module Bundler
     end
 
     def expanded_dependencies
-      dependencies_with_bundler + metadata_dependencies
+      apply_overrides_to(dependencies_with_bundler) + metadata_dependencies
+    end
+
+    def apply_overrides_to(deps)
+      return deps if @overrides.empty?
+      deps.map {|dep| apply_override_to(dep) }
+    end
+
+    def apply_override_to(dep)
+      override = Override.find_for(@overrides, dep.name, :version)
+      return dep unless override
+      new_dep = dep.dup
+      new_dep.instance_variable_set(:@requirement, override.apply_to(dep.requirement))
+      new_dep
     end
 
     def dependencies_with_bundler
@@ -1060,7 +1098,7 @@ module Bundler
               @locked_specs.delete(locked_specs.select {|s| s.source != dep.source })
             end
 
-            unless dep.matches_spec?(locked_specs.first)
+            unless apply_override_to(dep).matches_spec?(locked_specs.first)
               @gems_to_unlock << name
               dep_changed = true
             end
@@ -1070,7 +1108,66 @@ module Bundler
         @changed_dependencies << name if dep_changed
       end
 
+      converge_overrides_outside_dependencies
+      converge_rewritten_dependencies
+
       @changed_dependencies.any?
+    end
+
+    # The lockfile keeps the upstream dependencies of every gem, so a gem that
+    # a `from:`/`to:` override cut loose stays locked until a resolution drops
+    # it.
+    def converge_rewritten_dependencies
+      @overrides.each do |override|
+        next unless override.from
+
+        name = override.target
+        next if @originally_locked_specs[name].empty?
+        next if @dependencies.any? {|d| d.name == name }
+
+        still_required = @originally_locked_specs.any? do |s|
+          Override.rewrite_dependencies(@overrides, s.name, s.runtime_dependencies).any? {|d| d.name == name }
+        end
+        next if still_required
+
+        @gems_to_unlock << name
+        @changed_dependencies << name
+      end
+    end
+
+    # A misspelled `from:` gem leaves the override with nothing to rewrite.
+    def warn_inert_overrides(specs)
+      @overrides.each do |override|
+        next unless override.from
+        next if specs[override.from].any? {|s| s.dependencies.any? {|d| d.name == override.target } }
+
+        Bundler.ui.warn "#{override} has no effect because the bundle has no #{override.from} that depends on #{override.target}"
+      end
+    end
+
+    def converge_overrides_outside_dependencies
+      @overrides.each do |override|
+        # :all and metadata overrides are intentionally not pre-unlocked. The
+        # lockfile does not record overrides, so unlocking for them would
+        # re-resolve on every run and reject every frozen install. Install-time
+        # compatibility checks already honor them for locked specs, and they
+        # affect resolution on a fresh lock or when the user runs `bundle update`.
+        next unless override.target.is_a?(String) && override.field == :version
+
+        name = override.target
+        # Overrides on direct deps are detected in the per-dep
+        # converge_dependencies loop via apply_override_to + matches_spec?.
+        next if @dependencies.any? {|d| d.name == name }
+
+        locked_specs = @originally_locked_specs[name]
+        next if locked_specs.empty?
+        # Only a version string constrains on its own. :ignore_upper and nil
+        # loosen requirements the lockfile already satisfies.
+        next if override.apply_to(Gem::Requirement.default).satisfied_by?(locked_specs.first.version)
+
+        @gems_to_unlock << name
+        @changed_dependencies << name
+      end
     end
 
     # Remove elements from the locked specs that are expired. This will most
@@ -1295,7 +1392,7 @@ module Bundler
     end
 
     def source_map
-      @source_map ||= SourceMap.new(sources, dependencies, @locked_specs)
+      @source_map ||= SourceMap.new(sources, dependencies, @locked_specs, @overrides.filter_map {|o| o.operation if o.from })
     end
 
     def new_resolver_for_full_update
@@ -1308,7 +1405,7 @@ module Bundler
 
     def new_resolution_base(last_resolve:, unlock:)
       new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
-      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms, explicit_unlocks: @explicit_unlocks)
+      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms, overrides: @overrides, explicit_unlocks: @explicit_unlocks)
     end
 
     def new_resolver(base)

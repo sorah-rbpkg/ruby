@@ -25,6 +25,7 @@ module Bundler
         @checksum_store = Checksum::Store.new
         @gem_installers = {}
         @gem_installers_mutex = Mutex.new
+        @remote_spec_for_mutex = Mutex.new
         @remote_specs_mutex = Mutex.new
 
         cooldown = options["cooldown"]
@@ -196,6 +197,8 @@ module Bundler
              "the security policy didn't allow it, with the message: #{e.message}"
           end
 
+          s.content_address = spec.content_address if spec.content_address
+
           spec.__swap__(s)
         end
 
@@ -230,8 +233,12 @@ module Bundler
         spec.post_install_message
       end
 
+      def uncached?(spec)
+        caches.none? {|cache| File.exist?(package_path(cache, spec)) }
+      end
+
       def cache(spec, custom_path = nil)
-        cached_path = Bundler.settings[:cache_all_platforms] ? fetch_gem_if_possible(spec) : cached_gem(spec)
+        cached_path = fetch_gem_if_possible(spec)
         raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
@@ -437,12 +444,14 @@ module Bundler
       # Looks up a single spec in the remote sources, fetching only its own
       # name when the full remote index is not already materialized.
       def remote_spec_for(spec)
-        return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
+        @remote_spec_for_mutex.synchronize do
+          return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
 
-        index = Index.build do |idx|
-          fetch_names(api_fetchers, [spec.name], idx)
+          index = Index.build do |idx|
+            fetch_names(api_fetchers, [spec.name], idx)
+          end
+          index.search(spec).first
         end
-        index.search(spec).first
       end
 
       def fetch_names(fetchers, dependency_names, index)
@@ -462,8 +471,22 @@ module Bundler
         if spec.remote
           fetch_gem(spec, previous_spec)
         else
-          cached_gem(spec)
+          cached_gem(spec) || refetch_gem(spec, previous_spec)
         end
+      end
+
+      # An installed gem materializes without a remote, so a reinstall forced by
+      # `--redownload` has to look the gem up in the remote index again before it
+      # can download the archive that the cache no longer holds.
+      def refetch_gem(spec, previous_spec = nil)
+        return unless @allow_remote
+
+        remote_spec = remote_spec_for(spec)
+        return unless remote_spec && remote_spec.full_name == spec.full_name
+
+        path = fetch_gem(remote_spec, previous_spec)
+        spec.remote = remote_spec.remote
+        path
       end
 
       def fetch_gem(spec, previous_spec = nil)
@@ -545,8 +568,13 @@ module Bundler
         Bundler.ui.confirm("Fetching #{version_message(spec, previous_spec)}")
         gem_remote_fetcher = remote_fetchers.fetch(spec.remote).gem_remote_fetcher
 
-        Gem.time("Downloaded #{spec.name} in", 0, true) do
-          Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+        Plugin.hook(Plugin::Events::GEM_BEFORE_FETCH, spec)
+        begin
+          Gem.time("Downloaded #{spec.name} in", 0, true) do
+            Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+          end
+        ensure
+          Plugin.hook(Plugin::Events::GEM_AFTER_FETCH, spec)
         end
       end
 
@@ -566,7 +594,12 @@ module Bundler
         return unless remote = spec.remote
         return unless cache_slug = remote.cache_slug
 
-        Bundler.user_cache.join("gems", cache_slug)
+        if Gem.respond_to?(:global_gem_cache_path)
+          Pathname.new(Gem.global_gem_cache_path).join(cache_slug)
+        else
+          # Fall back to old location for older RubyGems versions
+          Bundler.user_cache.join("gems", cache_slug)
+        end
       end
 
       def extension_cache_slug(spec)
@@ -574,11 +607,11 @@ module Bundler
         remote.cache_slug
       end
 
-      # We are using a mutex to reaed and write from/to the hash.
+      # We are using a mutex to read and write from/to the hash.
       # The reason this double synchronization was added is for performance
       # and to lock the mutex for the shortest possible amount of time. Otherwise,
       # all threads are fighting over this mutex and when it gets acquired it gets locked
-      # until a threads finishes downloading a gem, leaving the other threads waiting
+      # until a thread finishes downloading a gem, leaving the other threads waiting
       # doing nothing.
       def rubygems_gem_installer(spec, options)
         @gem_installers_mutex.synchronize { @gem_installers[spec.name] } || begin
@@ -589,6 +622,7 @@ module Bundler
 
           installer = Bundler::RubyGemsGemInstaller.at(
             path,
+            content_address: (spec.content_address if Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)),
             security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
             install_dir: rubygems_dir.to_s,
             bin_dir: Bundler.system_bindir.to_s,
@@ -596,7 +630,9 @@ module Bundler
             wrappers: true,
             env_shebang: true,
             build_args: options[:build_args],
-            bundler_extension_cache_path: extension_cache_path(spec)
+            bundler_extension_cache_path: extension_cache_path(spec),
+            build_extension: Bundler.settings[:no_build_extension] ? false : nil,
+            install_plugin: Bundler.settings[:no_install_plugin] ? false : nil
           )
           @gem_installers_mutex.synchronize { @gem_installers[spec.name] ||= installer }
         end

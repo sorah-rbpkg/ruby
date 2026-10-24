@@ -54,8 +54,6 @@ RSpec.context "when installing a bundle that includes yanked gems" do
     end
 
     before do
-      skip "Materialization on Windows is not yet strict, so the example does not detect the gem has been yanked" if Gem.win_platform?
-
       build_repo4 do
         build_gem "foo", "1.0.0"
         build_gem "foo", "1.0.1"
@@ -120,7 +118,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
       build_gem "foo", "9.0.0"
     end
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     install_gemfile <<-G, raise_on_error: false
       source "https://gem.repo4"

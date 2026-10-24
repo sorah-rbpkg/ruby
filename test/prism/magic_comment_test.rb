@@ -3,7 +3,7 @@
 require_relative "test_helper"
 require "ripper"
 
-module Prism
+module Ruby::Prism
   class MagicCommentTest < TestCase
     if RUBY_ENGINE == "ruby"
       class MagicCommentRipper < Ripper
@@ -69,6 +69,10 @@ module Prism
       assert_magic_encoding(Encoding::US_ASCII, "# -*- foo: bar; encoding: ascii -*-")
     end
 
+    def test_emacs_missing_delimiter
+      assert_magic_encoding(Encoding::US_ASCII, '# -*- \1; encoding: ascii -*-')
+    end
+
     def test_coding_whitespace
       assert_magic_encoding(Encoding::ASCII_8BIT, "# coding \t \r  \v   :     \t \v    \r   ascii-8bit")
     end
@@ -81,7 +85,7 @@ module Prism
 
     def assert_magic_encoding(expected, line)
       source = %Q{#{line}\n""}
-      actual = Prism.parse(source).encoding
+      actual = Ruby::Prism.parse(source).encoding
 
       # Compare against our expectation.
       assert_equal expected, actual
@@ -106,7 +110,7 @@ module Prism
       # Check that we get the correct number of magic comments when lexing with
       # ripper.
       expected = MagicCommentRipper.new(source).tap(&:parse).magic_comments
-      actual = Prism.parse(source).magic_comments
+      actual = Ruby::Prism.parse(source).magic_comments
 
       assert_equal expected.length, actual.length
       expected.zip(actual).each do |(expected_key, expected_value), magic_comment|

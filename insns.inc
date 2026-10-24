@@ -64,8 +64,8 @@ enum ruby_vminsn_type {
     BIN(putself),
     BIN(putobject),
     BIN(putspecialobject),
-    BIN(putstring),
-    BIN(putchilledstring),
+    BIN(dupstring),
+    BIN(dupchilledstring),
     BIN(concatstrings),
     BIN(anytostring),
     BIN(toregexp),
@@ -119,6 +119,10 @@ enum ruby_vminsn_type {
     BIN(branchif),
     BIN(branchunless),
     BIN(branchnil),
+    BIN(jump_without_ints),
+    BIN(branchif_without_ints),
+    BIN(branchunless_without_ints),
+    BIN(branchnil_without_ints),
     BIN(once),
     BIN(opt_case_dispatch),
     BIN(opt_plus),
@@ -173,8 +177,8 @@ enum ruby_vminsn_type {
     BIN(trace_putself),
     BIN(trace_putobject),
     BIN(trace_putspecialobject),
-    BIN(trace_putstring),
-    BIN(trace_putchilledstring),
+    BIN(trace_dupstring),
+    BIN(trace_dupchilledstring),
     BIN(trace_concatstrings),
     BIN(trace_anytostring),
     BIN(trace_toregexp),
@@ -228,6 +232,10 @@ enum ruby_vminsn_type {
     BIN(trace_branchif),
     BIN(trace_branchunless),
     BIN(trace_branchnil),
+    BIN(trace_jump_without_ints),
+    BIN(trace_branchif_without_ints),
+    BIN(trace_branchunless_without_ints),
+    BIN(trace_branchnil_without_ints),
     BIN(trace_once),
     BIN(trace_opt_case_dispatch),
     BIN(trace_opt_plus),
@@ -264,12 +272,15 @@ enum ruby_vminsn_type {
 #if USE_ZJIT
     BIN(zjit_getinstancevariable),
     BIN(zjit_setinstancevariable),
+    BIN(zjit_splatkw),
     BIN(zjit_definedivar),
     BIN(zjit_send),
     BIN(zjit_opt_send_without_block),
     BIN(zjit_objtostring),
     BIN(zjit_opt_nil_p),
+    BIN(zjit_invokesuper),
     BIN(zjit_invokeblock),
+    BIN(zjit_opt_case_dispatch),
     BIN(zjit_opt_plus),
     BIN(zjit_opt_minus),
     BIN(zjit_opt_mult),
@@ -296,7 +307,7 @@ enum ruby_vminsn_type {
     VM_INSTRUCTION_SIZE
 };
 
-#define VM_BARE_INSTRUCTION_SIZE 109
+#define VM_BARE_INSTRUCTION_SIZE 113
 
 #define ASSERT_VM_INSTRUCTION_SIZE(array) \
     STATIC_ASSERT(numberof_##array, numberof(array) == VM_INSTRUCTION_SIZE)

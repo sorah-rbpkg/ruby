@@ -4,6 +4,11 @@ require "rubygems/installer"
 
 module Bundler
   class RubyGemsGemInstaller < Gem::Installer
+    # Can be removed once RubyGems 4.0.0 support is dropped
+    unless private_method_defined?(:assign_content_address)
+      private def assign_content_address; end
+    end
+
     # Cap how many jobserver slots a single gem's `make` may grab so that one
     # gem with many recipes doesn't starve the others sharing the pool. Beyond
     # a handful of jobs the extra parallelism rarely pays off in practice.
@@ -14,6 +19,8 @@ module Bundler
     end
 
     def install
+      assign_content_address
+
       pre_install_checks
 
       run_pre_install_hooks
@@ -32,7 +39,11 @@ module Bundler
         extract_files
       end
 
-      build_extensions if spec.extensions.any?
+      if options[:build_extension] == false
+        warn_skipped_extensions
+      elsif spec.extensions.any?
+        build_extensions
+      end
       write_build_info_file
       run_post_build_hooks
 
@@ -40,7 +51,12 @@ module Bundler
         generate_bin
       end
 
-      generate_plugins
+      if options[:install_plugin] == false
+        remove_stale_plugins
+        warn_skipped_plugins
+      else
+        generate_plugins
+      end
 
       write_spec
 
@@ -83,6 +99,29 @@ module Bundler
       else
         regenerate_plugins_for(spec, @plugins_dir)
       end
+    end
+
+    # Reimplemented from RubyGems, since RubyGems older than 4.1 doesn't
+    # provide it
+    def remove_stale_plugins
+      return unless spec.plugins.empty?
+
+      ensure_writable_dir @plugins_dir
+      remove_plugins_for(spec, @plugins_dir)
+    end
+
+    def warn_skipped_extensions
+      return if spec.extensions.empty?
+
+      Bundler.ui.warn "#{spec.full_name} contains native extensions that were not built.\n" \
+                      "To build extensions, unset no_build_extension and run `bundle pristine #{spec.name}`."
+    end
+
+    def warn_skipped_plugins
+      return if spec.plugins.empty?
+
+      Bundler.ui.warn "#{spec.full_name} contains plugins that were not installed.\n" \
+                      "To install plugins, unset no_install_plugin and run `bundle pristine #{spec.name}`."
     end
 
     if Bundler.rubygems.provides?("< 3.5.19")

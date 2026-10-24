@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-INSTALL" "1" "April 2026" ""
+.TH "BUNDLE\-INSTALL" "1" "May 2026" ""
 .SH "NAME"
 \fBbundle\-install\fR \- Install the dependencies specified in your Gemfile
 .SH "SYNOPSIS"
@@ -14,7 +14,7 @@ If a \fBGemfile\.lock\fR does exist, and you have updated your Gemfile(5), Bundl
 .SH "OPTIONS"
 .TP
 \fB\-\-cooldown=<number>\fR
-Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding any per\-source or global configuration\. See \fBcooldown\fR in bundle\-config(1) for details on the precedence between the CLI flag, Bundler config, and Gemfile per\-source settings\.
+Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding every other cooldown setting, RubyGems' own included\. See \fBcooldown\fR in bundle\-config(1) for details on the precedence between the CLI flag, Bundler config, Gemfile per\-source settings, and the gemrc file\.
 .TP
 \fB\-\-force\fR, \fB\-\-redownload\fR
 Force reinstalling every gem, even if already installed\.

@@ -1,0 +1,249 @@
+module TypeProf::Core
+  class ChangeSet
+    def initialize(node, target)
+      @node = node
+      @target = target
+      @diagnostics = []
+      @new_diagnostics = []
+      if target
+        @depended_value_entities = []
+        @new_depended_value_entities = []
+        @depended_method_entities = []
+        @new_depended_method_entities = []
+        @depended_static_reads = []
+        @new_depended_static_reads = []
+        @depended_superclasses = []
+        @new_depended_superclasses = []
+      end
+    end
+
+    attr_reader :node, :target, :diagnostics
+
+    def covariant_types = @covariant_types ||= {}
+    def contravariant_types = @contravariant_types ||= {}
+    def edges = @edges ||= {}
+    def boxes = @boxes ||= {}
+
+    private def new_edges = @new_edges ||= {}
+    private def new_boxes = @new_boxes ||= {}
+
+    def reuse(new_node)
+      @node = new_node
+      boxes.each_value do |box|
+        box.reuse(new_node)
+      end
+    end
+
+    def copy_from(other)
+      @covariant_types = other.covariant_types.dup
+      @contravariant_types = other.contravariant_types.dup
+      @edges = other.edges.dup
+      @boxes = other.boxes.dup
+      @diagnostics = other.diagnostics.dup
+
+      other.covariant_types.clear
+      other.contravariant_types.clear
+      other.edges.clear
+      other.boxes.clear
+      other.diagnostics.clear
+    end
+
+    def new_vertex(genv, origin, base_vtx)
+      @new_vertexes ||= {}
+      new_vtx = @new_vertexes[base_vtx] ||= Vertex.new(origin)
+      add_edge(genv, base_vtx, new_vtx)
+      new_vtx
+    end
+
+    def new_covariant_vertex(genv, sig_type_node)
+      # This is used to avoid duplicated vertex generation for the same sig node
+      covariant_types[sig_type_node] ||= Vertex.new(sig_type_node)
+    end
+
+    def new_contravariant_vertex(genv, sig_type_node)
+      # This is used to avoid duplicated vertex generation for the same sig node
+      contravariant_types[sig_type_node] ||= Vertex.new(sig_type_node)
+    end
+
+    def add_edge(genv, src, dst)
+      (new_edges[src] ||= {})[dst] = true
+    end
+
+    # TODO: if an edge is removed during one analysis, we may need to remove sub-boxes?
+
+    def add_method_call_box(genv, recv, mid, a_args, subclasses, suppress_errors: false, unresolved_recv: nil)
+      key = [:mcall, recv, mid, a_args, subclasses, suppress_errors, unresolved_recv]
+      new_boxes[key] ||= MethodCallBox.new(@node, genv, recv, mid, a_args, subclasses, suppress_errors: suppress_errors, unresolved_recv: unresolved_recv)
+    end
+
+    def add_escape_box(genv, a_ret)
+      key = [:return, a_ret]
+      new_boxes[key] ||= EscapeBox.new(@node, genv, a_ret)
+    end
+
+    def add_splat_box(genv, arg, idx = nil, unresolved_recv = nil)
+      key = [:splat, arg, idx, unresolved_recv]
+      new_boxes[key] ||= SplatBox.new(@node, genv, arg, idx, unresolved_recv)
+    end
+
+    def add_keyword_merge_box(genv, rest, literal_pairs, fallback)
+      key = [:kw_merge, rest, literal_pairs, fallback]
+      new_boxes[key] ||= KeywordMergeBox.new(@node, genv, rest, literal_pairs, fallback)
+    end
+
+    def add_hash_splat_box(genv, arg, unified_key, unified_val)
+      key = [:hash_splat, arg, unified_key, unified_val]
+      new_boxes[key] ||= HashSplatBox.new(@node, genv, arg, unified_key, unified_val)
+    end
+
+    def add_masgn_box(genv, value, lefts, rest_elem, rights)
+      key = [:masgn, value, lefts, rest_elem, rights]
+      new_boxes[key] ||= MAsgnBox.new(@node, genv, value, lefts, rest_elem, rights)
+    end
+
+    def add_method_def_box(genv, cpath, singleton, mid, f_args, ret_boxes)
+      key = [:mdef, cpath, singleton, mid, f_args, ret_boxes]
+      new_boxes[key] ||= MethodDefBox.new(@node, genv, cpath, singleton, mid, f_args, ret_boxes)
+    end
+
+    def add_method_decl_box(genv, cpath, singleton, mid, method_types, overloading)
+      key = [:mdecl, cpath, singleton, mid, method_types, overloading]
+      new_boxes[key] ||= MethodDeclBox.new(@node, genv, cpath, singleton, mid, method_types, overloading)
+    end
+
+    def add_method_alias_box(genv, cpath, singleton, new_mid, old_mid)
+      key = [:mdecl, cpath, singleton, new_mid, old_mid]
+      new_boxes[key] ||= MethodAliasBox.new(@node, genv, cpath, singleton, new_mid, old_mid)
+    end
+
+    def add_const_read_box(genv, static_ret)
+      key = [:cread, static_ret]
+      new_boxes[key] ||= ConstReadBox.new(@node, genv, static_ret)
+    end
+
+    def add_gvar_read_box(genv, var)
+      key = [:gvar_read, var]
+      new_boxes[key] ||= GVarReadBox.new(@node, genv, var)
+    end
+
+    def add_ivar_read_box(genv, cpath, singleton, name)
+      key = [:ivar_read, cpath, singleton, name]
+      new_boxes[key] ||= IVarReadBox.new(@node, genv, cpath, singleton, name)
+    end
+
+    def add_cvar_read_box(genv, cpath, name)
+      key = [:cvar_read, cpath, name]
+      new_boxes[key] ||= CVarReadBox.new(@node, genv, cpath, name)
+    end
+
+    def add_type_read_box(genv, type)
+      key = [:type_read, type]
+      new_boxes[key] ||= TypeReadBox.new(@node, genv, type)
+    end
+
+    def add_instance_type_box(genv, singleton_ty_vtx)
+      key = [:instance_type, singleton_ty_vtx]
+      new_boxes[key] ||= InstanceTypeBox.new(@node, genv, singleton_ty_vtx)
+    end
+
+    def add_diagnostic(meth, msg, node = @node)
+      @new_diagnostics << TypeProf::Diagnostic.new(node, meth, msg)
+    end
+
+    def add_depended_value_entity(ve)
+      @new_depended_value_entities << ve
+    end
+
+    def add_depended_method_entity(me)
+      @new_depended_method_entities << me
+    end
+
+    def add_depended_static_read(static_read)
+      @new_depended_static_reads << static_read
+    end
+
+    def add_depended_superclass(mod)
+      @new_depended_superclasses << mod
+    end
+
+    def reinstall(genv)
+      # Edges stored as nested hashes: {src => {dst => true}}
+      new_edges.each do |src, new_dsts|
+        old_dsts = edges[src]
+        new_dsts.each_key do |dst|
+          src.add_edge(genv, dst) unless old_dsts&.key?(dst)
+        end
+      end
+      edges.each do |src, old_dsts|
+        new_dsts = new_edges[src]
+        old_dsts.each_key do |dst|
+          src.remove_edge(genv, dst) unless new_dsts&.key?(dst)
+        end
+      end
+      @edges, @new_edges = @new_edges, @edges
+      new_edges.each_value(&:clear)
+      new_edges.clear
+
+      boxes.each do |key, box|
+        box.destroy(genv)
+      end
+      @boxes, @new_boxes = @new_boxes, @boxes
+      new_boxes.clear
+
+      @diagnostics.each do |diag|
+        genv.add_diagnostic_path(diag.node.lenv.path)
+        diag.node.remove_diagnostic(diag)
+      end
+      @new_diagnostics.each do |diag|
+        genv.add_diagnostic_path(diag.node.lenv.path)
+        diag.node.add_diagnostic(diag)
+      end
+      @diagnostics, @new_diagnostics = @new_diagnostics, @diagnostics
+      @new_diagnostics.clear
+
+      return unless @target
+
+      @depended_value_entities.each do |ve|
+        ve.read_boxes.delete(@target) || raise
+      end
+      @new_depended_value_entities.uniq!
+      @new_depended_value_entities.each do |ve|
+        ve.read_boxes << @target
+      end
+      @depended_value_entities, @new_depended_value_entities = @new_depended_value_entities, @depended_value_entities
+      @new_depended_value_entities.clear
+
+      @depended_method_entities.each do |me|
+        me.method_call_boxes.delete(@target) || raise
+      end
+      @new_depended_method_entities.uniq!
+      @new_depended_method_entities.each do |me|
+        me.method_call_boxes << @target
+      end
+      @depended_method_entities, @new_depended_method_entities = @new_depended_method_entities, @depended_method_entities
+      @new_depended_method_entities.clear
+
+      @depended_static_reads.each do |static_read|
+        static_read.followers.delete(@target)
+      end
+      @new_depended_static_reads.uniq!
+      @new_depended_static_reads.each do |static_read|
+        static_read.followers << @target
+      end
+
+      @depended_static_reads, @new_depended_static_reads = @new_depended_static_reads, @depended_static_reads
+      @new_depended_static_reads.clear
+
+      @depended_superclasses.each do |mod|
+        mod.subclass_checks.delete(@target)
+      end
+      @new_depended_superclasses.uniq!
+      @new_depended_superclasses.each do |mod|
+        mod.subclass_checks << @target
+      end
+
+      @depended_superclasses, @new_depended_superclasses = @new_depended_superclasses, @depended_superclasses
+      @new_depended_superclasses.clear
+    end
+  end
+end

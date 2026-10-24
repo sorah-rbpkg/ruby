@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.2"
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class ParametersSignatureTest < TestCase
     def test_req
       assert_parameters([[:req, :a]], "a")
@@ -50,6 +50,11 @@ module Prism
       assert_parameters([[:nokey]], "**nil")
     end
 
+    def test_noblock
+      # FIXME: `compare: RUBY_VERSION >= "4.1"` once builds are available
+      assert_parameters([[:noblock]], "&nil", compare: false)
+    end
+
     def test_keyrest_anonymous
       assert_parameters([[:keyrest, :**]], "**")
     end
@@ -72,12 +77,20 @@ module Prism
       assert_parameters([[:rest, :*], [:keyrest, :**], [:block, :&]], "...")
     end
 
+    def test_invalid_syntax
+      e = assert_raise(RuntimeError) do
+        Ruby::Prism.parse_statement("def f(**nil, ...); end").parameters.signature
+      end
+      assert_equal("Invalid syntax", e.message)
+    end
+
     private
 
-    def assert_parameters(expected, source)
+    def assert_parameters(expected, source, compare: true)
       # Compare against our expectation.
       assert_equal(expected, signature(source))
 
+      return unless compare
       # Compare against Ruby's expectation.
       object = Object.new
       eval("def object.m(#{source}); end")
@@ -85,7 +98,7 @@ module Prism
     end
 
     def signature(source)
-      program = Prism.parse("def m(#{source}); end").value
+      program = Ruby::Prism.parse("def m(#{source}); end").value
       program.statements.body.first.parameters.signature
     end
   end

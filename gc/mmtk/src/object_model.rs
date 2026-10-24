@@ -1,8 +1,15 @@
-use crate::abi::{RubyObjectAccess, OBJREF_OFFSET};
-use crate::{abi, Ruby};
+use std::ptr::copy_nonoverlapping;
+
+use crate::Ruby;
+use crate::abi;
+use crate::abi::MIN_OBJ_ALIGN;
+use crate::abi::OBJREF_OFFSET;
+use crate::abi::RubyObjectAccess;
+use mmtk::util::Address;
+use mmtk::util::ObjectReference;
 use mmtk::util::constants::BITS_IN_BYTE;
-use mmtk::util::copy::{CopySemantics, GCWorkerCopyContext};
-use mmtk::util::{Address, ObjectReference};
+use mmtk::util::copy::CopySemantics;
+use mmtk::util::copy::GCWorkerCopyContext;
 use mmtk::vm::*;
 
 pub struct VMObjectModel {}
@@ -12,6 +19,8 @@ impl VMObjectModel {
 }
 
 impl ObjectModel<Ruby> for VMObjectModel {
+    const GLOBAL_FIELD_UNLOG_BIT_SPEC: VMGlobalFieldUnlogBitSpec =
+        VMGlobalFieldUnlogBitSpec::side_first();
     const GLOBAL_LOG_BIT_SPEC: VMGlobalLogBitSpec = VMGlobalLogBitSpec::side_first();
 
     // We overwrite the prepended word which were used to hold object sizes.
@@ -36,11 +45,47 @@ impl ObjectModel<Ruby> for VMObjectModel {
     const NEED_VO_BITS_DURING_TRACING: bool = true;
 
     fn copy(
-        _from: ObjectReference,
-        _semantics: CopySemantics,
-        _copy_context: &mut GCWorkerCopyContext<Ruby>,
+        from: ObjectReference,
+        semantics: CopySemantics,
+        copy_context: &mut GCWorkerCopyContext<Ruby>,
     ) -> ObjectReference {
-        unimplemented!("Copying GC not currently supported")
+        let from_acc = RubyObjectAccess::from_objref(from);
+        let from_start = from_acc.obj_start();
+        let object_size = from_acc.object_size();
+        let to_start = copy_context.alloc_copy(from, object_size, MIN_OBJ_ALIGN, 0, semantics);
+        debug_assert!(!to_start.is_zero());
+        let to_payload = to_start.add(OBJREF_OFFSET);
+        unsafe {
+            copy_nonoverlapping::<u8>(from_start.to_ptr(), to_start.to_mut_ptr(), object_size);
+        }
+        let to_obj = unsafe { ObjectReference::from_raw_address_unchecked(to_payload) };
+        copy_context.post_copy(to_obj, object_size, semantics);
+        trace!("Copied object from {} to {}", from, to_obj);
+
+        (crate::binding().upcalls().move_obj_during_marking)(from, to_obj);
+
+        #[cfg(feature = "clear_old_copy")]
+        {
+            trace!(
+                "Clearing old copy {} ({}-{})",
+                from,
+                from_start,
+                from_start + object_size
+            );
+            // For debug purpose, we clear the old copy so that if the Ruby VM reads from the old
+            // copy again, it will likely result in an error.
+            unsafe { std::ptr::write_bytes::<u8>(from_start.to_mut_ptr(), 0, object_size) }
+        }
+
+        to_obj
+    }
+
+    fn try_copy(
+        from: ObjectReference,
+        semantics: CopySemantics,
+        copy_context: &mut GCWorkerCopyContext<Ruby>,
+    ) -> Option<ObjectReference> {
+        Some(Self::copy(from, semantics, copy_context))
     }
 
     fn copy_to(_from: ObjectReference, _to: ObjectReference, _region: Address) -> Address {

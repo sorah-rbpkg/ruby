@@ -203,6 +203,7 @@ struct rb_method_definition_struct {
     } body;
 
     ID original_id;
+    VALUE original_module; /* module in which the method definition is; see location_original_module() */
     uintptr_t method_serial;
     const rb_box_t *box;
 };
@@ -238,6 +239,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE[5]);
 RUBY_SYMBOL_EXPORT_END
 
+void rb_vm_coverage_record_me(const rb_method_entry_t *me);
+
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
@@ -260,11 +263,11 @@ void rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id
 void rb_method_table_insert0(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me, bool iclass_shared_mtbl);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
+void rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_t visi);
 
 VALUE rb_unnamed_parameters(int arity);
 
 void rb_vm_insert_cc_refinement(const struct rb_callcache *cc);
-void rb_vm_delete_cc_refinement(const struct rb_callcache *cc);
 
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
 void rb_clear_all_refinement_method_cache(void);

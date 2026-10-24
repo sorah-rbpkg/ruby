@@ -798,7 +798,7 @@ class TestThread < Test::Unit::TestCase
 
   def for_test_handle_interrupt_with_return
     Thread.handle_interrupt(Object => :never){
-      Thread.current.raise RuntimeError.new("have to be rescured")
+      Thread.current.raise RuntimeError.new("have to be rescued")
       return
     }
   rescue
@@ -815,66 +815,13 @@ class TestThread < Test::Unit::TestCase
     assert_nothing_raised do
       begin
         Thread.handle_interrupt(Object => :never){
-          Thread.current.raise RuntimeError.new("have to be rescured")
+          Thread.current.raise RuntimeError.new("have to be rescued")
           break
         }
       rescue
       end
       _dummy_for_check_ints=nil
     end
-  end
-
-  # Thread.handle_interrupt checks for interrupts after the block returns,
-  # before re-raising the jump (break/return/raise) that left the block.
-  # Running a signal handler there must not clobber ec->errinfo, which still
-  # holds the payload of that jump.
-  def test_handle_interrupt_with_return_and_trap_handler
-    omit "needs fork" unless Process.respond_to?(:fork)
-    omit "SIGUSR1 is not supported" unless Signal.list.key?("USR1")
-
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 120)
-    begin;
-      trap(:USR1) do
-        begin
-          raise "entering a rescue clause clears errinfo"
-        rescue
-        end
-      end
-
-      def return_from_handle_interrupt(array)
-        array.each do |i|
-          Thread.handle_interrupt(Exception => :immediate) { return i }
-        end
-        nil
-      end
-
-      # Signal from another process: a thread of this process would only get
-      # scheduled a few times a second while the main thread spins.
-      pid = Process.pid
-      killer = fork do
-        begin
-          # Process.ppid changes if the parent crashes.
-          while Process.ppid == pid
-            Process.kill(:USR1, pid)
-            sleep 0.001
-          end
-        rescue Errno::ESRCH
-        end
-        exit!(0)
-      end
-
-      returned = nil
-      begin
-        500_000.times do
-          returned = return_from_handle_interrupt([1, 2, 3])
-          break unless returned == 1
-        end
-      ensure
-        Process.kill(:KILL, killer) rescue Errno::ESRCH
-        Process.waitpid(killer)
-      end
-      assert_equal(1, returned)
-    end;
   end
 
   def test_handle_interrupt_blocking
@@ -901,10 +848,6 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_handle_interrupt_masks_sigint
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      omit "SIGINT handling differs on Windows"
-    end
-
     assert_in_out_err([], <<-INPUT, %w(outer false), [])
       waiting = Thread::Queue.new
       release = Thread::Queue.new
@@ -1062,18 +1005,15 @@ _eom
   end
 
   def test_thread_timer_and_interrupt
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     bug5757 = '[ruby-dev:44985]'
     pid = nil
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
     opt = {}
     opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
-    s, t, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, **opt) do |in_p, out_p, err_p, cpid|
+    s, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, **opt) do |in_p, out_p, err_p, cpid|
       assert IO.select([out_p], nil, nil, 10), 'subprocess not ready'
       out_p.gets
       pid = cpid
-      t0 = Time.now.to_f
       Process.kill(:SIGINT, pid)
       begin
         Timeout.timeout(10) { Process.wait(pid) }
@@ -1081,14 +1021,12 @@ _eom
         EnvUtil.terminate(pid)
         raise
       end
-      t1 = Time.now.to_f
-      [$?, t1 - t0, err_p.read]
+      [$?, err_p.read]
     end
     assert_equal(pid, s.pid, bug5757)
     assert_equal([false, true, false, Signal.list["INT"]],
                  [s.exited?, s.signaled?, s.stopped?, s.termsig],
                  "[s.exited?, s.signaled?, s.stopped?, s.termsig]")
-    assert_include(0..2, t, bug5757)
   end
 
   def test_thread_join_in_trap
@@ -1294,7 +1232,7 @@ q.pop
     assert_operator(size_default, :>=, size_0, "0 size")
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
     assert_operator(size_default, :<=, size_large, "large size")
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_blocking_mutex_unlocked_on_fork
     bug8433 = '[ruby-core:55102] [Bug #8433]'
@@ -1586,10 +1524,6 @@ q.pop
       # opt = {new_pgroup: true}
     end
 
-    if /freebsd/ =~ RUBY_PLATFORM
-      omit "[Bug #18613]"
-    end
-
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}", timeout: 120)
     {#
       n = 1000
@@ -1677,9 +1611,9 @@ q.pop
     INPUT
   end
 
-  # [Bug #21342]
   def test_unlock_locked_mutex_with_collected_fiber
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    bug21342 = '[ruby-core:122121] [Bug #21342]'
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21342)
     begin;
       5.times do
         m = Mutex.new
@@ -1696,7 +1630,7 @@ q.pop
   end
 
   def test_unlock_locked_mutex_with_collected_fiber2
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       MUTEXES = []
       5.times do
@@ -1715,7 +1649,7 @@ q.pop
   end
 
   def test_mutexes_locked_in_fiber_dont_have_aba_issue_with_new_fibers
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       mutexes = 1000.times.map do
         Mutex.new
@@ -1734,6 +1668,38 @@ q.pop
           raise "FAILED!" if mutexes.any?(&:owned?)
         end.resume
       end
+    end;
+  end
+
+  # [Bug #21836]
+  def test_mn_threads_sub_millisecond_sleep
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      1000.times { sleep 0.0001 }
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = t1 - t0
+      assert_operator elapsed, :>=, 0.1, "sub-millisecond sleeps should not return immediately"
+    end;
+  end
+
+  def test_mn_threads_killed_io_waiter_does_not_spin
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      r, w = IO.pipe
+      th = Thread.new { r.read(1) }
+      sleep 0.1 # let th park in the M:N poller
+      th.kill
+      th.join
+      w.close # r hangs up while the poller still holds a registration for it
+
+      t0 = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID)
+      sleep 0.3
+      cpu = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID) - t0
+      # A spinning timer thread never reaches its timeout branch, which under
+      # RUBY_MN_THREADS=2 is the only thing that can serve the exiting Ractor.
+      assert_operator cpu, :<, 0.15, "timer thread spins on an fd nobody waits on"
+      r.close
     end;
   end
 

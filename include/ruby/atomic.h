@@ -34,7 +34,7 @@
 # include <sys/types.h>         /* ssize_t */
 #endif
 
-#if RBIMPL_COMPILER_SINCE(MSVC, 13, 0, 0)
+#if RBIMPL_COMPILER_IS(MSVC)
 # pragma intrinsic(_InterlockedOr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
 # include <atomic.h>
@@ -458,7 +458,7 @@ rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val, int memory_order)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_fetch_and_add(ptr, val);
 
-#elif defined(_WIN32)
+#elif defined(_WIN64)
     return InterlockedExchangeAdd64(ptr, val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
@@ -466,11 +466,11 @@ rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val, int memory_order)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, val);
 
-#elif defined(__sun) && defined(HAVE_ATOMIC_H)
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
-    rbimpl_atomic_fetch_add(tmp, val, memory_order);
+    return rbimpl_atomic_fetch_add(tmp, val, memory_order);
 
 #elif defined(HAVE_STDATOMIC_H)
     return atomic_fetch_add_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
@@ -790,21 +790,8 @@ rbimpl_atomic_or(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     __sync_or_and_fetch(ptr, val);
 
-#elif RBIMPL_COMPILER_SINCE(MSVC, 13, 0, 0)
+#elif RBIMPL_COMPILER_IS(MSVC)
     _InterlockedOr(ptr, val);
-
-#elif defined(_WIN32) && defined(__GNUC__)
-    /* This was for old MinGW.  Maybe not needed any longer? */
-    __asm__(
-        "lock\n\t"
-        "orl\t%1, %0"
-        : "=m"(ptr)
-        : "Ir"(val));
-
-#elif defined(_WIN32) && defined(_M_IX86)
-    __asm mov eax, ptr;
-    __asm mov ecx, val;
-    __asm lock or [eax], ecx;
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
     atomic_or_uint(ptr, val);
@@ -816,15 +803,6 @@ rbimpl_atomic_or(volatile rb_atomic_t *ptr, rb_atomic_t val, int memory_order)
 # error Unsupported platform.
 #endif
 }
-
-/* Nobody uses this but for theoretical backwards compatibility... */
-#if RBIMPL_COMPILER_BEFORE(MSVC, 13, 0, 0)
-static inline rb_atomic_t
-rb_w32_atomic_or(volatile rb_atomic_t *var, rb_atomic_t val)
-{
-    return rbimpl_atomic_or(var, val);
-}
-#endif
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
@@ -989,6 +967,9 @@ rbimpl_atomic_load(volatile rb_atomic_t *ptr, int memory_order)
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     return __atomic_load_n(ptr, memory_order);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    /* A plain load is seq_cst on x64 because the stores here use xchg. */
+    return *ptr;
 #else
     return rbimpl_atomic_fetch_add(ptr, 0, memory_order);
 #endif
@@ -1031,15 +1012,8 @@ rbimpl_atomic_cas(volatile rb_atomic_t *ptr, rb_atomic_t oldval, rb_atomic_t new
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_val_compare_and_swap(ptr, oldval, newval);
 
-#elif RBIMPL_COMPILER_SINCE(MSVC, 13, 0, 0)
+#elif RBIMPL_COMPILER_IS(MSVC)
     return InterlockedCompareExchange(ptr, newval, oldval);
-
-#elif defined(_WIN32)
-    PVOID *pptr = RBIMPL_CAST((PVOID *)ptr);
-    PVOID pold = RBIMPL_CAST((PVOID)oldval);
-    PVOID pnew = RBIMPL_CAST((PVOID)newval);
-    PVOID pret = InterlockedCompareExchange(pptr, pnew, pold);
-    return RBIMPL_CAST((rb_atomic_t)pret);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
     return atomic_cas_uint(ptr, oldval, newval);
@@ -1053,15 +1027,6 @@ rbimpl_atomic_cas(volatile rb_atomic_t *ptr, rb_atomic_t oldval, rb_atomic_t new
 # error Unsupported platform.
 #endif
 }
-
-/* Nobody uses this but for theoretical backwards compatibility... */
-#if RBIMPL_COMPILER_BEFORE(MSVC, 13, 0, 0)
-static inline rb_atomic_t
-rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t newval)
-{
-    return rbimpl_atomic_cas(var, oldval, newval);
-}
-#endif
 
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
@@ -1150,6 +1115,8 @@ rbimpl_atomic_ptr_load(void **ptr, int memory_order)
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     return __atomic_load_n(ptr, memory_order);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    return *RBIMPL_CAST((void *volatile *)ptr);
 #else
     void *val = *ptr;
     return rbimpl_atomic_ptr_cas(ptr, val, val, memory_order, memory_order);

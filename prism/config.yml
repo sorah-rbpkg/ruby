@@ -5,7 +5,6 @@ errors:
   - ARGUMENT_AFTER_BLOCK
   - ARGUMENT_AFTER_FORWARDING_ELLIPSES
   - ARGUMENT_BARE_HASH
-  - ARGUMENT_BLOCK_FORWARDING
   - ARGUMENT_BLOCK_MULTI
   - ARGUMENT_CONFLICT_AMPERSAND
   - ARGUMENT_CONFLICT_STAR
@@ -64,6 +63,7 @@ errors:
   - DEF_ENDLESS
   - DEF_ENDLESS_PARAMETERS
   - DEF_ENDLESS_SETTER
+  - DEF_ENDLESS_DO_BLOCK
   - DEF_NAME
   - DEF_PARAMS_TERM
   - DEF_PARAMS_TERM_PAREN
@@ -97,7 +97,6 @@ errors:
   - EXPECT_EXPRESSION_AFTER_LPAREN
   - EXPECT_EXPRESSION_AFTER_OPERATOR
   - EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ
-  - EXPECT_EXPRESSION_AFTER_QUESTION
   - EXPECT_EXPRESSION_AFTER_SPLAT
   - EXPECT_EXPRESSION_AFTER_SPLAT_HASH
   - EXPECT_EXPRESSION_AFTER_STAR
@@ -247,7 +246,9 @@ errors:
   - PATTERN_TERM_PAREN
   - PIPEPIPEEQ_MULTI_ASSIGN
   - REGEXP_ENCODING_OPTION_MISMATCH
+  - REGEXP_ESCAPED_NON_ASCII_IN_UTF8
   - REGEXP_INCOMPAT_CHAR_ENCODING
+  - REGEXP_INVALID_CHAR_PROPERTY
   - REGEXP_INVALID_UNICODE_RANGE
   - REGEXP_NON_ESCAPED_MBC
   - REGEXP_PARSE_ERROR
@@ -358,6 +359,8 @@ tokens:
     comment: "when"
   - name: NEWLINE
     comment: "a newline character outside of other tokens"
+  - name: NEWLINE_TERMINATOR
+    comment: "a newline that terminates a construct where a newline is otherwise insignificant"
   - name: PARENTHESIS_RIGHT
     comment: ")"
   - name: PIPE
@@ -376,7 +379,7 @@ tokens:
   - name: AMPERSAND_EQUAL
     comment: "&="
   - name: BACKTICK
-    comment: "`"
+    comment: "` as a method name"
   - name: BACK_REFERENCE
     comment: "a back reference"
   - name: BANG
@@ -387,6 +390,10 @@ tokens:
     comment: "!~"
   - name: BRACE_LEFT
     comment: "{"
+  - name: BRACE_LEFT_ARGUMENT
+    comment: "{ for a block following a parenthesized argument"
+  - name: BRACE_LEFT_HASH
+    comment: "{ for a hash literal"
   - name: BRACKET_LEFT
     comment: "["
   - name: BRACKET_LEFT_ARRAY
@@ -493,6 +500,10 @@ tokens:
     comment: "def"
   - name: KEYWORD_DEFINED
     comment: "defined?"
+  - name: KEYWORD_DO_BLOCK
+    comment: "do keyword for a block attached to a command"
+  - name: KEYWORD_DO_LAMBDA
+    comment: "do keyword that opens the body of a lambda literal"
   - name: KEYWORD_DO_LOOP
     comment: "do keyword for a predicate in a while, until, or for loop"
   - name: KEYWORD_END_UPCASE
@@ -579,6 +590,8 @@ tokens:
     comment: "a numbered reference to a capture group in the previous regular expression match"
   - name: PARENTHESIS_LEFT
     comment: "("
+  - name: PARENTHESIS_LEFT_GROUPING
+    comment: "( scanned at the beginning of an expression"
   - name: PARENTHESIS_LEFT_PARENTHESES
     comment: "( for a parentheses node"
   - name: PERCENT
@@ -653,12 +666,12 @@ tokens:
     comment: "unary **"
   - name: WORDS_SEP
     comment: "a separator between words in a list"
+  - name: WORDS_SEP_IMPLICIT
+    comment: "a separator between words in a list that has no source characters"
+  - name: XSTRING_BEGIN
+    comment: "the beginning of an execution string"
   - name: __END__
     comment: "marker for the point in the file at which the parser should stop"
-  - name: MISSING
-    comment: "a token that was expected but not found"
-  - name: NOT_PROVIDED
-    comment: "a token that was not present but it is okay"
 flags:
   - name: ArgumentsNodeFlags
     values:
@@ -813,8 +826,6 @@ nodes:
           - GlobalVariableReadNode
           - BackReferenceReadNode
           - NumberedReferenceReadNode
-          - on error: SymbolNode # alias $a b
-          - on error: MissingNode # alias $a 42
         comment: |
           Represents the old name of the global variable that can be used before aliasing.
 
@@ -823,7 +834,7 @@ nodes:
       - name: keyword_loc
         type: location
         comment: |
-          The location of the `alias` keyword.
+          The Location of the `alias` keyword.
 
               alias $foo $bar
               ^^^^^
@@ -855,8 +866,6 @@ nodes:
         kind:
           - SymbolNode
           - InterpolatedSymbolNode
-          - on error: GlobalVariableReadNode # alias a $b
-          - on error: MissingNode # alias a 42
         comment: |
           Represents the old name of the method that will be aliased.
 
@@ -871,7 +880,7 @@ nodes:
       - name: keyword_loc
         type: location
         comment: |
-          Represents the location of the `alias` keyword.
+          Represents the Location of the `alias` keyword.
 
               alias foo bar
               ^^^^^
@@ -901,7 +910,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          Represents the alternation operator location.
+          Represents the alternation operator Location.
 
               foo => bar | baz
                          ^
@@ -937,7 +946,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `and` keyword or the `&&` operator.
+          The Location of the `and` keyword or the `&&` operator.
 
               left and right
                    ^^^
@@ -972,7 +981,7 @@ nodes:
       - name: opening_loc
         type: location?
         comment: |
-          Represents the optional source location for the opening token.
+          Represents the optional source Location for the opening token.
 
               [1,2,3]                 # "["
               %w[foo bar baz]         # "%w["
@@ -981,7 +990,7 @@ nodes:
       - name: closing_loc
         type: location?
         comment: |
-          Represents the optional source location for the closing token.
+          Represents the optional source Location for the closing token.
 
               [1,2,3]                 # "]"
               %w[foo bar baz]         # "]"
@@ -1020,7 +1029,9 @@ nodes:
                       ^  ^
       - name: rest
         type: node?
-        kind: pattern expression
+        kind:
+          - ImplicitRestNode
+          - SplatNode
         comment: |
           Represents the rest element of the array pattern.
 
@@ -1037,14 +1048,14 @@ nodes:
       - name: opening_loc
         type: location?
         comment: |
-          Represents the opening location of the array pattern.
+          Represents the opening Location of the array pattern.
 
               foo in [1, 2]
                      ^
       - name: closing_loc
         type: location?
         comment: |
-          Represents the closing location of the array pattern.
+          Represents the closing Location of the array pattern.
 
               foo in [1, 2]
                           ^
@@ -1052,19 +1063,19 @@ nodes:
       Represents an array pattern in pattern matching.
 
           foo in 1, 2
-          ^^^^^^^^^^^
+                 ^^^^
 
           foo in [1, 2]
-          ^^^^^^^^^^^^^
+                 ^^^^^^
 
           foo in *bar
-          ^^^^^^^^^^^
+                 ^^^^
 
           foo in Bar[]
-          ^^^^^^^^^^^^
+                 ^^^^^
 
           foo in Bar[1, 2, 3]
-          ^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^
   - name: AssocNode
     fields:
       - name: key
@@ -1095,7 +1106,7 @@ nodes:
       - name: operator_loc
         type: location?
         comment: |
-          The location of the `=>` operator, if present.
+          The Location of the `=>` operator, if present.
 
               { foo => bar }
                     ^^
@@ -1117,7 +1128,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `**` operator.
+          The Location of the `**` operator.
 
               { **x }
                 ^^
@@ -1146,7 +1157,7 @@ nodes:
       - name: begin_keyword_loc
         type: location?
         comment: |
-          Represents the location of the `begin` keyword.
+          Represents the Location of the `begin` keyword.
 
               begin x end
               ^^^^^
@@ -1173,7 +1184,7 @@ nodes:
           Represents the else clause within the begin block.
 
               begin x; rescue y; else z; end
-                                 ^^^^^^
+                                 ^^^^^^^^^^^
       - name: ensure_clause
         type: node?
         kind: EnsureNode
@@ -1185,7 +1196,7 @@ nodes:
       - name: end_keyword_loc
         type: location?
         comment: |
-          Represents the location of the `end` keyword.
+          Represents the Location of the `end` keyword.
 
               begin x end
                       ^^^
@@ -1206,11 +1217,11 @@ nodes:
           The expression that is being passed as a block argument. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               foo(&args)
-                  ^^^^^
+                   ^^^^
       - name: operator_loc
         type: location
         comment: |
-          Represents the location of the `&` operator.
+          Represents the Location of the `&` operator.
 
               foo(&args)
                   ^
@@ -1218,7 +1229,7 @@ nodes:
       Represents a block argument using `&`.
 
           bar(&args)
-          ^^^^^^^^^^
+              ^^^^^
   - name: BlockLocalVariableNode
     flags: ParameterFlags
     fields:
@@ -1271,17 +1282,17 @@ nodes:
       - name: opening_loc
         type: location
         comment: |
-          Represents the location of the opening `|`.
+          Represents the Location of the opening `{` or `do`.
 
               [1, 2, 3].each { |i| puts x }
-                               ^
+                             ^
       - name: closing_loc
         type: location
         comment: |
-          Represents the location of the closing `|`.
+          Represents the Location of the closing `}` or `end`.
 
               [1, 2, 3].each { |i| puts x }
-                                 ^
+                                          ^
     comment: |
       Represents a block of ruby code.
 
@@ -1301,14 +1312,14 @@ nodes:
       - name: name_loc
         type: location?
         comment: |
-          Represents the location of the block parameter name.
+          Represents the Location of the block parameter name.
 
               def a(&b)
                      ^
       - name: operator_loc
         type: location
         comment: |
-          Represents the location of the `&` operator.
+          Represents the Location of the `&` operator.
 
               def a(&b)
                     ^
@@ -1348,7 +1359,7 @@ nodes:
       - name: opening_loc
         type: location?
         comment: |
-          Represents the opening location of the block parameters.
+          Represents the opening Location of the block parameters.
 
               -> (a, b = 1; local) { }
                  ^
@@ -1359,7 +1370,7 @@ nodes:
       - name: closing_loc
         type: location?
         comment: |
-          Represents the closing location of the block parameters.
+          Represents the closing Location of the block parameters.
 
               -> (a, b = 1; local) { }
                                  ^
@@ -1389,7 +1400,7 @@ nodes:
       - name: keyword_loc
         type: location
         comment: |
-          The location of the `break` keyword.
+          The Location of the `break` keyword.
 
               break foo
               ^^^^^
@@ -1412,14 +1423,14 @@ nodes:
       - name: call_operator_loc
         type: location?
         comment: |
-          Represents the location of the call operator.
+          Represents the Location of the call operator.
 
               foo.bar &&= value
                  ^
       - name: message_loc
         type: location?
         comment: |
-          Represents the location of the message.
+          Represents the Location of the message.
 
               foo.bar &&= value
                   ^^^
@@ -1440,7 +1451,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          Represents the location of the operator.
+          Represents the Location of the operator.
 
               foo.bar &&= value
                       ^^^
@@ -1477,7 +1488,7 @@ nodes:
       - name: call_operator_loc
         type: location?
         comment: |
-          Represents the location of the call operator.
+          Represents the Location of the call operator.
 
               foo.bar
                  ^
@@ -1494,14 +1505,15 @@ nodes:
       - name: message_loc
         type: location?
         comment: |
-          Represents the location of the message.
+          Represents the Location of the message.
 
               foo.bar
                   ^^^
       - name: opening_loc
         type: location?
         comment: |
-          Represents the location of the left parenthesis.
+          Represents the Location of the left parenthesis.
+
               foo(bar)
                  ^
       - name: arguments
@@ -1515,14 +1527,14 @@ nodes:
       - name: closing_loc
         type: location?
         comment: |
-          Represents the location of the right parenthesis.
+          Represents the Location of the right parenthesis.
 
               foo(bar)
                      ^
       - name: equal_loc
         type: location?
         comment: |
-          Represents the location of the equal sign, in the case that this is an attribute write.
+          Represents the Location of the equal sign, in the case that this is an attribute write.
 
               foo.bar = value
                       ^
@@ -1573,14 +1585,14 @@ nodes:
       - name: call_operator_loc
         type: location?
         comment: |
-          Represents the location of the call operator.
+          Represents the Location of the call operator.
 
               foo.bar += value
                  ^
       - name: message_loc
         type: location?
         comment: |
-          Represents the location of the message.
+          Represents the Location of the message.
 
               foo.bar += value
                   ^^^
@@ -1608,7 +1620,7 @@ nodes:
       - name: binary_operator_loc
         type: location
         comment: |
-          Represents the location of the binary operator.
+          Represents the Location of the binary operator.
 
               foo.bar += value
                       ^^
@@ -1639,14 +1651,14 @@ nodes:
       - name: call_operator_loc
         type: location?
         comment: |
-          Represents the location of the call operator.
+          Represents the Location of the call operator.
 
               foo.bar ||= value
                  ^
       - name: message_loc
         type: location?
         comment: |
-          Represents the location of the message.
+          Represents the Location of the message.
 
               foo.bar ||= value
                   ^^^
@@ -1667,7 +1679,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          Represents the location of the operator.
+          Represents the Location of the operator.
 
               foo.bar ||= value
                       ^^^
@@ -1698,7 +1710,7 @@ nodes:
       - name: call_operator_loc
         type: location
         comment: |
-          Represents the location of the call operator.
+          Represents the Location of the call operator.
 
               foo.bar = 1
                  ^
@@ -1712,7 +1724,7 @@ nodes:
       - name: message_loc
         type: location
         comment: |
-          Represents the location of the message.
+          Represents the Location of the message.
 
               foo.bar = 1
                   ^^^
@@ -1750,7 +1762,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          Represents the location of the `=>` operator.
+          Represents the Location of the `=>` operator.
 
               foo => bar
                   ^^
@@ -1758,7 +1770,7 @@ nodes:
       Represents assigning to a local variable in pattern matching.
 
           foo => [bar => baz]
-                 ^^^^^^^^^^^^
+                  ^^^^^^^^^^
   - name: CaseMatchNode
     fields:
       - name: predicate
@@ -1768,7 +1780,7 @@ nodes:
           Represents the predicate of the case match. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               case true; in false; end
-              ^^^^
+                   ^^^^
       - name: conditions
         type: node[]
         kind: InNode
@@ -1784,18 +1796,18 @@ nodes:
           Represents the else clause of the case match.
 
               case true; in false; else; end
-                                   ^^^^
+                                   ^^^^^^^^^
       - name: case_keyword_loc
         type: location
         comment: |
-          Represents the location of the `case` keyword.
+          Represents the Location of the `case` keyword.
 
               case true; in false; end
               ^^^^
       - name: end_keyword_loc
         type: location
         comment: |
-          Represents the location of the `end` keyword.
+          Represents the Location of the `end` keyword.
 
               case true; in false; end
                                    ^^^
@@ -1831,18 +1843,18 @@ nodes:
           Represents the else clause of the case statement.
 
               case true; when false; else; end
-                                     ^^^^
+                                     ^^^^^^^^^
       - name: case_keyword_loc
         type: location
         comment: |
-          Represents the location of the `case` keyword.
+          Represents the Location of the `case` keyword.
 
               case true; when false; end
               ^^^^
       - name: end_keyword_loc
         type: location
         comment: |
-          Represents the location of the `end` keyword.
+          Represents the Location of the `end` keyword.
 
               case true; when false; end
                                      ^^^
@@ -1860,7 +1872,7 @@ nodes:
       - name: class_keyword_loc
         type: location
         comment: |
-          Represents the location of the `class` keyword.
+          Represents the Location of the `class` keyword.
 
               class Foo end
               ^^^^^
@@ -1869,11 +1881,10 @@ nodes:
         kind:
           - ConstantReadNode
           - ConstantPathNode
-          - on error: CallNode # class 0.X end
       - name: inheritance_operator_loc
         type: location?
         comment: |
-          Represents the location of the `<` operator.
+          Represents the Location of the `<` operator.
 
               class Foo < Bar
                         ^
@@ -1893,13 +1904,12 @@ nodes:
         comment: |
           Represents the body of the class.
 
-              class Foo
-                foo
-                ^^^
+              class Foo; bar; end
+                         ^^^
       - name: end_keyword_loc
         type: location
         comment: |
-          Represents the location of the `end` keyword.
+          Represents the Location of the `end` keyword.
 
               class Foo end
                         ^^^
@@ -1926,14 +1936,14 @@ nodes:
       - name: name_loc
         type: location
         comment: |
-          Represents the location of the variable name.
+          Represents the Location of the variable name.
 
               @@target &&= value
               ^^^^^^^^
       - name: operator_loc
         type: location
         comment: |
-          Represents the location of the `&&=` operator.
+          Represents the Location of the `&&=` operator.
 
               @@target &&= value
                        ^^^
@@ -2021,7 +2031,7 @@ nodes:
       - name: name_loc
         type: location
         comment: |
-          The location of the variable name.
+          The Location of the variable name.
 
               @@foo = :bar
               ^^^^^
@@ -2039,7 +2049,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `=` operator.
+          The Location of the `=` operator.
 
               @@foo = :bar
                     ^
@@ -2135,7 +2145,7 @@ nodes:
       - name: delimiter_loc
         type: location
         comment: |
-          The location of the `::` delimiter.
+          The Location of the `::` delimiter.
 
               ::Foo
               ^^
@@ -2145,7 +2155,7 @@ nodes:
       - name: name_loc
         type: location
         comment: |
-          The location of the name of the constant.
+          The Location of the name of the constant.
 
               ::Foo
                 ^^^
@@ -2221,7 +2231,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `=` operator.
+          The Location of the `=` operator.
 
               ::ABC = 123
                     ^
@@ -2281,7 +2291,7 @@ nodes:
       - name: name_loc
         type: location
         comment: |
-          The location of the constant name.
+          The Location of the constant name.
 
               FOO = 1
               ^^^
@@ -2299,7 +2309,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `=` operator.
+          The Location of the `=` operator.
 
               FOO = :bar
                   ^
@@ -2424,6 +2434,15 @@ nodes:
           ^^^^^^
             bar
           end
+  - name: ErrorRecoveryNode
+    fields:
+      - name: unexpected
+        type: node?
+        kind: Node
+        comment: |
+          The unexpected node that was found in the tree, if there was one.
+    comment: |
+      Represents a node that is either missing or unexpected and results in a syntax error.
   - name: FalseNode
     comment: |
       Represents the use of the literal `false` keyword.
@@ -2466,9 +2485,7 @@ nodes:
                                ^^^^^^
       - name: right
         type: node
-        kind:
-          - SplatNode
-          - on error: MissingNode
+        kind: SplatNode
         comment: |
           Represents the second wildcard node in the pattern.
 
@@ -2480,7 +2497,7 @@ nodes:
       - name: opening_loc
         type: location?
         comment: |
-          The location of the opening brace.
+          The Location of the opening brace.
 
               foo in [*bar, baz, *qux]
                      ^
@@ -2490,7 +2507,7 @@ nodes:
       - name: closing_loc
         type: location?
         comment: |
-          The location of the closing brace.
+          The Location of the closing brace.
 
               foo in [*bar, baz, *qux]
                                      ^
@@ -2551,9 +2568,6 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - on error: BackReferenceReadNode # for $& in a end
-          - on error: NumberedReferenceReadNode # for $1 in a end
-          - on error: MissingNode # for in 1..10; end
         comment: |
           The index expression for `for` loops.
 
@@ -2580,28 +2594,28 @@ nodes:
       - name: for_keyword_loc
         type: location
         comment: |
-          The location of the `for` keyword.
+          The Location of the `for` keyword.
 
               for i in a end
               ^^^
       - name: in_keyword_loc
         type: location
         comment: |
-          The location of the `in` keyword.
+          The Location of the `in` keyword.
 
               for i in a end
                     ^^
       - name: do_keyword_loc
         type: location?
         comment: |
-          The location of the `do` keyword, if present.
+          The Location of the `do` keyword, if present.
 
               for i in a do end
                          ^^
       - name: end_keyword_loc
         type: location
         comment: |
-          The location of the `end` keyword.
+          The Location of the `end` keyword.
 
               for i in a end
                          ^^^
@@ -2627,6 +2641,14 @@ nodes:
           end
   - name: ForwardingSuperNode
     fields:
+      - name: keyword_loc
+        type: location
+        comment: |
+          super
+          ^^^^^
+
+          super { 123 }
+          ^^^^^
       - name: block
         type: node?
         kind: BlockNode
@@ -2729,7 +2751,7 @@ nodes:
       - name: name_loc
         type: location
         comment: |
-          The location of the global variable's name.
+          The Location of the global variable's name.
 
               $foo = :bar
               ^^^^
@@ -2747,7 +2769,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `=` operator.
+          The Location of the `=` operator.
 
               $foo = :bar
                    ^
@@ -2761,7 +2783,7 @@ nodes:
       - name: opening_loc
         type: location
         comment: |
-          The location of the opening brace.
+          The Location of the opening brace.
 
               { a => b }
               ^
@@ -2781,7 +2803,7 @@ nodes:
       - name: closing_loc
         type: location
         comment: |
-          The location of the closing brace.
+          The Location of the closing brace.
 
               { a => b }
                        ^
@@ -2832,7 +2854,7 @@ nodes:
       - name: opening_loc
         type: location?
         comment: |
-          The location of the opening brace.
+          The Location of the opening brace.
 
               foo => { a: 1 }
                      ^
@@ -2842,7 +2864,7 @@ nodes:
       - name: closing_loc
         type: location?
         comment: |
-          The location of the closing brace.
+          The Location of the closing brace.
 
               foo => { a: 1 }
                             ^
@@ -2868,7 +2890,7 @@ nodes:
       - name: if_keyword_loc
         type: location?
         comment: |
-          The location of the `if` keyword if present.
+          The Location of the `if` keyword if present.
 
               bar if foo
                   ^^
@@ -2893,7 +2915,7 @@ nodes:
       - name: then_keyword_loc
         type: location?
         comment: |
-          The location of the `then` keyword (if present) or the `?` in a ternary expression, `nil` otherwise.
+          The Location of the `then` keyword (if present) or the `?` in a ternary expression, `nil` otherwise.
 
               if foo then bar end
                      ^^^^
@@ -2934,7 +2956,7 @@ nodes:
       - name: end_keyword_loc
         type: location?
         comment: |
-          The location of the `end` keyword if present, `nil` otherwise.
+          The Location of the `end` keyword if present, `nil` otherwise.
 
               if foo
                 bar
@@ -3008,9 +3030,9 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: in_loc
+      - name: in_keyword_loc
         type: location
-      - name: then_loc
+      - name: then_keyword_loc
         type: location?
     comment: |
       Represents the use of the `in` keyword in a case statement.
@@ -3219,7 +3241,7 @@ nodes:
       - name: name_loc
         type: location
         comment: |
-          The location of the variable name.
+          The Location of the variable name.
 
               @_x = 1
               ^^^
@@ -3237,7 +3259,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `=` operator.
+          The Location of the `=` operator.
 
               @x = y
                  ^
@@ -3307,10 +3329,6 @@ nodes:
           - EmbeddedStatementsNode
           - EmbeddedVariableNode
           - InterpolatedStringNode # `"a" "#{b}"`
-          - on error: XStringNode # `<<`FOO` "bar"
-          - on error: InterpolatedXStringNode
-          - on error: SymbolNode
-          - on error: InterpolatedSymbolNode
       - name: closing_loc
         type: location?
     newline: parts
@@ -3544,7 +3562,7 @@ nodes:
       - name: name_loc
         type: location
         comment: |
-          The location of the variable name.
+          The Location of the variable name.
 
               foo = :bar
               ^^^
@@ -3566,7 +3584,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `=` operator.
+          The Location of the `=` operator.
 
               x = :y
                 ^
@@ -3599,7 +3617,7 @@ nodes:
       - name: pattern
         type: node
         kind: pattern expression
-      - name: operator_loc
+      - name: keyword_loc
         type: location
     comment: |
       Represents the use of the modifier `in` operator.
@@ -3666,7 +3684,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the operator.
+          The Location of the operator.
 
               foo => bar
                   ^^
@@ -3688,9 +3706,6 @@ nodes:
 
           /(?<foo>bar)/ =~ baz
           ^^^^^^^^^^^^^^^^^^^^
-  - name: MissingNode
-    comment: |
-      Represents a node that is missing from the source and results in a syntax error.
   - name: ModuleNode
     fields:
       - name: locals
@@ -3702,7 +3717,6 @@ nodes:
         kind:
           - ConstantReadNode
           - ConstantPathNode
-          - on error: MissingNode # module Parent module end
       - name: body
         type: node?
         kind:
@@ -3732,8 +3746,6 @@ nodes:
           - IndexTargetNode
           - MultiTargetNode
           - RequiredParameterNode # def m((a,b)); end
-          - on error: BackReferenceReadNode # a, (b, $&) = z
-          - on error: NumberedReferenceReadNode # a, (b, $1) = z
         comment: |
           Represents the targets expressions before a splat node.
 
@@ -3777,8 +3789,6 @@ nodes:
           - IndexTargetNode
           - MultiTargetNode
           - RequiredParameterNode # def m((*,b)); end
-          - on error: BackReferenceReadNode # a, (*, $&) = z
-          - on error: NumberedReferenceReadNode # a, (*, $1) = z
         comment: |
           Represents the targets expressions after a splat node.
 
@@ -3787,14 +3797,14 @@ nodes:
       - name: lparen_loc
         type: location?
         comment: |
-          The location of the opening parenthesis.
+          The Location of the opening parenthesis.
 
               a, (b, c) = 1, 2, 3
                  ^
       - name: rparen_loc
         type: location?
         comment: |
-          The location of the closing parenthesis.
+          The Location of the closing parenthesis.
 
               a, (b, c) = 1, 2, 3
                       ^
@@ -3822,8 +3832,6 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - on error: BackReferenceReadNode # $&, = z
-          - on error: NumberedReferenceReadNode # $1, = z
         comment: |
           Represents the targets expressions before a splat node.
 
@@ -3866,8 +3874,6 @@ nodes:
           - CallTargetNode
           - IndexTargetNode
           - MultiTargetNode
-          - on error: BackReferenceReadNode # *, $& = z
-          - on error: NumberedReferenceReadNode # *, $1 = z
         comment: |
           Represents the targets expressions after a splat node.
 
@@ -3876,21 +3882,21 @@ nodes:
       - name: lparen_loc
         type: location?
         comment: |
-          The location of the opening parenthesis.
+          The Location of the opening parenthesis.
 
               (a, b, c) = 1, 2, 3
               ^
       - name: rparen_loc
         type: location?
         comment: |
-          The location of the closing parenthesis.
+          The Location of the closing parenthesis.
 
               (a, b, c) = 1, 2, 3
                       ^
       - name: operator_loc
         type: location
         comment: |
-          The location of the operator.
+          The Location of the operator.
 
               a, b, c = 1, 2, 3
                       ^
@@ -3925,6 +3931,18 @@ nodes:
 
           nil
           ^^^
+  - name: NoBlockParameterNode
+    fields:
+      - name: operator_loc
+        type: location
+      - name: keyword_loc
+        type: location
+    comment: |
+      Represents the use of `&nil` inside method arguments.
+
+          def a(&nil)
+                ^^^^
+          end
   - name: NoKeywordsParameterNode
     fields:
       - name: operator_loc
@@ -4024,7 +4042,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `or` keyword or the `||` operator.
+          The Location of the `or` keyword or the `||` operator.
 
               left or right
                    ^^
@@ -4053,11 +4071,6 @@ nodes:
         kind:
           - RequiredParameterNode
           - MultiTargetNode
-          # On parsing error of `f(**kwargs, ...)` or `f(**nil, ...)`, the keyword_rest value is moved here:
-          - on error: KeywordRestParameterNode
-          - on error: NoKeywordsParameterNode
-          # On parsing error of `f(..., ...)`, the first forwarding parameter is moved here:
-          - on error: ForwardingParameterNode
       - name: keywords
         type: node[]
         kind:
@@ -4071,7 +4084,9 @@ nodes:
           - NoKeywordsParameterNode
       - name: block
         type: node?
-        kind: BlockParameterNode
+        kind:
+          - BlockParameterNode
+          - NoBlockParameterNode
     comment: |
       Represents the list of parameters on a method, block, or lambda definition.
 
@@ -4107,21 +4122,21 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `^` operator
+          The Location of the `^` operator
 
               foo in ^(bar)
                      ^
       - name: lparen_loc
         type: location
         comment: |
-          The location of the opening parenthesis.
+          The Location of the opening parenthesis.
 
               foo in ^(bar)
                       ^
       - name: rparen_loc
         type: location
         comment: |
-          The location of the closing parenthesis.
+          The Location of the closing parenthesis.
 
               foo in ^(bar)
                           ^
@@ -4142,7 +4157,6 @@ nodes:
           - BackReferenceReadNode # foo in ^$&
           - NumberedReferenceReadNode # foo in ^$1
           - ItLocalVariableReadNode # proc { 1 in ^it }
-          - on error: MissingNode # foo in ^Bar
         comment: |
           The variable used in the pinned expression
 
@@ -4151,7 +4165,7 @@ nodes:
       - name: operator_loc
         type: location
         comment: |
-          The location of the `^` operator
+          The Location of the `^` operator
 
               foo in ^bar
                      ^
@@ -4225,11 +4239,11 @@ nodes:
 
               1...foo
                   ^^^
-          If neither right-hand or left-hand side was included, this will be a MissingNode.
+          If neither right-hand or left-hand side was included, this will be an ErrorRecoveryNode.
       - name: operator_loc
         type: location
         comment: |
-          The location of the `..` or `...` operator.
+          The Location of the `..` or `...` operator.
     comment: |
       Represents the use of the `..` or `...` operators.
 
@@ -4340,9 +4354,6 @@ nodes:
           - ConstantPathTargetNode
           - CallTargetNode
           - IndexTargetNode
-          - on error: BackReferenceReadNode # => begin; rescue => $&; end
-          - on error: NumberedReferenceReadNode # => begin; rescue => $1; end
-          - on error: MissingNode # begin; rescue =>; end
       - name: then_keyword_loc
         type: location?
       - name: statements
@@ -4455,7 +4466,7 @@ nodes:
     fields:
       - name: filepath
         type: string
-        comment: Represents the file path being parsed. This corresponds directly to the `filepath` option given to the various `Prism::parse*` APIs.
+        comment: Represents the file path being parsed. This corresponds directly to the `filepath` option given to the various `Prism.parse*` APIs.
     comment: |
       Represents the use of the `__FILE__` keyword.
 
@@ -4543,8 +4554,8 @@ nodes:
     fields:
       - name: opening_loc
         type: location?
-      - name: value_loc
-        type: location?
+      - name: content_loc
+        type: location
       - name: closing_loc
         type: location?
       - name: unescaped
@@ -4579,10 +4590,10 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: UnlessNode
     fields:
-      - name: keyword_loc
+      - name: unless_keyword_loc
         type: location
         comment: |
-          The location of the `unless` keyword.
+          The Location of the `unless` keyword.
 
               unless cond then bar end
               ^^^^^^
@@ -4603,7 +4614,7 @@ nodes:
       - name: then_keyword_loc
         type: location?
         comment: |
-          The location of the `then` keyword, if present.
+          The Location of the `then` keyword, if present.
 
               unless cond then bar end
                           ^^^^
@@ -4623,11 +4634,11 @@ nodes:
           The else clause of the unless expression, if present.
 
               unless cond then bar else baz end
-                                   ^^^^^^^^
+                                   ^^^^^^^^^^^^
       - name: end_keyword_loc
         type: location?
         comment: |
-          The location of the `end` keyword, if present.
+          The Location of the `end` keyword, if present.
 
               unless cond then bar end
                                    ^^^
@@ -4643,11 +4654,11 @@ nodes:
   - name: UntilNode
     flags: LoopFlags
     fields:
-      - name: keyword_loc
+      - name: until_keyword_loc
         type: location
       - name: do_keyword_loc
         type: location?
-      - name: closing_loc
+      - name: end_keyword_loc
         type: location?
       - name: predicate
         type: node
@@ -4666,7 +4677,7 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^
   - name: WhenNode
     fields:
-      - name: keyword_loc
+      - name: when_keyword_loc
         type: location
       - name: conditions
         type: node[]
@@ -4686,11 +4697,11 @@ nodes:
   - name: WhileNode
     flags: LoopFlags
     fields:
-      - name: keyword_loc
+      - name: while_keyword_loc
         type: location
       - name: do_keyword_loc
         type: location?
-      - name: closing_loc
+      - name: end_keyword_loc
         type: location?
       - name: predicate
         type: node

@@ -26,8 +26,7 @@ module Bundler
     def run
       check_for_deployment_mode!
 
-      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
-      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+      Bundler::CLI::Common.configure_cooldown(options)
 
       Bundler.definition.validate_runtime!
       current_specs = Bundler.ui.silence { Bundler.definition.resolve }
@@ -77,7 +76,7 @@ module Bundler
         gemfile_specs + dependency_specs
       end
 
-      specs.sort_by(&:name).uniq(&:name).each do |current_spec|
+      specs_for_outdated_check(specs).each do |current_spec|
         next unless gems.empty? || gems.include?(current_spec.name)
 
         active_spec = retrieve_active_spec(definition, current_spec)
@@ -91,7 +90,9 @@ module Bundler
         dependency = current_dependencies[current_spec.name]
         groups = ""
         if dependency && !options[:parseable]
-          groups = dependency.groups.join(", ")
+          groups = dependency.groups
+          groups = groups.sort if options_include_groups
+          groups = groups.join(", ")
         end
 
         outdated_gems << {
@@ -102,13 +103,11 @@ module Bundler
         }
       end
 
-      relevant_outdated_gems = if options_include_groups
-        outdated_gems.group_by {|g| g[:groups] }.sort.flat_map do |groups, gems|
-          contains_group = groups.split(", ").include?(options[:group])
-          next unless options[:groups] || contains_group
-
-          gems
-        end.compact
+      relevant_outdated_gems = if options[:groups]
+        without_groups, with_groups = outdated_gems.partition {|g| g[:groups].empty? }
+        with_groups.group_by {|g| g[:groups] }.sort.flat_map(&:last) + without_groups
+      elsif options_include_groups
+        outdated_gems.select {|g| g[:groups].split(", ").include?(options[:group]) }
       else
         outdated_gems
       end
@@ -150,6 +149,12 @@ module Bundler
       else
         "Bundle up to date!\n"
       end
+    end
+
+    def specs_for_outdated_check(specs)
+      specs.group_by(&:name).values.filter_map do |matching_specs|
+        MatchPlatform.select_best_platform_match(matching_specs, Bundler.local_platform).first || matching_specs.first
+      end.sort_by(&:name)
     end
 
     def retrieve_active_spec(definition, current_spec)
@@ -327,8 +332,6 @@ module Bundler
       end
 
       Bundler.ui.info justify(header, column_sizes)
-
-      data.sort_by! {|row| row[0] }
 
       data.each do |row|
         Bundler.ui.info justify(row, column_sizes)

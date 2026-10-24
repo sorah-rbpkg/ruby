@@ -41,9 +41,11 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
+#include "ruby/atomic.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "vm_core.h"            /* for GET_EC() */
 
 #if USE_GMP
 RBIMPL_WARNING_PUSH()
@@ -63,6 +65,21 @@ static const bool debug_integer_pack = (
     ) != 0;
 
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+/* Two-digit decimal lookup table.  Offset 2*n holds the ASCII pair for
+ * n in the range 0..99.  Used by both rb_fix2str in numeric.c and
+ * big2str_2bdigits below to emit two base-10 digits per iteration. */
+const char ruby_decimal_digit_pairs[201] =
+    "00010203040506070809"
+    "10111213141516171819"
+    "20212223242526272829"
+    "30313233343536373839"
+    "40414243444546474849"
+    "50515253545556575859"
+    "60616263646566676869"
+    "70717273747576777879"
+    "80818283848586878889"
+    "90919293949596979899";
 
 #ifndef SIZEOF_BDIGIT_DBL
 # if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
@@ -2943,11 +2960,6 @@ bary_divmod(BDIGIT *qds, size_t qn, BDIGIT *rds, size_t rn, const BDIGIT *xds, s
     }
 }
 
-
-#ifndef BIGNUM_DEBUG
-# define BIGNUM_DEBUG (0+RUBY_DEBUG)
-#endif
-
 static int
 bigzero_p(VALUE x)
 {
@@ -2964,7 +2976,7 @@ int
 rb_cmpint(VALUE val, VALUE a, VALUE b)
 {
     if (NIL_P(val)) {
-        rb_cmperr(a, b);
+        rb_cmperr_reason(a, b, "comparator returned nil");
     }
     if (FIXNUM_P(val)) {
         long l = FIX2LONG(val);
@@ -2992,7 +3004,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
 static size_t
 big_embed_capa(VALUE big)
 {
-    size_t size = rb_gc_obj_slot_size(big) - offsetof(struct RBignum, as.ary);
+    size_t size = rb_obj_shape_slot_size(big) - offsetof(struct RBignum, as.ary);
     RUBY_ASSERT(size % sizeof(BDIGIT) == 0);
     size_t capa = size / sizeof(BDIGIT);
     RUBY_ASSERT(capa <= BIGNUM_EMBED_LEN_MAX);
@@ -3036,20 +3048,21 @@ rb_big_realloc(VALUE big, size_t len)
     else {
         if (len <= embed_capa) {
             ds = RBIGNUM(big)->as.heap.digits;
+            size_t old_len = RBIGNUM(big)->as.heap.len;
             FL_SET_RAW(big, BIGNUM_EMBED_FLAG);
             BIGNUM_SET_LEN(big, len);
             (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)RBIGNUM(big)->as.ary, embed_capa * sizeof(BDIGIT));
             if (ds) {
                 MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
-                xfree(ds);
+                SIZED_FREE_N(ds, old_len);
             }
         }
         else {
             if (BIGNUM_LEN(big) == 0) {
                 RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
             }
-            else if (BIGNUM_LEN(big) < len) {
-                REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len);
+            else if (BIGNUM_LEN(big) != len) {
+                SIZED_REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len, BIGNUM_LEN(big));
             }
         }
     }
@@ -3070,17 +3083,14 @@ bignew_1(VALUE klass, size_t len, int sign)
     if (big_embeddable_p(len)) {
         size_t size = big_embed_size(len);
         RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-        NEWOBJ_OF(big, struct RBignum, klass,
-                T_BIGNUM | BIGNUM_EMBED_FLAG | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0),
-                size, 0);
+        NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | BIGNUM_EMBED_FLAG, size);
         bigv = (VALUE)big;
         BIGNUM_SET_SIGN(bigv, sign);
         BIGNUM_SET_LEN(bigv, len);
         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)big->as.ary, len * sizeof(BDIGIT));
     }
     else {
-        NEWOBJ_OF(big, struct RBignum, klass,
-                T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0), sizeof(struct RBignum), 0);
+        NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM, sizeof(struct RBignum));
         bigv = (VALUE)big;
         BIGNUM_SET_SIGN(bigv, sign);
         big->as.heap.digits = ALLOC_N(BDIGIT, len);
@@ -3432,9 +3442,6 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
         INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     if (sign == 2) {
-#if defined __GNUC__ && (__GNUC__ == 4 && __GNUC_MINOR__ == 4)
-        *nlz_bits_ret = 0;
-#endif
         return (size_t)-1;
     }
     *nlz_bits_ret = nlz_bits;
@@ -4327,7 +4334,7 @@ rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception)
 {
     VALUE ret;
     const char *s;
-    long len;
+    rb_len_t len;
     char *end;
 
     StringValue(str);
@@ -4757,7 +4764,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     if (MAX_BASE36_POWER_TABLE_ENTRIES <= power_level)
         rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
 
-    VALUE power = base36_power_cache[base - 2][power_level];
+    VALUE power = rbimpl_atomic_value_load(&base36_power_cache[base - 2][power_level], RBIMPL_ATOMIC_ACQUIRE);
     if (!power) {
         size_t numdigits;
         if (power_level == 0) {
@@ -4772,9 +4779,16 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             numdigits *= 2;
         }
         rb_obj_hide(power);
-        base36_power_cache[base - 2][power_level] = power;
-        base36_numdigits_cache[base - 2][power_level] = numdigits;
-        rb_vm_register_global_object(power);
+        base36_numdigits_cache[base - 2][power_level] = numdigits; // benign race
+        /* Ractors can race this fill */
+        VALUE old = rbimpl_atomic_value_cas(&base36_power_cache[base - 2][power_level], 0, power,
+                                            RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_ACQUIRE);
+        if (old) {
+            power = old;
+        }
+        else {
+            rb_vm_register_global_object(power);
+        }
     }
     if (numdigits_ret)
         *numdigits_ret = base36_numdigits_cache[base - 2][power_level];
@@ -4793,9 +4807,9 @@ struct big2str_struct {
 static void
 big2str_alloc(struct big2str_struct *b2s, size_t len)
 {
-    if (LONG_MAX-1 < len)
+    if (RB_LEN_MAX-1 < len)
         rb_raise(rb_eArgError, "too big number");
-    b2s->result = rb_usascii_str_new(0, (long)(len + 1)); /* plus one for sign */
+    b2s->result = rb_usascii_str_new(0, (rb_len_t)(len + 1)); /* plus one for sign */
     b2s->ptr = RSTRING_PTR(b2s->result);
     if (b2s->negative)
         *b2s->ptr++ = '-';
@@ -4818,11 +4832,34 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
             return;
         p = buf;
         j = sizeof(buf);
-        do {
-            BDIGIT_DBL idx = num % b2s->base;
-            num /= b2s->base;
-            p[--j] = ruby_digitmap[idx];
-        } while (num);
+        if (b2s->base == 10) {
+            /* Emit two decimal digits per iteration from ruby_decimal_digit_pairs.
+             * See the comment on the table in bignum.c near ruby_digitmap. */
+            while (num >= 100) {
+                BDIGIT_DBL idx = (num % 100) * 2;
+                num /= 100;
+                j -= 2;
+                p[j]     = ruby_decimal_digit_pairs[idx];
+                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
+            }
+            if (num >= 10) {
+                BDIGIT_DBL idx = num * 2;
+                j -= 2;
+                p[j]     = ruby_decimal_digit_pairs[idx];
+                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
+            }
+            else {
+                /* num is 1..9 here (0 was handled above) */
+                p[--j] = (char)('0' + num);
+            }
+        }
+        else {
+            do {
+                BDIGIT_DBL idx = num % b2s->base;
+                num /= b2s->base;
+                p[--j] = ruby_digitmap[idx];
+            } while (num);
+        }
         len = sizeof(buf) - j;
         big2str_alloc(b2s, len + taillen);
         MEMCPY(b2s->ptr, buf + j, char, len);
@@ -4830,11 +4867,39 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
     else {
         p = b2s->ptr;
         j = b2s->hbase2_numdigits;
-        do {
-            BDIGIT_DBL idx = num % b2s->base;
-            num /= b2s->base;
-            p[--j] = ruby_digitmap[idx];
-        } while (j);
+        if (b2s->base == 10) {
+            /* Non-beginning chunks must emit EXACTLY hbase2_numdigits,
+             * zero-padded on the left.  Consume num in 2-digit groups,
+             * handle the odd trailing digit, then memset remaining
+             * positions with '0'. */
+            while (num >= 100) {
+                BDIGIT_DBL idx = (num % 100) * 2;
+                num /= 100;
+                j -= 2;
+                p[j]     = ruby_decimal_digit_pairs[idx];
+                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
+            }
+            if (num >= 10) {
+                BDIGIT_DBL idx = num * 2;
+                j -= 2;
+                p[j]     = ruby_decimal_digit_pairs[idx];
+                p[j + 1] = ruby_decimal_digit_pairs[idx + 1];
+            }
+            else if (num > 0) {
+                p[--j] = (char)('0' + num);
+            }
+            if (j > 0) {
+                memset(p, '0', j);
+                j = 0;
+            }
+        }
+        else {
+            do {
+                BDIGIT_DBL idx = num % b2s->base;
+                num /= b2s->base;
+                p[--j] = ruby_digitmap[idx];
+            } while (j);
+        }
         len = b2s->hbase2_numdigits;
     }
     b2s->ptr += len;
@@ -5071,7 +5136,7 @@ big2str_generic(VALUE x, int base)
     RB_GC_GUARD(x);
 
     *b2s_data.ptr = '\0';
-    rb_str_resize(b2s_data.result, (long)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
+    rb_str_resize(b2s_data.result, (rb_len_t)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
 
     RB_GC_GUARD(x);
     return b2s_data.result;
@@ -6306,11 +6371,6 @@ rb_big_fdiv_double(VALUE x, VALUE y)
     return NUM2DBL(v);
 }
 
-VALUE
-rb_big_fdiv(VALUE x, VALUE y)
-{
-    return DBL2NUM(rb_big_fdiv_double(x, y));
-}
 
 VALUE
 rb_big_pow(VALUE x, VALUE y)
@@ -6968,6 +7028,23 @@ rb_big_bit_length(VALUE big)
 
     return rb_integer_unpack(result_bary, numberof(result_bary), sizeof(BDIGIT), 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+}
+
+VALUE
+rb_big_bit_count(VALUE big)
+{
+    if (BIGNUM_NEGATIVE_P(big))
+        rb_raise(rb_eArgError, "bit_count is undefined for negative integers");
+
+    BDIGIT *ds = BDIGITS(big);
+    size_t n = BIGNUM_LEN(big);
+    size_t count = 0;
+
+    while (n--) {
+        count += rb_popcount64((uint64_t)ds[n]);
+    }
+
+    return SIZET2NUM(count);
 }
 
 VALUE

@@ -3,8 +3,8 @@ require_relative 'fixtures/classes'
 
 context "Creating UnboundMethods" do
   specify "there is no difference between Method#unbind and Module#instance_method" do
-    UnboundMethodSpecs::Methods.instance_method(:foo).should be_kind_of(UnboundMethod)
-    UnboundMethodSpecs::Methods.new.method(:foo).unbind.should be_kind_of(UnboundMethod)
+    UnboundMethodSpecs::Methods.instance_method(:foo).should.is_a?(UnboundMethod)
+    UnboundMethodSpecs::Methods.new.method(:foo).unbind.should.is_a?(UnboundMethod)
   end
 end
 
@@ -87,7 +87,7 @@ describe "UnboundMethod#==" do
     (@child1 == @parent).should == true
   end
 
-  it "returns false if same method but extracted from two different subclasses" do
+  it "returns true if same method but extracted from two different subclasses" do
     (@child2 == @child1).should == true
     (@child1 == @child2).should == true
   end
@@ -97,7 +97,7 @@ describe "UnboundMethod#==" do
     (@includer == @includee).should == true
   end
 
-  ruby_bug "#21873", ""..."4.0" do
+  ruby_bug "#21873", ""..."4.1" do
     it "returns true if same method is present in an object through module inclusion" do
       (@mixin == @includer_base).should == true
       (@includer_base == @mixin).should == true
@@ -129,6 +129,13 @@ describe "UnboundMethod#==" do
     (@discard_1 == UnboundMethodSpecs::Methods.instance_method(:discard_1)).should == false
   end
 
+  it "returns false for two attr_reader methods" do
+    Class.new do
+      attr_reader :a, :b
+      instance_method(:a).should_not == instance_method(:b)
+    end
+  end
+
   it "considers methods through aliasing equal" do
     c = Class.new do
       class << self
@@ -140,9 +147,6 @@ describe "UnboundMethod#==" do
     c.method(:n).should == Class.instance_method(:new).bind(c)
   end
 
-  # On CRuby < 3.2, the 2 specs below pass due to method/instance_method skipping zsuper methods.
-  # We are interested in the general pattern working, i.e. the combination of method/instance_method
-  # and #== exposes the wanted behavior.
   it "considers methods through visibility change equal" do
     c = Class.new do
       class << self

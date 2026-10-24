@@ -39,7 +39,7 @@ rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port)
         message = rb_sprintf("user specified timeout for %" PRIsVALUE " port %" PRIsVALUE, host, port);
     }
 
-    rb_raise(rb_eIOTimeoutError, "%" PRIsVALUE, message);
+    rb_exc_raise(rb_exc_new_str(rb_eIOTimeoutError, message));
 }
 
 static VALUE
@@ -258,6 +258,21 @@ is_specified_ip_address(const char *hostname)
             inet_pton(AF_INET, hostname, &ipv4addr) == 1);
 }
 
+static int
+is_local_port_fixed(const char *portp)
+{
+    if (!portp) return 0;
+
+    char *endp;
+    errno = 0;
+    long port = strtol(portp, &endp, 10);
+
+    if (endp == portp) return 0;
+    if (errno == ERANGE) return 0;
+
+    return port > 0;
+}
+
 struct fast_fallback_inetsock_arg
 {
     VALUE self;
@@ -299,7 +314,7 @@ allocate_fast_fallback_getaddrinfo_shared(int family_size)
 }
 
 static void
-allocate_fast_fallback_getaddrinfo_hints(struct addrinfo *hints, int family, int remote_addrinfo_hints, int additional_flags)
+init_fast_fallback_getaddrinfo_hints(struct addrinfo *hints, int family, int remote_addrinfo_hints, int additional_flags)
 {
     MEMZERO(hints, struct addrinfo, 1);
     hints->ai_family = family;
@@ -676,7 +691,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
             struct addrinfo getaddrinfo_hints[arg->family_size];
 
-            allocate_fast_fallback_getaddrinfo_hints(
+            init_fast_fallback_getaddrinfo_hints(
                 &getaddrinfo_hints[i],
                 arg->families[i],
                 remote_addrinfo_hints,
@@ -692,18 +707,18 @@ init_fast_fallback_inetsock_internal(VALUE v)
             arg->getaddrinfo_entries[i]->test_ecode = 0;
 
             /* for testing HEv2 */
-            if (!NIL_P(test_mode_settings) && RB_TYPE_P(test_mode_settings, T_HASH)) {
+            if (RB_TYPE_P(test_mode_settings, T_HASH)) {
                 const char *family_sym = arg->families[i] == AF_INET6 ? "ipv6" : "ipv4";
 
                 VALUE test_delay_setting = rb_hash_aref(test_mode_settings, ID2SYM(rb_intern("delay")));
-                if (!NIL_P(test_delay_setting)) {
+                if (RB_TYPE_P(test_delay_setting, T_HASH)) {
                     VALUE rb_test_delay_ms = rb_hash_aref(test_delay_setting, ID2SYM(rb_intern(family_sym)));
-                    long test_delay_ms = NIL_P(rb_test_delay_ms) ? 0 : rb_test_delay_ms;
+                    long test_delay_ms = NIL_P(rb_test_delay_ms) ? 0 : NUM2LONG(rb_test_delay_ms);
                     arg->getaddrinfo_entries[i]->test_sleep_ms = test_delay_ms;
                 }
 
                 VALUE test_error_setting = rb_hash_aref(test_mode_settings, ID2SYM(rb_intern("error")));
-                if (!NIL_P(test_error_setting)) {
+                if (RB_TYPE_P(test_error_setting, T_HASH)) {
                     VALUE rb_test_ecode = rb_hash_aref(test_error_setting, ID2SYM(rb_intern(family_sym)));
                     if (!NIL_P(rb_test_ecode)) {
                         arg->getaddrinfo_entries[i]->test_ecode = NUM2INT(rb_test_ecode);
@@ -961,10 +976,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
             for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
                 int cfd = arg->connection_attempt_fds[i];
                 if (cfd < 0) continue;
-                if (cfd > n) n = cfd;
+                if (cfd + 1 > n) n = cfd + 1;
                 rb_fd_set(cfd, &arg->writefds);
             }
-            if (n > 0) n++;
             nfds = n;
         }
 
@@ -1005,6 +1019,12 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = errno;
                         close(fd);
+                        remove_connection_attempt_fd(
+                            arg->connection_attempt_fds,
+                            &arg->connection_attempt_fds_size,
+                            fd
+                        );
+                        i--;
 
                         if (any_addrinfos(&resolution_store)) continue;
                         if (in_progress_fds(arg->connection_attempt_fds_size)) break;
@@ -1039,6 +1059,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             &arg->connection_attempt_fds_size,
                             fd
                         );
+                        i--;
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = err;
                     }
@@ -1081,9 +1102,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         if (resolved_type[0] == IPV6_HOSTNAME_RESOLVED) {
                             resolution_store.v6.finished = true;
 
-                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
-                                arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY) {
-                                if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
+                                if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY &&
+                                    (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                                     last_error.type = RESOLUTION_ERROR;
                                     last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                                     syscall = "getaddrinfo(3)";
@@ -1121,11 +1142,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         } else {
                             /* Retry to read from hostname_resolution_waiter */
                         }
-                    } else if (resolved_type_size < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                    } else if (resolved_type_size == 0 || errno == EAGAIN || errno == EWOULDBLOCK) {
                         errno = 0;
                         break;
-                    } else {
-                        /* Retry to read from hostname_resolution_waiter */
+                    } else if (errno != EINTR) {
+                        rb_syserr_fail(errno, "read(2)");
                     }
 
                     if (!resolution_store.v6.finished &&
@@ -1142,11 +1163,21 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         /* For cases where write(2) fails in child threads */
         if (!resolution_store.is_all_finished) {
-            if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
+            int v6_has_syserr, v4_has_syserr;
+
+            rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+            {
+                v6_has_syserr = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr;
+                v4_has_syserr = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr;
+            }
+            rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
+
+            if (!resolution_store.v6.finished && v6_has_syserr) {
                 resolution_store.v6.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
-                    if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                    if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY &&
+                        (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                         last_error.type = RESOLUTION_ERROR;
                         last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                         syscall = "getaddrinfo(3)";
@@ -1162,7 +1193,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     user_specified_resolv_timeout_at = NULL;
                 }
             }
-            if (!resolution_store.v4.finished && arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr) {
+            if (!resolution_store.v4.finished && v4_has_syserr) {
                 resolution_store.v4.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
@@ -1243,15 +1274,15 @@ fast_fallback_inetsock_cleanup(VALUE v)
     if (arg->wait != -1) close(arg->wait);
 
     if (getaddrinfo_shared) {
-        if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
-        getaddrinfo_shared->notify = -1;
-
         int shared_need_free = 0;
         struct addrinfo *ais[arg->family_size];
         for (int i = 0; i < arg->family_size; i++) ais[i] = NULL;
 
         rb_nativethread_lock_lock(&getaddrinfo_shared->lock);
         {
+            if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
+            getaddrinfo_shared->notify = -1;
+
             for (int i = 0; i < arg->family_size; i++) {
                 struct fast_fallback_getaddrinfo_entry *getaddrinfo_entry = arg->getaddrinfo_entries[i];
 
@@ -1314,13 +1345,15 @@ rsock_init_inetsock(
 
     if (type == INET_CLIENT && FAST_FALLBACK_INIT_INETSOCK_IMPL == 1 && RTEST(fast_fallback)) {
         struct rb_addrinfo *local_res = NULL;
-        char *hostp, *portp;
-        char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
+        char *hostp, *portp, *local_portp;
+        char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV], local_pbuf[NI_MAXSERV];
         int additional_flags = 0;
+        int local_flags = 0;
         hostp = raddrinfo_host_str(remote_host, hbuf, sizeof(hbuf), &additional_flags);
         portp = raddrinfo_port_str(remote_serv, pbuf, sizeof(pbuf), &additional_flags);
+        local_portp = raddrinfo_port_str(local_serv, local_pbuf, sizeof(local_pbuf), &local_flags);
 
-        if (!is_specified_ip_address(hostp)) {
+        if (!is_specified_ip_address(hostp) && !is_local_port_fixed(local_portp)) {
             int target_families[2] = { 0, 0 };
             int resolving_family_size = 0;
 
@@ -1431,7 +1464,7 @@ rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
         id = SYM2ID(revlookup);
         if (id == id_numeric) return_norevlookup(1);
         if (id == id_hostname) return_norevlookup(0);
-        rb_raise(rb_eArgError, "invalid reverse_lookup flag: :%s", rb_id2name(id));
+        rb_raise(rb_eArgError, "invalid reverse_lookup flag: :%"PRIsVALUE, rb_sym2str(revlookup));
     }
     return 0;
 #undef return_norevlookup
@@ -1456,7 +1489,7 @@ ip_inspect(VALUE sock)
         (id = rsock_intern_family(addr.addr.sa_family)) != 0) {
         VALUE family = rb_id2str(id);
         char hbuf[1024], pbuf[1024];
-        long slen = RSTRING_LEN(str);
+        rb_len_t slen = RSTRING_LEN(str);
         const char last = (slen > 1 && RSTRING_PTR(str)[slen - 1] == '>') ?
             (--slen, '>') : 0;
         str = rb_str_subseq(str, 0, slen);

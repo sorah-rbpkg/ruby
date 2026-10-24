@@ -207,6 +207,9 @@ Init_sizeof(void)
 #ifdef HAVE_TYPE___FLOAT80
     DEFINE_SIZE(__float80);
 #endif
+#ifdef HAVE_TYPE_RB_LEN_T
+    DEFINE_SIZE(rb_len_t);
+#endif
     OBJ_FREEZE(s);
 
 #undef DEFINE

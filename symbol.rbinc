@@ -9,17 +9,17 @@
 #include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
 struct rb_execution_context_struct; /* in vm_core.h */
 
-static VALUE builtin_inline_class_12(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_13(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 12 "symbol.rb"
-return rb_sym_to_s(self);
+#line 13 "symbol.rb"
+return rb_sym2str(self);
 #line 17 "symbol.rbinc"
 }
 
-static VALUE builtin_inline_class_28(struct rb_execution_context_struct *ec, const VALUE self)
+static VALUE builtin_inline_class_25(struct rb_execution_context_struct *ec, const VALUE self)
 {
-#line 28 "symbol.rb"
-return rb_sym2str(self);
+#line 25 "symbol.rb"
+return RBOOL(RSTRING_LEN(rb_sym2str(self)) == 0);
 #line 24 "symbol.rbinc"
 }
 
@@ -27,8 +27,8 @@ void Init_builtin_symbol(void)
 {
   // table definition
   static const struct rb_builtin_function symbol_table[] = {
-    RB_BUILTIN_FUNCTION(0, _bi12, builtin_inline_class_12, 0),
-    RB_BUILTIN_FUNCTION(1, _bi28, builtin_inline_class_28, 0),
+    RB_BUILTIN_FUNCTION(0, _bi13, builtin_inline_class_13, 0),
+    RB_BUILTIN_FUNCTION(1, _bi25, builtin_inline_class_25, 0),
     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
   };
 
@@ -37,8 +37,8 @@ COMPILER_WARNING_PUSH
 #if GCC_VERSION_SINCE(5, 1, 0) || defined __clang__
 COMPILER_WARNING_ERROR(-Wincompatible-pointer-types)
 #endif
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_12);
-  if (0) rb_builtin_function_check_arity0(builtin_inline_class_28);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_13);
+  if (0) rb_builtin_function_check_arity0(builtin_inline_class_25);
 COMPILER_WARNING_POP
 
   // load

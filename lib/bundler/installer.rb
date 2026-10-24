@@ -103,7 +103,7 @@ module Bundler
 
       if options[:binstubs_cmd] && spec.executables.empty?
         options = {}
-        spec.runtime_dependencies.each do |dep|
+        Override.rewrite_dependencies(@definition.overrides, spec.name, spec.runtime_dependencies).each do |dep|
           bins = @definition.specs[dep].first.executables
           options[dep.name] = bins unless bins.empty?
         end
@@ -126,6 +126,8 @@ module Bundler
       ruby_command = ruby_command
       template_path = File.expand_path("templates/Executable", __dir__)
       template = File.read(template_path)
+
+      Bundler.mkdir_p(bin_path)
 
       exists = []
       spec.executables.each do |executable|
@@ -172,6 +174,8 @@ module Bundler
       template = File.read(File.expand_path("templates/Executable.standalone", __dir__))
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
+
+      Bundler.mkdir_p(bin_path)
 
       spec.executables.each do |executable|
         next if executable == "bundle"
@@ -228,16 +232,30 @@ module Bundler
     end
 
     def ensure_specs_are_compatible!
+      overrides = @definition.overrides
       @definition.specs.each do |spec|
-        unless spec.matches_current_ruby?
-          raise InstallError, "#{spec.full_name} requires ruby version #{spec.required_ruby_version}, " \
-            "which is incompatible with the current version, #{Gem.ruby_version}"
+        unless spec.matches_current_ruby_with_overrides?(overrides)
+          raise InstallError, incompatibility_message(spec, "requires ruby version #{spec.required_ruby_version}, " \
+            "which is incompatible with the current version, #{Gem.ruby_version}")
         end
-        unless spec.matches_current_rubygems?
-          raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
-            "which is incompatible with the current version, #{Gem.rubygems_version}"
+        unless spec.matches_current_rubygems_with_overrides?(overrides)
+          raise InstallError, incompatibility_message(spec, "requires rubygems version #{spec.required_rubygems_version}, " \
+            "which is incompatible with the current version, #{Gem.rubygems_version}")
         end
       end
+    end
+
+    # Build the error raised when a locked spec can't run on the current Ruby or
+    # RubyGems. When the offending spec is a platform-specific variant locked in
+    # frozen mode, point users at the fix: re-resolving outside frozen mode adds
+    # the Ruby (non platform-specific) fallback variant to the lockfile.
+    def incompatibility_message(spec, reason)
+      message = "#{spec.full_name} #{reason}"
+      return message unless Bundler.frozen_bundle? && spec.platform != Gem::Platform::RUBY
+
+      message + "\n\nThe lockfile only includes the #{spec.platform} variant of #{spec.name}. " \
+        "If a compatible Ruby variant is available, run `bundle install` outside of frozen/deployment mode " \
+        "to add it to the lockfile as a fallback, then commit the updated #{SharedHelpers.relative_lockfile_path}."
     end
 
     def lock

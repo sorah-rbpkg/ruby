@@ -1,0 +1,671 @@
+module TypeProf::Core
+  class FormalArguments
+    def initialize(req_positionals, opt_positionals, rest_positionals, post_positionals, req_keywords, opt_keywords, rest_keywords, block)
+      @req_positionals = req_positionals
+      @opt_positionals = opt_positionals
+      @rest_positionals = rest_positionals
+      @post_positionals = post_positionals
+      @req_keywords = req_keywords
+      @opt_keywords = opt_keywords
+      @rest_keywords = rest_keywords
+      @block = block
+    end
+
+    Empty = FormalArguments.new([], [], nil, [], [], [], nil, nil)
+
+    attr_reader :req_positionals
+    attr_reader :opt_positionals
+    attr_reader :rest_positionals
+    attr_reader :post_positionals
+    attr_reader :req_keywords
+    attr_reader :opt_keywords
+    attr_reader :rest_keywords
+    attr_reader :block
+
+    # Binds a call's actual arguments to these formals. `node` supplies the
+    # keyword names, which live on the AST node rather than in the vertices.
+    def pass_arguments(changes, genv, a_args, node)
+      if a_args.splat_flags.any?
+        # there is at least one splat actual argument
+
+        lower = @req_positionals.size + @post_positionals.size
+        upper = @rest_positionals ? nil : lower + @opt_positionals.size
+        if upper && upper < a_args.positionals.size
+          meth = changes.node.mid_code_range ? :mid_code_range : :code_range
+          err = "#{ a_args.positionals.size } for #{ lower }#{ upper ? lower < upper ? "...#{ upper }" : "" : "+" }"
+          changes.add_diagnostic(meth, "wrong number of arguments (#{ err })")
+          return false
+        end
+
+        start_rest = [a_args.splat_flags.index(true), @req_positionals.size + @opt_positionals.size].min
+        end_rest = [a_args.splat_flags.rindex(true) + 1, a_args.positionals.size - @post_positionals.size].max
+        rest_vtxs = a_args.get_rest_args(genv, changes, start_rest, end_rest)
+
+        @req_positionals.each_with_index do |f_vtx, i|
+          if i < start_rest
+            changes.add_edge(genv, a_args.positionals[i], f_vtx)
+          else
+            rest_vtxs.each do |vtx|
+              changes.add_edge(genv, vtx, f_vtx)
+            end
+          end
+        end
+        @opt_positionals.each_with_index do |f_vtx, i|
+          i += @req_positionals.size
+          if i < start_rest
+            changes.add_edge(genv, a_args.positionals[i], f_vtx)
+          else
+            rest_vtxs.each do |vtx|
+              changes.add_edge(genv, vtx, f_vtx)
+            end
+          end
+        end
+        @post_positionals.each_with_index do |f_vtx, i|
+          i += a_args.positionals.size - @post_positionals.size
+          if end_rest <= i
+            changes.add_edge(genv, a_args.positionals[i], f_vtx)
+          else
+            rest_vtxs.each do |vtx|
+              changes.add_edge(genv, vtx, f_vtx)
+            end
+          end
+        end
+
+        if @rest_positionals
+          rest_vtxs.each do |vtx|
+            @rest_positionals.each_type do |ty|
+              if ty.is_a?(Type::Instance) && ty.mod == genv.mod_ary && ty.args[0]
+                changes.add_edge(genv, vtx, ty.args[0])
+              end
+            end
+          end
+        end
+      else
+        # there is no splat actual argument
+
+        lower = @req_positionals.size + @post_positionals.size
+        upper = @rest_positionals ? nil : lower + @opt_positionals.size
+        if a_args.positionals.size < lower || (upper && upper < a_args.positionals.size)
+          meth = changes.node.mid_code_range ? :mid_code_range : :code_range
+          err = "#{ a_args.positionals.size } for #{ lower }#{ upper ? lower < upper ? "...#{ upper }" : "" : "+" }"
+          changes.add_diagnostic(meth, "wrong number of arguments (#{ err })")
+          return false
+        end
+
+        @req_positionals.each_with_index do |f_vtx, i|
+          changes.add_edge(genv, a_args.positionals[i], f_vtx)
+        end
+        @post_positionals.each_with_index do |f_vtx, i|
+          i -= @post_positionals.size
+          changes.add_edge(genv, a_args.positionals[i], f_vtx)
+        end
+        start_rest = @req_positionals.size
+        end_rest = a_args.positionals.size - @post_positionals.size
+        i = 0
+        while i < @opt_positionals.size && start_rest < end_rest
+          f_arg = @opt_positionals[i]
+          changes.add_edge(genv, a_args.positionals[start_rest], f_arg)
+          i += 1
+          start_rest += 1
+        end
+
+        if start_rest < end_rest
+          if @rest_positionals
+            (start_rest..end_rest-1).each do |i|
+              @rest_positionals.each_type do |ty|
+                if ty.is_a?(Type::Instance) && ty.mod == genv.mod_ary && ty.args[0]
+                  changes.add_edge(genv, a_args.positionals[i], ty.args[0])
+                end
+              end
+            end
+          end
+        end
+      end
+
+      if a_args.keywords
+        # TODO: support diagnostics
+        node.req_keywords.zip(@req_keywords) do |name, f_vtx|
+          changes.add_edge(genv, a_args.get_keyword_arg(genv, changes, name), f_vtx)
+        end
+
+        node.opt_keywords.zip(@opt_keywords).each do |name, f_vtx|
+          changes.add_edge(genv, a_args.get_keyword_arg(genv, changes, name), f_vtx)
+        end
+
+        if node.rest_keywords
+          named_keys = node.req_keywords + node.opt_keywords
+          a_args.keywords.each_type do |kw_ty|
+            case kw_ty
+            when Type::Record
+              rest_fields = kw_ty.fields.reject {|key, _| named_keys.include?(key) }
+              base = kw_ty.base_type(genv)
+              rest_record = Type::Record.new(genv, rest_fields, base)
+              changes.add_edge(genv, Source.new(rest_record), @rest_keywords)
+            when Type::Hash, Type::Instance
+              changes.add_edge(genv, Source.new(kw_ty), @rest_keywords)
+            end
+          end
+        end
+      end
+
+      return true
+    end
+
+  end
+
+  class ActualArguments
+    def initialize(positionals, splat_flags, keywords, block)
+      @positionals = positionals
+      @splat_flags = splat_flags
+      @keywords = keywords
+      @block = block
+    end
+
+    attr_reader :positionals, :splat_flags, :keywords, :block
+
+    def new_vertexes(genv, node)
+      positionals = @positionals.map {|arg| arg.new_vertex(genv, node) }
+      splat_flags = @splat_flags
+      keywords = @keywords ? @keywords.new_vertex(genv, node) : nil
+      block = @block ? @block.new_vertex(genv, node) : nil
+      ActualArguments.new(positionals, splat_flags, keywords, block)
+    end
+
+    def with_keywords_as_last_positional_hash
+      return self unless @keywords
+
+      ActualArguments.new(
+        @positionals + [@keywords],
+        @splat_flags + [false],
+        nil,
+        @block,
+      )
+    end
+
+    # Keywords passed to formals that take none are the last positional hash.
+    def with_keywords_normalized_for(node)
+      return self unless keywords
+      return self if node.no_keywords || node.rest_keywords
+      return self unless node.req_keywords.empty? && node.opt_keywords.empty?
+
+      with_keywords_as_last_positional_hash
+    end
+
+    def prepend_positionals(positionals, splat_flags)
+      return self if positionals.empty?
+
+      ActualArguments.new(positionals + @positionals, splat_flags + @splat_flags, @keywords, @block)
+    end
+
+    def with_keywords(keywords)
+      ActualArguments.new(@positionals, @splat_flags, keywords, @block)
+    end
+
+    def with_block(block, omittable: false)
+      ActualArguments.new(@positionals, @splat_flags, @keywords, block)
+    end
+
+    def add_box_edges(genv, box)
+      @keywords.add_edge(genv, box) if @keywords
+      @block.add_edge(genv, box) if @block
+    end
+
+    def normalize_for_method_call(_genv)
+      self
+    end
+
+    def get_rest_args(genv, changes, start_rest, end_rest)
+      vtxs = []
+
+      start_rest.upto(end_rest - 1) do |i|
+        a_arg = @positionals[i]
+        if @splat_flags[i]
+          a_arg.each_type do |ty|
+            ty = ty.base_type(genv)
+            if ty.is_a?(Type::Instance) && ty.mod == genv.mod_ary && ty.args[0]
+              vtxs << changes.new_vertex(genv, self, ty.args[0])
+            else
+              "???"
+            end
+          end
+        else
+          vtxs << a_arg
+        end
+      end
+
+      vtxs.uniq
+    end
+
+    def get_keyword_arg(genv, changes, name)
+      vtx = Vertex.new(self)
+      @keywords.each_type do |ty|
+        case ty
+        when Type::Hash
+          changes.add_edge(genv, ty.get_value(name), vtx)
+        when Type::Record
+          field_vtx = ty.get_value(name)
+          changes.add_edge(genv, field_vtx, vtx) if field_vtx
+        when Type::Instance
+          if ty.mod == genv.mod_hash
+            changes.add_edge(genv, ty.args[1], vtx)
+          end
+        else
+          # what to do?
+        end
+      end
+      vtx
+    end
+  end
+
+  class ForwardingActualArguments < ActualArguments
+    def initialize(positionals, splat_flags, keywords, block, positionals_omittable, keywords_omittable, block_omittable, activation, activation_required)
+      super(positionals, splat_flags, keywords, block)
+      @positionals_omittable = positionals_omittable
+      @keywords_omittable = keywords_omittable
+      @block_omittable = block_omittable
+      @activation = activation
+      @activation_required = activation_required
+    end
+
+    attr_reader :positionals_omittable, :keywords_omittable, :block_omittable
+
+    def new_vertexes(genv, node)
+      positionals = @positionals.map {|arg| arg.new_vertex(genv, node) }
+      splat_flags = @splat_flags
+      keywords = @keywords ? @keywords.new_vertex(genv, node) : nil
+      block = @block ? @block.new_vertex(genv, node) : nil
+      activation = @activation.new_vertex(genv, node)
+      ForwardingActualArguments.new(positionals, splat_flags, keywords, block, @positionals_omittable, @keywords_omittable, @block_omittable, activation, @activation_required)
+    end
+
+    def with_keywords_as_last_positional_hash
+      return self unless @keywords
+
+      ForwardingActualArguments.new(
+        @positionals + [@keywords],
+        @splat_flags + [false],
+        nil,
+        @block,
+        @positionals_omittable + [false],
+        false,
+        @block_omittable,
+        @activation,
+        @activation_required,
+      )
+    end
+
+    def prepend_positionals(positionals, splat_flags)
+      return self if positionals.empty?
+
+      ForwardingActualArguments.new(
+        positionals + @positionals,
+        splat_flags + @splat_flags,
+        @keywords,
+        @block,
+        ::Array.new(positionals.size, false) + @positionals_omittable,
+        @keywords_omittable,
+        @block_omittable,
+        @activation,
+        @activation_required,
+      )
+    end
+
+    def with_keywords(keywords, keywords_omittable: false)
+      ForwardingActualArguments.new(
+        @positionals,
+        @splat_flags,
+        keywords,
+        @block,
+        @positionals_omittable,
+        keywords_omittable,
+        @block_omittable,
+        @activation,
+        @activation_required,
+      )
+    end
+
+    def with_block(block, omittable: false)
+      ForwardingActualArguments.new(
+        @positionals,
+        @splat_flags,
+        @keywords,
+        block,
+        @positionals_omittable,
+        @keywords_omittable,
+        omittable,
+        @activation,
+        @activation_required,
+      )
+    end
+
+    def add_box_edges(genv, box)
+      @activation.add_edge(genv, box)
+      super
+    end
+
+    def normalize_for_method_call(genv)
+      if @activation.types.empty?
+        return nil if @activation_required
+        return self
+      end
+
+      positionals = []
+      splat_flags = []
+
+      @positionals.each_with_index do |arg, i|
+        unless @positionals_omittable[i] && @splat_flags[i] && empty_omittable_splat_argument?(genv, arg)
+          positionals << arg
+          splat_flags << @splat_flags[i]
+        end
+      end
+
+      keywords = @keywords
+      keywords = nil if @keywords_omittable && keywords && keywords.types.empty?
+
+      block = @block
+      block = nil if @block_omittable && block && block.types.empty?
+
+      ActualArguments.new(positionals, splat_flags, keywords, block)
+    end
+
+    private
+
+    def empty_omittable_splat_argument?(genv, arg)
+      empty = true
+      arg.each_type do |ty|
+        ty = ty.base_type(genv)
+        unless ty.is_a?(Type::Instance) && ty.mod == genv.mod_ary && ty.args[0] && ty.args[0].types.empty?
+          empty = false
+          break
+        end
+      end
+      empty
+    end
+  end
+
+  class ForwardingArguments
+    def initialize(req_positionals, opt_positionals, rest_positionals, post_positionals, req_keyword_pairs, opt_keyword_pairs, rest_keywords, block, activation, param_names)
+      @req_positionals = req_positionals
+      @opt_positionals = opt_positionals
+      @rest_positionals = rest_positionals
+      @post_positionals = post_positionals
+      @req_keyword_pairs = req_keyword_pairs
+      @opt_keyword_pairs = opt_keyword_pairs
+      @rest_keywords = rest_keywords
+      @block = block
+      @activation = activation
+      @param_names = param_names
+    end
+
+    # The arguments that `...` forwards: only the ones the caller passed to it.
+    # The parameters before `...` (`def foo(a, b = 1, ...)`) are not forwarded,
+    # and none can follow it.
+    def to_actual_arguments(genv, changes, node)
+      positionals = []
+      splat_flags = []
+      positionals_omittable = []
+
+      if @rest_positionals
+        positionals << Source.new(genv.gen_ary_type(@rest_positionals))
+        splat_flags << true
+        positionals_omittable << true
+      end
+
+      # `...` cannot follow keyword parameters, so only the rest keywords remain
+      ForwardingActualArguments.new(positionals, splat_flags, @rest_keywords, @block, positionals_omittable, !!@rest_keywords, true, @activation, true)
+    end
+
+    # A bare `super` passes the current values of the parameters, which
+    # include the defaults of omitted ones and any reassignment.
+    def to_implicit_super_arguments(genv, changes, node, lenv)
+      positionals = []
+      splat_flags = []
+      positionals_omittable = []
+
+      # A destructured parameter has no name, so it is passed as it was given
+      @param_names[:req_positionals].zip(@req_positionals) do |name, vtx|
+        positionals << (name ? lenv.get_method_var(name) : vtx)
+        splat_flags << false
+        positionals_omittable << false
+      end
+
+      @param_names[:opt_positionals].each do |name|
+        positionals << lenv.get_method_var(name)
+        splat_flags << false
+        positionals_omittable << false
+      end
+
+      if @param_names[:rest_positionals]
+        positionals << lenv.get_method_var(@param_names[:rest_positionals])
+        splat_flags << true
+        positionals_omittable << true
+      elsif @rest_positionals
+        positionals << Source.new(genv.gen_ary_type(@rest_positionals))
+        splat_flags << true
+        positionals_omittable << true
+      end
+
+      @param_names[:post_positionals].zip(@post_positionals) do |name, vtx|
+        positionals << (name ? lenv.get_method_var(name) : vtx)
+        splat_flags << false
+        positionals_omittable << false
+      end
+
+      req_keyword_pairs = @param_names[:req_keywords].map {|name| [name, lenv.get_method_var(name)] }
+      opt_keyword_pairs = @param_names[:opt_keywords].map {|name| [name, lenv.get_method_var(name)] }
+      rest_keywords = @param_names[:rest_keywords] ? lenv.get_method_var(@param_names[:rest_keywords]) : @rest_keywords
+      keywords, keywords_omittable = build_keyword_args(genv, changes, node, req_keyword_pairs, opt_keyword_pairs, rest_keywords)
+      ForwardingActualArguments.new(positionals, splat_flags, keywords, @block, positionals_omittable, keywords_omittable, true, @activation, false)
+    end
+
+    def accept_actual_arguments(genv, changes, a_args)
+      changes.add_edge(genv, Source.new(genv.true_type), @activation)
+
+      if a_args.splat_flags.any?
+        start_rest = [a_args.splat_flags.index(true), @req_positionals.size + @opt_positionals.size].min
+        end_rest = [a_args.splat_flags.rindex(true) + 1, a_args.positionals.size - @post_positionals.size].max
+        rest_vtxs = a_args.get_rest_args(genv, changes, start_rest, end_rest)
+
+        @req_positionals.each_with_index do |f_vtx, i|
+          if i < start_rest
+            changes.add_edge(genv, a_args.positionals[i], f_vtx)
+          else
+            rest_vtxs.each do |vtx|
+              changes.add_edge(genv, vtx, f_vtx)
+            end
+          end
+        end
+
+        @opt_positionals.each_with_index do |elem_vtx, i|
+          i += @req_positionals.size
+          if i < start_rest
+            changes.add_edge(genv, a_args.positionals[i], elem_vtx)
+          else
+            rest_vtxs.each do |vtx|
+              changes.add_edge(genv, vtx, elem_vtx)
+            end
+          end
+        end
+
+        @post_positionals.each_with_index do |f_vtx, i|
+          i += a_args.positionals.size - @post_positionals.size
+          if end_rest <= i
+            changes.add_edge(genv, a_args.positionals[i], f_vtx)
+          else
+            rest_vtxs.each do |vtx|
+              changes.add_edge(genv, vtx, f_vtx)
+            end
+          end
+        end
+
+        if @rest_positionals
+          rest_vtxs.each do |vtx|
+            changes.add_edge(genv, vtx, @rest_positionals)
+          end
+        end
+
+      else
+        @req_positionals.each_with_index do |f_vtx, i|
+          changes.add_edge(genv, a_args.positionals[i], f_vtx)
+        end
+
+        @post_positionals.each_with_index do |f_vtx, i|
+          i -= @post_positionals.size
+          changes.add_edge(genv, a_args.positionals[i], f_vtx)
+        end
+
+        start_rest = @req_positionals.size
+        end_rest = a_args.positionals.size - @post_positionals.size
+        i = 0
+        while i < @opt_positionals.size && start_rest < end_rest
+          changes.add_edge(genv, a_args.positionals[start_rest], @opt_positionals[i])
+          i += 1
+          start_rest += 1
+        end
+
+        if @rest_positionals
+          start_rest.upto(end_rest - 1) do |i|
+            changes.add_edge(genv, a_args.positionals[i], @rest_positionals)
+          end
+        end
+      end
+
+      changes.add_edge(genv, a_args.block, @block) if @block && a_args.block
+
+      return unless a_args.keywords
+
+      @req_keyword_pairs.each do |name, f_vtx|
+        changes.add_edge(genv, a_args.get_keyword_arg(genv, changes, name), f_vtx)
+      end
+
+      @opt_keyword_pairs.each do |name, f_vtx|
+        changes.add_edge(genv, a_args.get_keyword_arg(genv, changes, name), f_vtx)
+      end
+
+      if @rest_keywords
+        named_keys = @req_keyword_pairs.map(&:first) + @opt_keyword_pairs.map(&:first)
+        a_args.keywords.each_type do |kw_ty|
+          case kw_ty
+          when Type::Record
+            rest_fields = kw_ty.fields.reject {|key, _| named_keys.include?(key) }
+            base = kw_ty.base_type(genv)
+            rest_record = Type::Record.new(genv, rest_fields, base)
+            changes.add_edge(genv, Source.new(rest_record), @rest_keywords)
+          when Type::Hash, Type::Instance
+            changes.add_edge(genv, Source.new(kw_ty), @rest_keywords)
+          end
+        end
+      end
+    end
+
+    private
+
+    def build_keyword_args(genv, changes, node, req_keyword_pairs, opt_keyword_pairs, rest_keywords)
+      if req_keyword_pairs.empty? && opt_keyword_pairs.empty?
+        return rest_keywords, !!rest_keywords
+      end
+
+      unified_key = Vertex.new(node)
+      unified_val = Vertex.new(node)
+      literal_pairs = {}
+
+      req_keyword_pairs.each do |name, vtx|
+        changes.add_edge(genv, Source.new(Type::Symbol.new(genv, name)), unified_key)
+        changes.add_edge(genv, vtx, unified_val)
+        literal_pairs[name] = vtx
+      end
+
+      opt_keyword_pairs.each do |name, vtx|
+        changes.add_edge(genv, Source.new(Type::Symbol.new(genv, name)), unified_key)
+        changes.add_edge(genv, vtx, unified_val)
+        literal_pairs[name] = vtx
+      end
+
+      base_hash_type = genv.gen_hash_type(unified_key, unified_val)
+      changes.add_hash_splat_box(genv, rest_keywords, unified_key, unified_val) if rest_keywords
+
+      if literal_pairs.empty?
+        [Source.new(base_hash_type), false]
+      elsif rest_keywords
+        fallback = Source.new(Type::Record.new(genv, literal_pairs, base_hash_type))
+        [changes.add_keyword_merge_box(genv, rest_keywords, literal_pairs, fallback).ret, false]
+      else
+        [Source.new(Type::Record.new(genv, literal_pairs, base_hash_type)), false]
+      end
+    end
+  end
+
+  class Block
+    #: (AST::BlockNode, Vertex, Array[Vertex], Array[EscapeBox], FormalArguments?) -> void
+    def initialize(node, f_ary_arg, f_args, next_boxes, formals = nil)
+      @node = node
+      @f_ary_arg = f_ary_arg
+      @f_args = f_args
+      @next_boxes = next_boxes
+      # Set when the body is entered like a method rather than yielded to, which
+      # is to say for a lambda: the full formals then bind the call's arguments.
+      @formals = formals
+    end
+
+    attr_reader :node, :f_args, :next_boxes
+
+    # The arguments of a call that enters this body directly, as Proc#call does.
+    def pass_arguments(genv, changes, a_args)
+      if @formals
+        a_args = a_args.with_keywords_normalized_for(@node)
+        @formals.pass_arguments(changes, genv, a_args, @node)
+        changes.add_edge(genv, a_args.block, @formals.block) if @formals.block && a_args.block
+      else
+        accept_args(genv, changes, a_args.positionals)
+      end
+    end
+
+    def accept_args(genv, changes, caller_positionals)
+      if caller_positionals.size == 1 && @f_args.size >= 2 && !@formals
+        # A block deconstructs a sole array argument over its parameters; a
+        # lambda takes it as the one argument it is.
+        changes.add_edge(genv, caller_positionals[0], @f_ary_arg)
+      else
+        caller_positionals.zip(@f_args) do |a_arg, f_arg|
+          changes.add_edge(genv, a_arg, f_arg) if f_arg
+        end
+      end
+    end
+
+    def add_ret(genv, changes, ret)
+      @next_boxes.each do |box|
+        changes.add_edge(genv, box.a_ret, ret)
+      end
+    end
+  end
+
+  class RecordBlock
+    def pass_arguments(genv, changes, a_args)
+      accept_args(genv, changes, a_args.positionals)
+    end
+
+    def initialize(node)
+      @node = node
+      @used = false
+      @f_args = []
+      @ret = Vertex.new(node)
+    end
+
+    def get_f_arg(i)
+      @f_args[i] ||= Vertex.new(@node)
+    end
+
+    attr_reader :node, :f_args, :ret, :used
+
+    def accept_args(genv, changes, caller_positionals)
+      @used = true
+      caller_positionals.each_with_index do |a_arg, i|
+        changes.add_edge(genv, a_arg.new_vertex(genv, @node), get_f_arg(i))
+      end
+    end
+
+    def add_ret(genv, changes, ret)
+      changes.add_edge(genv, ret, @ret)
+    end
+  end
+end

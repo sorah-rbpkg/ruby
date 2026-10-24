@@ -1,0 +1,384 @@
+module TypeProf::Core
+  class AST
+    def self.create_part_node(raw_part, lenv)
+      case raw_part.type
+      when :string_node
+        AST.create_node(raw_part, lenv)
+      when :embedded_statements_node
+        raw_part.statements ? AST.create_node(raw_part.statements, lenv) : DummyNilNode.new(lenv.code_range_from_node(raw_part), lenv)
+      when :embedded_variable_node
+        AST.create_node(raw_part.variable, lenv)
+      else
+        raise "unknown symbol part: #{ raw_part.type }"
+      end
+    end
+
+    class SelfNode < Node
+      def install0(genv)
+        @lenv.get_var(:"*self")
+      end
+    end
+
+    class LiteralNode < Node
+      def initialize(raw_node, lenv, lit)
+        super(raw_node, lenv)
+        @lit = lit
+      end
+
+      attr_reader :lit
+
+      def attrs = { lit: }
+
+      def install0(genv)
+        raise "not supported yet: #{ @lit.inspect }"
+      end
+    end
+
+    class NilNode < LiteralNode
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv, nil)
+      end
+
+      def install0(genv) = Source.new(genv.nil_type)
+    end
+
+    class TrueNode < LiteralNode
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv, true)
+      end
+
+      def install0(genv) = Source.new(genv.true_type)
+    end
+
+    class FalseNode < LiteralNode
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv, false)
+      end
+
+      def install0(genv) = Source.new(genv.false_type)
+    end
+
+    class IntegerNode < LiteralNode
+      def initialize(raw_node, lenv, lit = raw_node.slice)
+        super(raw_node, lenv, Integer(lit))
+      end
+
+      def install0(genv) = Source.new(genv.int_type)
+    end
+
+    class FloatNode < LiteralNode
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv, Float(raw_node.slice))
+      end
+
+      def install0(genv) = Source.new(genv.float_type)
+    end
+
+    class RationalNode < LiteralNode
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv, raw_node.slice.to_r)
+      end
+
+      def install0(genv) = Source.new(genv.rational_type)
+    end
+
+    class ComplexNode < LiteralNode
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv, raw_node.slice.to_c)
+      end
+
+      def install0(genv) = Source.new(genv.complex_type)
+    end
+
+    class SymbolNode < LiteralNode
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv, raw_node.value.to_sym)
+      end
+
+      def install0(genv) = Source.new(Type::Symbol.new(genv, @lit))
+    end
+
+    class InterpolatedSymbolNode < Node
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv)
+        @parts = raw_node.parts.map do |raw_part|
+          AST.create_part_node(raw_part, lenv)
+        end
+      end
+
+      attr_reader :parts
+
+      def subnodes = { parts: }
+
+      def install0(genv)
+        @parts.each do |subnode|
+          subnode.install(genv)
+        end
+        Source.new(genv.symbol_type)
+      end
+    end
+
+    class StringNode < LiteralNode
+      def initialize(raw_node, lenv, content)
+        super(raw_node, lenv, content)
+      end
+
+      def install0(genv) = Source.new(genv.str_type)
+    end
+
+    class InterpolatedStringNode < Node
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv)
+        @parts = []
+
+        queue = raw_node.parts.dup
+
+        until queue.empty?
+          raw_part = queue.shift
+
+          if raw_part.type == :interpolated_string_node
+            queue.unshift(*raw_part.parts)
+          else
+            @parts << AST.create_part_node(raw_part, lenv)
+          end
+        end
+      end
+
+      attr_reader :parts
+
+      def subnodes = { parts: }
+
+      def install0(genv)
+        @parts.each do |subnode|
+          subnode.install(genv)
+        end
+        Source.new(genv.str_type)
+      end
+    end
+
+    class RegexpNode < Node
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv)
+      end
+
+      def install0(genv) = Source.new(genv.regexp_type)
+    end
+
+    class InterpolatedRegexpNode < Node
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv)
+        @parts = raw_node.parts.map do |raw_part|
+          AST.create_part_node(raw_part, lenv)
+        end
+      end
+
+      attr_reader :parts
+
+      def subnodes = { parts: }
+
+      def install0(genv)
+        @parts.each do |subnode|
+          subnode.install(genv)
+        end
+        Source.new(genv.regexp_type)
+      end
+    end
+
+    class MatchLastLineNode < Node
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv)
+      end
+
+      def install0(genv) = Source.new(genv.true_type, genv.false_type)
+    end
+
+    class InterpolatedMatchLastLineNode < Node
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv)
+        @parts = raw_node.parts.map do |raw_part|
+          AST.create_part_node(raw_part, lenv)
+        end
+      end
+
+      attr_reader :parts
+
+      def subnodes = { parts: }
+
+      def install0(genv)
+        @parts.each do |subnode|
+          subnode.install(genv)
+        end
+        Source.new(genv.true_type, genv.false_type)
+      end
+    end
+
+    class RangeNode < Node
+      def initialize(raw_node, lenv)
+        super(raw_node, lenv)
+        @begin = raw_node.left ? AST.create_node(raw_node.left, lenv) : DummyNilNode.new(raw_node, lenv)
+        @end = raw_node.right ? AST.create_node(raw_node.right, lenv) : DummyNilNode.new(raw_node, lenv)
+      end
+
+      attr_reader :begin, :end
+
+      def subnodes = { begin:, end: }
+
+      def install0(genv)
+        elem = Vertex.new(self)
+        @changes.add_edge(genv, @begin.install(genv), elem)
+        @changes.add_edge(genv, @end.install(genv), elem)
+        Source.new(genv.gen_range_type(elem))
+      end
+    end
+
+    class ArrayNode < Node
+      def initialize(raw_node, lenv, elems = raw_node.elements)
+        super(raw_node, lenv)
+        @elems = elems.map {|n| AST.create_node(n, lenv) }
+        @splat = @elems.any? {|e| e.is_a?(SplatNode) }
+      end
+
+      attr_reader :elems, :splat
+
+      def subnodes = { elems: }
+      def attrs = { splat: }
+
+      def install0(genv)
+        elems = @elems.map {|e| e.install(genv).new_vertex(genv, self) }
+        unified_elem = Vertex.new(self)
+        elems.each {|vtx| @changes.add_edge(genv, vtx, unified_elem) }
+        base_ty = genv.gen_ary_type(unified_elem)
+        if @splat
+          Source.new(base_ty)
+        else
+          Source.new(Type::Array.new(genv, elems, base_ty))
+        end
+      end
+    end
+
+    class HashNode < Node
+      def initialize(raw_node, lenv, keywords)
+        super(raw_node, lenv)
+        @keys = []
+        @vals = []
+        @keywords = keywords
+        @splat = false
+
+        raw_node.elements.each do |raw_elem|
+          # TODO: Support :assoc_splat_node
+          case raw_elem.type
+          when :assoc_node
+            @keys << AST.create_node(raw_elem.key, lenv)
+            @vals << AST.create_node(raw_elem.value, lenv)
+          when :assoc_splat_node
+            @keys << nil
+            if raw_elem.value
+              @vals << AST.create_node(raw_elem.value, lenv)
+            else
+              @vals << nil
+            end
+            @splat = true
+          else
+            raise "unknown hash elem: #{ raw_elem.type }"
+          end
+        end
+      end
+
+      attr_reader :keys, :vals, :splat, :keywords
+
+      def subnodes = { keys:, vals: }
+      def attrs = { splat:, keywords: }
+
+      def install0(genv)
+        unified_key = Vertex.new(self)
+        unified_val = Vertex.new(self)
+        literal_pairs = {}
+        all_symbol_keys = true
+        @keys.zip(@vals) do |key, val|
+          if key
+            k = key.install(genv).new_vertex(genv, self)
+            v = val.install(genv).new_vertex(genv, self)
+            @changes.add_edge(genv, k, unified_key)
+            @changes.add_edge(genv, v, unified_val)
+            if key.is_a?(SymbolNode)
+              literal_pairs[key.lit] = v
+            else
+              all_symbol_keys = false
+            end
+          else
+            if val.nil?
+              h = @lenv.get_var(:"**anonymous_keyword")
+            else
+              h = val.install(genv)
+            end
+            # TODO: do we want to call to_hash on h?
+            @changes.add_hash_splat_box(genv, h, unified_key, unified_val)
+          end
+        end
+        base_hash_type = genv.gen_hash_type(unified_key, unified_val)
+        if @splat
+          Source.new(base_hash_type)
+        elsif all_symbol_keys
+          Source.new(Type::Record.new(genv, literal_pairs, base_hash_type))
+        else
+          Source.new(Type::Hash.new(genv, literal_pairs, base_hash_type))
+        end
+      end
+    end
+
+    # Prism::LambdaNode has the same locals/parameters/body as Prism::BlockNode.
+    # A lambda literal is a block without a call: `->` never dispatches to a
+    # user-defined `lambda` method.
+    class LambdaNode < BlockNode
+      def lambda? = true
+
+      # A diagnostic on the `===` call below, such as wrong arity, points at the
+      # whole lambda.
+      def mid_code_range = nil
+
+      # `in ->(x) { ... }` matches by calling the lambda with the subject.
+      def install_pattern0(genv, subject)
+        recv = install0(genv)
+        a_args = ActualArguments.new([subject], [false], nil, nil)
+        @changes.add_method_call_box(genv, recv, :===, a_args, false)
+        recv
+      end
+
+      # A lambda is entered like a method, so every parameter kind binds, not just
+      # the positionals a block is handed.
+      def build_formals(genv, blenv, f_args)
+        # f_args is the block-shaped list, required then optional; numbered and `it`
+        # parameters put names there that @params does not carry.
+        req_count = f_args.size - @opt_positional_defaults.size
+        rest = new_formal(blenv, @params[:rest_positionals])
+        post = @params[:post_positionals].map {|v| blenv.new_var(v, self) }
+        req_keywords = self.req_keywords.map {|v| blenv.new_var(v, self) }
+        opt_keywords = self.opt_keywords.map {|v| blenv.new_var(v, self) }
+        rest_keywords = new_formal(blenv, self.rest_keywords)
+        block = new_formal(blenv, @params[:block])
+
+        if rest
+          @changes.add_edge(genv, Source.new(genv.gen_ary_type(Vertex.new(self))), rest)
+        end
+        # Only the anonymous `**` needs seeding, as it does for a method: a named
+        # one takes its type from what the call passes.
+        if self.rest_keywords == :"**anonymous_keyword"
+          @changes.add_edge(genv, Source.new(genv.gen_hash_type(Vertex.new(self), Vertex.new(self))), rest_keywords)
+        end
+        install_multi_targets(genv, @params[:post_multi_targets], post, blenv)
+        opt_keyword_defaults.zip(opt_keywords) do |expr, vtx|
+          @changes.add_edge(genv, expr.install(genv), vtx)
+        end
+
+        FormalArguments.new(
+          f_args[0, req_count], f_args[req_count..], rest, post,
+          req_keywords, opt_keywords, rest_keywords, block,
+        )
+      end
+
+      private
+
+      def new_formal(blenv, name) = name ? blenv.new_var(name, self) : nil
+    end
+  end
+end

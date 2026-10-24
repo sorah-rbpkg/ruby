@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class RegexpTest < TestCase
     ############################################################################
     # These tests test the actual use case of extracting named capture groups
@@ -227,30 +227,49 @@ module Prism
 
     def test_last_encoding_option_wins
       regex = "/foo/nu"
-      option = Prism.parse_statement(regex).options
+      option = Ruby::Prism.parse_statement(regex).options
 
       assert_equal Regexp::FIXEDENCODING, option
 
       regex = "/foo/un"
-      option = Prism.parse_statement(regex).options
+      option = Ruby::Prism.parse_statement(regex).options
 
       assert_equal Regexp::NOENCODING, option
     end
 
+    # A `%r` regexp can use a newline (LF or CRLF) as its delimiter. The closing
+    # delimiter terminates the regexp and must not be misread as an option -- in
+    # particular the trailing `\n` of a `\r\n` delimiter.
+    def test_newline_delimiter
+      assert_newline_regexp("%r\nfoo\n", "foo", 0)
+      assert_newline_regexp("%r\r\nfoo\r\n", "foo", 0)
+      assert_newline_regexp("%r\r\nfoo\r\ni", "foo", Regexp::IGNORECASE)
+      assert_newline_regexp("%r\r\nfoo\r\nmix", "foo", Regexp::IGNORECASE | Regexp::MULTILINE | Regexp::EXTENDED)
+      assert_newline_regexp("%r\r\n\r\n", "", 0)
+    end
+
     private
 
+    def assert_newline_regexp(source, content, options)
+      node = Ruby::Prism.parse_statement(source)
+
+      assert_kind_of RegularExpressionNode, node
+      assert_equal content, node.content
+      assert_equal options, node.options
+    end
+
     def assert_valid_regexp(source)
-      assert Prism.parse_success?("/#{source}/ =~ \"\"")
+      assert Ruby::Prism.parse_success?("/#{source}/ =~ \"\"")
     end
 
     def named_captures(source)
-      Prism.parse("/#{source}/ =~ \"\"").value.locals
+      Ruby::Prism.parse("/#{source}/ =~ \"\"").value.locals
     end
 
     def options(flags)
       options =
         ["/foo/#{flags}", "/foo\#{1}/#{flags}"].map do |source|
-          Prism.parse_statement(source).options
+          Ruby::Prism.parse_statement(source).options
         end
 
       # Check that we get the same set of options from both regular expressions

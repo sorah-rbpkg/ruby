@@ -38,7 +38,35 @@ require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/windows_tag_group"
+require_relative "support/shards"
+
+begin
+  raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
+
+  require "simplecov"
+
+  SimpleCov.start do
+    command_name "bundler:#{Process.pid}"
+    root File.expand_path("..", __dir__)
+    coverage_dir File.expand_path("../coverage", __dir__)
+
+    skip "/spec/"
+    skip "/test/"
+    skip "/lib/rubygems/"
+    skip "/lib/bundler/vendor/"
+    skip "/tool/"
+    skip "/tmp/"
+    skip ".gemspec"
+  end
+
+  SimpleCov.print_error_status = false
+
+  # Only merge this process result into the resultset. Parallel workers share a
+  # coverage directory, so the report is formatted once by `rake coverage:report`.
+  SimpleCov.at_exit { SimpleCov.result }
+rescue LoadError
+  # SimpleCov is not installed
+end
 
 $debug = false
 
@@ -57,7 +85,7 @@ RSpec.configure do |config|
   config.include Spec::Path
   config.include Spec::Platforms
   config.include Spec::Permissions
-  config.include Spec::WindowsTagGroup
+  config.include Spec::Shards
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -105,7 +133,13 @@ RSpec.configure do |config|
     ENV["BUNDLE_SILENCE_ROOT_WARNING"] = nil
     ENV["RUBYGEMS_GEMDEPS"] = nil
     ENV["XDG_CONFIG_HOME"] = nil
+    ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
+    # Left set, these point the suite at the real OS credential store, where
+    # specs that configure a host credential would write into the developer's
+    # own keychain.
+    ENV["BUNDLE_CREDENTIAL_STORE"] = nil
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
 
     # Prevent tests from modifying the user's global git config.
     # GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM are available since Git 2.32.
@@ -161,7 +195,7 @@ RSpec.configure do |config|
     reset!
   end
 
-  Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.each do |tag, file_paths|
+  Spec::Shards::EXAMPLE_MAPPINGS.each do |tag, file_paths|
     file_pattern = Regexp.union(file_paths.map {|path| Regexp.new(Regexp.escape(path) + "$") })
 
     config.define_derived_metadata(file_path: file_pattern) do |metadata|
@@ -171,8 +205,8 @@ RSpec.configure do |config|
 
   config.before(:context) do |example|
     metadata = example.class.metadata
-    if metadata[:type] != :aruba && !metadata[:realworld] && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
-      warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
+    if metadata[:type] != :aruba && !metadata[:realworld] && metadata.keys.none? {|k| Spec::Shards::EXAMPLE_MAPPINGS.keys.include?(k) }
+      warn "#{metadata[:file_path]} is not assigned to any shard. see spec/support/shards.rb for details."
     end
   end unless Spec::Path.ruby_core?
 end
