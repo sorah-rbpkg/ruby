@@ -1,4 +1,4 @@
-#!/usr/bin/ruby4.0
+#!/usr/bin/ruby4.1
 
 
 extensions = [
