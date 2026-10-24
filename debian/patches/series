@@ -13,3 +13,4 @@ rbinstall-Disable-arch-dependent-file-isolation.patch
 gc-mmtk-avoid-fn_addr_eq-for-MSRV-1.74.patch
 use-mmtk-core-checked-out-by-d-rules.patch
 test-ruby-test_process.rb-simplify-testing-spawn-with-lon.patch
+test_gem_credential_store_-run-fake-backends-with-Gem.rub.patch
