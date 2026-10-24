@@ -7,10 +7,10 @@ Subject: gc/mmtk: avoid fn_addr_eq for MSRV 1.74
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/gc/mmtk/src/abi.rs b/gc/mmtk/src/abi.rs
-index 1bd19fb..9ce6cd4 100644
+index 470a181..8a92024 100644
 --- a/gc/mmtk/src/abi.rs
 +++ b/gc/mmtk/src/abi.rs
-@@ -144,6 +144,7 @@ impl ObjectClosure {
+@@ -148,6 +148,7 @@ impl ObjectClosure {
      ///
      /// Note that this function is not reentrant.  Don't call this function in either `callback` or
      /// `f`.
@@ -18,7 +18,7 @@ index 1bd19fb..9ce6cd4 100644
      pub fn set_temporarily_and_run_code<'env, T, F1, F2>(
          &mut self,
          mut visit_object: F1,
-@@ -154,7 +155,7 @@ impl ObjectClosure {
+@@ -158,7 +159,7 @@ impl ObjectClosure {
          F2: 'env + FnOnce() -> T,
      {
          debug_assert!(

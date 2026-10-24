@@ -5,17 +5,17 @@ Subject: Make gemspecs reproducible
 Without an explicit date, they will get the current date and make the
 build unreproducible
 ---
- .bundle/gems/bigdecimal-4.0.1/bigdecimal.gemspec | 1 +
+ .bundle/gems/bigdecimal-4.1.3/bigdecimal.gemspec | 1 +
  .bundle/gems/fiddle-1.1.8/fiddle.gemspec         | 1 +
- .bundle/gems/rdoc-7.0.4/rdoc.gemspec             | 1 +
+ .bundle/gems/rdoc-8.1.0/rdoc.gemspec             | 1 +
  ext/io/console/io-console.gemspec                | 1 +
  lib/ipaddr.gemspec                               | 1 +
  5 files changed, 5 insertions(+)
 
-diff --git a/.bundle/gems/bigdecimal-4.0.1/bigdecimal.gemspec b/.bundle/gems/bigdecimal-4.0.1/bigdecimal.gemspec
-index b6ef8fd..596b8bb 100644
---- a/.bundle/gems/bigdecimal-4.0.1/bigdecimal.gemspec
-+++ b/.bundle/gems/bigdecimal-4.0.1/bigdecimal.gemspec
+diff --git a/.bundle/gems/bigdecimal-4.1.3/bigdecimal.gemspec b/.bundle/gems/bigdecimal-4.1.3/bigdecimal.gemspec
+index b5c3c25..aea95d8 100644
+--- a/.bundle/gems/bigdecimal-4.1.3/bigdecimal.gemspec
++++ b/.bundle/gems/bigdecimal-4.1.3/bigdecimal.gemspec
 @@ -14,6 +14,7 @@ Gem::Specification.new do |s|
    s.name          = name
    s.version       = source_version
@@ -36,10 +36,10 @@ index 0092f52..f77c224 100644
    spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
    spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
  
-diff --git a/.bundle/gems/rdoc-7.0.4/rdoc.gemspec b/.bundle/gems/rdoc-7.0.4/rdoc.gemspec
-index ada9341..5871ec2 100644
---- a/.bundle/gems/rdoc-7.0.4/rdoc.gemspec
-+++ b/.bundle/gems/rdoc-7.0.4/rdoc.gemspec
+diff --git a/.bundle/gems/rdoc-8.1.0/rdoc.gemspec b/.bundle/gems/rdoc-8.1.0/rdoc.gemspec
+index b38fbec..5cb97f5 100644
+--- a/.bundle/gems/rdoc-8.1.0/rdoc.gemspec
++++ b/.bundle/gems/rdoc-8.1.0/rdoc.gemspec
 @@ -7,6 +7,7 @@ end
  
  Gem::Specification.new do |s|
@@ -49,7 +49,7 @@ index ada9341..5871ec2 100644
  
    s.authors = [
 diff --git a/ext/io/console/io-console.gemspec b/ext/io/console/io-console.gemspec
-index 0a19992..4a80529 100644
+index b10e423..47a7a96 100644
 --- a/ext/io/console/io-console.gemspec
 +++ b/ext/io/console/io-console.gemspec
 @@ -12,6 +12,7 @@ end

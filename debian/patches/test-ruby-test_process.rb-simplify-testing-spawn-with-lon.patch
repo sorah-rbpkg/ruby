@@ -17,10 +17,10 @@ up.
  1 file changed, 13 insertions(+), 30 deletions(-)
 
 diff --git a/test/ruby/test_process.rb b/test/ruby/test_process.rb
-index b4f4085..8dc23ea 100644
+index e96af05..1757c2b 100644
 --- a/test/ruby/test_process.rb
 +++ b/test/ruby/test_process.rb
-@@ -1802,46 +1802,29 @@ class TestProcess < Test::Unit::TestCase
+@@ -1855,46 +1855,29 @@ class TestProcess < Test::Unit::TestCase
  
    def test_spawn_too_long_path
      bug4314 = '[ruby-core:34842]'

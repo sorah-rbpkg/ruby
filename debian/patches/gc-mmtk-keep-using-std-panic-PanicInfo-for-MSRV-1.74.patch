@@ -8,7 +8,7 @@ https://github.com/rust-lang/rust/pull/115974
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/gc/mmtk/src/lib.rs b/gc/mmtk/src/lib.rs
-index 8647793..6940f03 100644
+index b9deace..46af15a 100644
 --- a/gc/mmtk/src/lib.rs
 +++ b/gc/mmtk/src/lib.rs
 @@ -9,7 +9,6 @@ extern crate log;
