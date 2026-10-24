@@ -11,9 +11,7 @@
 /usr/lib/ruby/gems/*.0/specifications/debug-*
 /usr/lib/ruby/gems/*.0/specifications/matrix-*
 /usr/lib/ruby/gems/*.0/specifications/minitest-*
-/usr/lib/ruby/gems/*.0/specifications/net-ftp-*
 /usr/lib/ruby/gems/*.0/specifications/net-imap-*
-/usr/lib/ruby/gems/*.0/specifications/net-pop-*
 /usr/lib/ruby/gems/*.0/specifications/net-smtp-*
 /usr/lib/ruby/gems/*.0/specifications/power_assert-*
 /usr/lib/ruby/gems/*.0/specifications/prime-*
@@ -46,6 +44,8 @@
 /usr/lib/ruby/gems/*.0/specifications/reline-*
 /usr/lib/ruby/gems/*.0/specifications/readline-*
 /usr/lib/ruby/gems/*.0/specifications/fiddle-*
+/usr/lib/ruby/gems/*.0/specifications/prism-*
+/usr/lib/ruby/gems/*.0/specifications/tsort-*
 /usr/lib/ruby/gems/*.0/cache/*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/debug-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/racc-*
@@ -54,12 +54,11 @@
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/nkf-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/syslog-*
 /usr/lib/ruby/gems/*.0/extensions/*/*.0/fiddle-*
+/usr/lib/ruby/gems/*.0/extensions/*/*.0/prism-*
 /usr/lib/ruby/gems/*.0/gems/debug-*
 /usr/lib/ruby/gems/*.0/gems/matrix-*
 /usr/lib/ruby/gems/*.0/gems/minitest-*
-/usr/lib/ruby/gems/*.0/gems/net-ftp-*
 /usr/lib/ruby/gems/*.0/gems/net-imap-*
-/usr/lib/ruby/gems/*.0/gems/net-pop-*
 /usr/lib/ruby/gems/*.0/gems/net-smtp-*
 /usr/lib/ruby/gems/*.0/gems/power_assert-*
 /usr/lib/ruby/gems/*.0/gems/prime-*
@@ -92,4 +91,6 @@
 /usr/lib/ruby/gems/*.0/gems/reline-*
 /usr/lib/ruby/gems/*.0/gems/readline-*
 /usr/lib/ruby/gems/*.0/gems/fiddle-*
+/usr/lib/ruby/gems/*.0/gems/prism-*
+/usr/lib/ruby/gems/*.0/gems/tsort-*
 /usr/lib/ruby/gems/*.0/plugins/rdoc_plugin.rb
