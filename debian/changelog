@@ -1,6 +1,7 @@
 ruby4.1 (4.1.0~preview1-0nkmi1~dist) unstable; urgency=medium
 
   * 4.1.0~preview1
+  * Build ZJIT with stats alongside YJIT
 
  -- Sorah Fukumori <her@sorah.jp>  Sat, 24 Oct 2026 19:50:05 +0900
 

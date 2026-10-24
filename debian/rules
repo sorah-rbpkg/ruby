@@ -94,6 +94,7 @@ configure_options += --with-out-ext=win32api
 
 # sorah-rbpkg customs
 configure_options += --enable-yjit
+configure_options += --enable-zjit=stats
 configure_options += --with-modular-gc=/usr/lib/ruby-gc
 
 export LANG := C.UTF-8
