@@ -12,3 +12,6 @@ exclude :test_execute_system_update_installed, "gem update --system was disabled
 exclude :test_execute_system_when_latest_does_not_support_your_ruby, "gem update --system was disabled by rubygems-integration"
 exclude :test_execute_system_update_installed_in_non_default_gem_path, "gem update --system was disabled by rubygems-integration"
 exclude :test_execute_system_when_latest_does_not_support_your_ruby_but_previous_one_does, "gem update --system was disabled by rubygems-integration"
+exclude :test_execute_system_cooldown, "gem update --system was disabled by rubygems-integration"
+exclude :test_execute_system_silent_passed_to_setuprb, "gem update --system was disabled by rubygems-integration"
+exclude :test_execute_system_with_disabled_update, "gem update --system was disabled by rubygems-integration"
