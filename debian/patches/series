@@ -10,4 +10,3 @@ sync_default_gems-git-2.32-ignores-no-edit-in-cherry-pick.patch
 Ensure-Integer-GMP_VERSION-exists.patch
 rbinstall-Disable-arch-dependent-file-isolation.patch
 test-ruby-test_process.rb-simplify-testing-spawn-with-lon.patch
-test_gem_credential_store_-run-fake-backends-with-Gem.rub.patch
