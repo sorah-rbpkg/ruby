@@ -1,3 +1,10 @@
+ruby3.3 (3.3.13-0nkmi2~dist) unstable; urgency=medium
+
+  * Build-depend on libcrypt-dev; resolute's libc6-dev no longer pulls
+    it in, leaving String#crypt DES-only.
+
+ -- Sorah Fukumori <her@sorah.jp>  Sat, 14 Nov 2026 08:14:14 +0900
+
 ruby3.3 (3.3.13-0nkmi1~dist) unstable; urgency=medium
 
   * 3.3.13
