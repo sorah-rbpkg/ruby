@@ -172,11 +172,14 @@ rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n
 }
 
 static inline unsigned int
-rb_memsearch_qs_utf8_hash(const unsigned char *x)
+rb_memsearch_qs_utf8_hash(const unsigned char *x, const unsigned char *e)
 {
     register const unsigned int mix = 8353;
     register unsigned int h = *x;
     if (h < 0xC0) {
+        return h + 256;
+    }
+    else if (e - x < (h < 0xE0 ? 2 : h < 0xF0 ? 3 : 4)) {
         return h + 256;
     }
     else if (h < 0xE0) {
@@ -215,10 +218,10 @@ rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, l
         qstable[i] = m + 1;
     }
     for (; x < xe; ++x) {
-        qstable[rb_memsearch_qs_utf8_hash(x)] = xe - x;
+        qstable[rb_memsearch_qs_utf8_hash(x, xe)] = xe - x;
     }
     /* Searching */
-    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m)]) {
+    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m, ys+n)]) {
         if (*xs == *y && memcmp(xs, y, m) == 0)
             return y - ys;
     }
@@ -564,6 +567,10 @@ rb_reg_to_s(VALUE re)
 }
 
 static VALUE
+rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
+        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
+
+static VALUE
 rb_reg_str_with_term(VALUE re, int term)
 {
     int options, opt;
@@ -617,14 +624,23 @@ rb_reg_str_with_term(VALUE re, int term)
         if (*ptr == ':' && ptr[len-1] == ')') {
             Regexp *rp;
             VALUE verbose = ruby_verbose;
-            ruby_verbose = Qfalse;
+            rb_encoding *fixed_enc = 0;
+            onig_errmsg_buffer errmsg = "";
+            VALUE unescaped;
 
             ++ptr;
             len -= 2;
-            err = onig_new(&rp, ptr, ptr + len, options,
-                           enc, OnigDefaultSyntax, NULL);
-            onig_free(rp);
-            ruby_verbose = verbose;
+            unescaped = rb_reg_preprocess((const char *)ptr, (const char *)ptr + len,
+                                          enc, &fixed_enc, errmsg, options);
+            if (!NIL_P(unescaped)) {
+                ruby_verbose = Qfalse;
+                err = onig_new(&rp, (UChar *)RSTRING_PTR(unescaped),
+                               (UChar *)RSTRING_END(unescaped), options,
+                               enc, OnigDefaultSyntax, NULL);
+                onig_free(rp);
+                ruby_verbose = verbose;
+                RB_GC_GUARD(unescaped);
+            }
         }
         if (err) {
             options = RREGEXP_PTR(re)->options;
@@ -1564,10 +1580,6 @@ rb_reg_fixed_encoding_p(VALUE re)
     return RBOOL(FL_TEST(re, KCODE_FIXED));
 }
 
-static VALUE
-rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err, int options);
-
 NORETURN(static void reg_enc_error(VALUE re, VALUE str));
 
 static void
@@ -1648,7 +1660,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     onig_errmsg_buffer err = "";
     unescaped = rb_reg_preprocess(
         pattern, pattern + RSTRING_LEN(src_str), enc,
-        &fixed_enc, err, 0);
+        &fixed_enc, err, reg->options);
 
     if (NIL_P(unescaped)) {
         rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
@@ -1690,6 +1702,9 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     }
 
     reg->timelimit = timelimit;
+    if (reg->num_mem != RREGEXP_PTR(re)->num_mem) {
+        rb_bug("group count mismatch in the recompiled regexp: %d != %d", reg->num_mem, RREGEXP_PTR(re)->num_mem);
+    }
 
     RB_GC_GUARD(unescaped);
     RB_GC_GUARD(src_str);
@@ -3044,6 +3059,7 @@ escape_asis:
                         *encp = enc;
                     }
                 }
+                rb_str_buf_cat(buf, "(?#)", 4);
                 break;
             }
             rb_str_buf_cat(buf, (char *)&c, 1);
@@ -3101,6 +3117,9 @@ escape_asis:
                         p = orig_p;
                         c = '(';
                         rb_str_buf_cat(buf, (char *)&c, 1);
+                    }
+                    else {
+                        rb_str_buf_cat(buf, "(?#)", 4);
                     }
                     break;
                 }

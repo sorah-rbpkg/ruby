@@ -6993,7 +6993,7 @@ fn gen_send_cfunc(
         guard_object_is_array(asm, splat_array, splat_array.into(), Counter::guard_send_splat_not_array);
 
         asm_comment!(asm, "guard variable length splat call servicable");
-        let sp = asm.ctx.sp_opnd(0);
+        let sp = asm.lea(asm.ctx.sp_opnd(0));
         let proceed = asm.ccall(rb_yjit_splat_varg_checks as _, vec![sp, splat_array, CFP]);
         asm.cmp(proceed, Qfalse.into());
         asm.je(Target::side_exit(Counter::guard_send_cfunc_bad_splat_vargs));
@@ -8963,6 +8963,12 @@ fn gen_struct_aset(
         return None;
     }
 
+    // If the comptime receiver is frozen, writing a struct member will raise an exception
+    // and we don't want to JIT code to deal with that situation.
+    if comptime_recv.is_frozen() {
+        return None;
+    }
+
     if c_method_tracing_currently_enabled(jit) {
         // Struct accesses need fire c_call and c_return events, which we can't support
         // See :attr-tracing:
@@ -8982,6 +8988,17 @@ fn gen_struct_aset(
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
     assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
+
+    // Even if the comptime recv was not frozen, future recv may be. So we need to emit a guard
+    // that the recv is not frozen.
+    // We know all structs are heap objects, so we can check the flag directly.
+    let recv = asm.stack_opnd(1);
+    let recv = asm.load(recv);
+    let flags = asm.load(Opnd::mem(VALUE_BITS, recv, RUBY_OFFSET_RBASIC_FLAGS));
+    asm.test(flags, (RUBY_FL_FREEZE as u64).into());
+    asm.jnz(Target::side_exit(Counter::opt_aset_frozen));
+
+    // Not frozen, so we can proceed.
 
     asm_comment!(asm, "struct aset");
 
@@ -9700,6 +9717,11 @@ fn gen_invokeblock_specialized(
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
             gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_args_splat);
+            return None;
+        }
+        // Keyword values need to be packed into a Hash before calling the IFUNC.
+        if flags & VM_CALL_KWARG != 0 {
+            gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_kwarg);
             return None;
         }
         if flags & VM_CALL_KW_SPLAT != 0 {
@@ -10981,8 +11003,9 @@ static mut CODEGEN_GLOBALS: Option<CodegenGlobals> = None;
 impl CodegenGlobals {
     /// Initialize the codegen globals
     pub fn init() {
-        // Executable memory and code page size in bytes
-        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size));
+        // Executable memory and code page size in bytes. Clamp the --yjit-mem-size fallback
+        // because it can exceed MAX_EXEC_MEM_MIB.
+        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size).min(MAX_EXEC_MEM_MIB * 1024 * 1024));
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {

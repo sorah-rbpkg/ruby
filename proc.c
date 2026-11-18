@@ -89,6 +89,12 @@ typedef struct {
     VALUE env[VM_ENV_DATA_SIZE + 1]; /* ..., envval */
 } cfunc_proc_t;
 
+static inline bool
+cfunc_proc_inline_env_p(const rb_proc_t *proc)
+{
+    return proc->block.as.captured.ep == ((const cfunc_proc_t *)proc)->env + VM_ENV_DATA_SIZE - 1;
+}
+
 static size_t
 proc_memsize(const void *ptr)
 {
@@ -854,11 +860,16 @@ rb_func_proc_dup(VALUE src_obj)
     RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
 
     const VALUE *src_ep = src_proc->block.as.captured.ep;
-    VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
-    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
-    ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
-    RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    if (cfunc_proc_inline_env_p(src_proc)) {
+        VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
+        ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
+        ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+        RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    }
+    else {
+        rb_vm_block_ep_update(proc_obj, &proc->basic.block, src_ep);
+    }
 
     return proc_obj;
 }
@@ -1428,7 +1439,8 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *   prc == other -> true or false
  *   prc.eql?(other) -> true or false
  *
- * Two procs are the same if, and only if, they were created from the same code block.
+ * Returns whether +self+ and +other+ were created from the same code
+ * block and the same binding:
  *
  *   def return_block(&block)
  *     block
@@ -1447,6 +1459,11 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *
  *   # Another Proc will never be equal, even if the code is the "same"
  *   block1 == proc { puts 'test' }
+ *   #=> false
+ *
+ *   # Proc with the same code block but different binding is not equal:
+ *   def new_proc = proc { 1 }
+ *   new_proc == new_proc
  *   #=> false
  *
  */
@@ -1490,11 +1507,15 @@ proc_eq(VALUE self, VALUE other)
             return Qfalse;
         }
 
-        if (memcmp(
-                ((cfunc_proc_t *)self_proc)->env,
-                ((cfunc_proc_t *)other_proc)->env,
-                sizeof(((cfunc_proc_t *)self_proc)->env))) {
-            return Qfalse;
+        if (self_block->as.captured.ep != other_block->as.captured.ep) {
+            if (!cfunc_proc_inline_env_p(self_proc) ||
+                    !cfunc_proc_inline_env_p(other_proc) ||
+                    memcmp(
+                        ((const cfunc_proc_t *)self_proc)->env,
+                        ((const cfunc_proc_t *)other_proc)->env,
+                        sizeof(((const cfunc_proc_t *)self_proc)->env))) {
+                return Qfalse;
+            }
         }
         break;
       case block_type_proc:
@@ -2358,7 +2379,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     }
 
   /* undef: */
-    vid = ID2SYM(id);
+    if (id) vid = ID2SYM(id);
     rb_name_err_raise("undefined singleton method '%1$s' for '%2$s'",
                       obj, vid);
     UNREACHABLE_RETURN(Qundef);
@@ -3795,7 +3816,15 @@ curry(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
         return arity;
     }
     else {
-        return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
+        // `passed` is the only reference keeping this array (and thus the
+        // buffer that RARRAY_CONST_PTR points into) alive, but it is otherwise
+        // unused after this point. Without RB_GC_GUARD the compiler may drop it
+        // before the call returns, so conservative stack marking misses it and
+        // GC can reclaim the array while it is still being read as argv,
+        // crashing with "try to mark T_NONE object".
+        VALUE result = rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
+        RB_GC_GUARD(passed);
+        return result;
     }
 }
 
