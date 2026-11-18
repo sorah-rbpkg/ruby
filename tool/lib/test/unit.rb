@@ -1292,10 +1292,19 @@ module Test
         parser.on '--repeat-count=NUM', "Number of times to repeat", Integer do |n|
           options[:repeat_count] = n
         end
+        options[:keep_repeating] = false
+        parser.on '--[no-]keep-repeating', "Keep repeating even failed" do |n|
+          options[:keep_repeating] = true
+        end
       end
 
       def _run_anything(type)
         @repeat_count = @options[:repeat_count]
+        @keep_repeating = @options[:keep_repeating]
+        if @repeat_count and @options[:parallel]
+          warn "--repeat-count is not supported in parallel tests; ignored"
+          @repeat_count = @keep_repeating = nil
+        end
         super
       end
     end
@@ -1374,9 +1383,7 @@ module Test
       end
 
       def non_options(files, options)
-        if scale = options[:timeout_scale] or
-          (scale = ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and
-           (scale = scale.to_f) > 0)
+        if scale = options[:timeout_scale]
           EnvUtil.timeout_scale = scale
         end
         super
@@ -1617,7 +1624,7 @@ module Test
               [(@repeat_count ? "(#{@@current_repeat_count}/#{@repeat_count}) " : ""), type,
                 t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
         end while @repeat_count && @@current_repeat_count < @repeat_count &&
-                  report.empty? && failures.zero? && errors.zero?
+                  (@keep_repeating || report.empty? && failures.zero? && errors.zero?)
 
         output.sync = old_sync if sync
 

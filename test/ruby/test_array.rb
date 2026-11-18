@@ -1443,6 +1443,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
+  def test_pop_frozen_in_to_int
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.pop(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.shift(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+  end
+
   def test_prepend
     a = @cls[]
     assert_equal(@cls['cat'], a.prepend('cat'))
@@ -1828,6 +1842,33 @@ class TestArray < Test::Unit::TestCase
     assert_equal @cls[], a.slice(10..7)
 
     assert_equal([100], a.slice(-1, 1_000_000_000))
+  end
+
+  def test_range_with_len_max_end
+    max = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1) - 1
+
+    a = @cls[1, 2]
+    assert_equal(@cls[1, 2], a[0..max])
+    assert_equal(@cls[2], a[1..max])
+    assert_equal(@cls[2], a[-1..max])
+    assert_equal(@cls[1, 2], a[(0..max) % 1])
+    assert_raise(RangeError) { a[(0..max) % 2] }
+
+    a = @cls[1, 2]
+    assert_equal(@cls[1, 2], a.slice!(0..max))
+    assert_equal(@cls[], a)
+
+    a = @cls[1, 2]
+    assert_equal(@cls[2], a.slice!(1..max))
+    assert_equal(@cls[1], a)
+
+    a = @cls[1, 2]
+    a[0..max] = 9
+    assert_equal(@cls[9], a)
+
+    # Same as with 0...max
+    assert_raise(ArgumentError) { @cls[1, 2].fill(0, 0..max) }
+    assert_raise(IndexError) { @cls[1, 2].values_at(0..max) }
   end
 
   def test_slice_gc_compact_stress
@@ -2654,6 +2695,17 @@ class TestArray < Test::Unit::TestCase
     assert_empty(a.reject {|x| !x.include?(0)})
   end
 
+  def test_repeated_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 1], [1, 2], [2, 1], [2, 2]], ary.repeated_permutation(obj).to_a)
+  end
+
   def test_repeated_permutation_stack_error
     assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;
@@ -2758,6 +2810,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 1, 1], Array.new(3, 1))
     assert_equal([1, 1, 1], Array.new(3) { 1 })
     assert_equal([1, 1, 1], assert_warning(/block supersedes default value argument/) {Array.new(3, 1) { 1 }})
+    assert_equal([], [1].instance_eval { initialize(0) })
   end
 
   def test_aset_error
@@ -3088,6 +3141,22 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a)
   end
 
+  def test_zip_method_missing_block
+    # [Bug #22436]
+    obj = Object.new
+    def obj.method_missing(*) = nil
+    out = Object.new
+    def out.write(*) = nil
+    def out.puts(*) = yield # called without a block; must raise, not crash
+    begin
+      original_stdout, $stdout = $stdout, out
+      [1].zip(obj)
+      assert_raise(LocalJumpError) { puts 1 }
+    ensure
+      $stdout = original_stdout
+    end
+  end
+
   def test_transpose
     assert_equal([[1, :a], [2, :b], [3, :c]],
       [[1, 2, 3], [:a, :b, :c]].transpose)
@@ -3321,6 +3390,34 @@ class TestArray < Test::Unit::TestCase
     assert_raise(NoMethodError) {
       ary.sample(random: Object.new)
     }
+  end
+
+  def test_sample_modify_array_out_of_bounds
+    ary = (1..1_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace((1..50).to_a)
+      10
+    end
+    gen = Object.new
+    # 49 will be out-of-bounds when ary.replace is called
+    def gen.rand(lim) = 49
+    assert_raise(RangeError) {ary.sample(obj, random: gen)}
+
+    ary = (1..100).to_a
+    gen = Object.new
+    def gen.rand(lim) = lim-1
+    assert_equal((41..50).to_a.reverse, ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    gen = Object.new
+    gen.define_singleton_method(:rand) do |lim|
+      if (lim -= 1) <= 90
+        ary.replace((1..50).to_a)
+      end
+      lim
+    end
+    assert_equal([], ary.sample(10, random: gen))
   end
 
   def test_cycle

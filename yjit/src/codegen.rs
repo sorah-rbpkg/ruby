@@ -6982,7 +6982,7 @@ fn gen_send_cfunc(
         guard_object_is_array(asm, splat_array, splat_array.into(), Counter::guard_send_splat_not_array);
 
         asm_comment!(asm, "guard variable length splat call servicable");
-        let sp = asm.ctx.sp_opnd(0);
+        let sp = asm.lea(asm.ctx.sp_opnd(0));
         let proceed = asm.ccall(rb_yjit_splat_varg_checks as _, vec![sp, splat_array, CFP]);
         asm.cmp(proceed, Qfalse.into());
         asm.je(Target::side_exit(Counter::guard_send_cfunc_bad_splat_vargs));
@@ -9680,6 +9680,11 @@ fn gen_invokeblock_specialized(
             gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_args_splat);
             return None;
         }
+        // Keyword values need to be packed into a Hash before calling the IFUNC.
+        if flags & VM_CALL_KWARG != 0 {
+            gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_kwarg);
+            return None;
+        }
         if flags & VM_CALL_KW_SPLAT != 0 {
             gen_counter_incr(jit, asm, Counter::invokeblock_ifunc_kw_splat);
             return None;
@@ -10943,8 +10948,9 @@ static mut CODEGEN_GLOBALS: Option<CodegenGlobals> = None;
 impl CodegenGlobals {
     /// Initialize the codegen globals
     pub fn init() {
-        // Executable memory and code page size in bytes
-        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size));
+        // Executable memory and code page size in bytes. Clamp the --yjit-mem-size fallback
+        // because it can exceed MAX_EXEC_MEM_MIB.
+        let exec_mem_size = get_option!(exec_mem_size).unwrap_or(get_option!(mem_size).min(MAX_EXEC_MEM_MIB * 1024 * 1024));
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {

@@ -170,6 +170,27 @@ CODE
     assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
   end
 
+  def test_range_with_len_max_end
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1) - 1
+
+    assert_equal(S("ab"), S("ab")[0..max])
+    assert_equal(S("b"), S("ab")[1..max])
+    assert_equal(S("ab"), S("ab").byteslice(0..max))
+
+    s = S("ab")
+    assert_equal(S("ab"), s.slice!(0..max))
+    assert_equal(S(""), s)
+
+    s = S("ab")
+    s[0..max] = S("x")
+    assert_equal(S("x"), s)
+
+    s = S("ab")
+    s.bytesplice(0..max, S("x"))
+    assert_equal(S("x"), s)
+  end
+
   def test_AREF_invalid_encoding
     assert_equal(S("\x80"), S("A"*39+"\x80")[-1, 1])
   end
@@ -223,6 +244,8 @@ CODE
     s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
     assert_equal(S("BarFoo"), s)
     assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
+    assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, RbConfig::LIMITS["INT_MIN"]] = "None" }
+    assert_equal(S("BarFoo"), s)
 
     s = S("FooBar")
     s[S("Foo")] = S("Bar")
@@ -241,6 +264,16 @@ CODE
     assert_raise(ArgumentError) { "foo"[1, 2, 3] = "" }
 
     assert_raise(IndexError) {"foo"[RbConfig::LIMITS["LONG_MIN"]] = "l"}
+  end
+
+  def test_ASET_string_modified_during_conversion
+    str = S("hello" * 100)
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace("")
+      "x"
+    end
+    assert_raise(RuntimeError) { str[/h.l/] = obj }
   end
 
   def test_CMP # '<=>'
@@ -406,6 +439,9 @@ CODE
     assert_equal(S("   hello   "), S("hello").center(11))
     assert_equal(S("ababaababa"), S("").center(10, "ab"), Bug2463)
     assert_equal(S("ababaababab"), S("").center(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_chomp
@@ -474,6 +510,19 @@ CODE
     assert_equal("foo", s.chomp("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp("\n"))
+
+    # capacity forces a heap buffer, so a read before the receiver leaves it
+    WIDE_ENCODINGS.each do |enc|
+      ["A", "AB", "ABC"].each do |bytes|
+        s = S(capacity: 4096)
+        s << bytes
+        s.force_encoding(enc)
+        label = "#{enc.name} #{bytes.bytesize}"
+        assert_equal(bytes.b, s.chomp.b, label)
+        assert_equal(bytes.b, s.chomp("").b, label)
+        assert_nil(s.chomp!, label)
+      end
+    end
   ensure
     $/ = save
     $VERBOSE = verbose
@@ -1010,6 +1059,95 @@ CODE
     assert_equal 0x3042, s.each_codepoint.next
   end
 
+  def test_setbyte_shrink_during_conversion
+    s = S('a' * 10_000_000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      s.concat("x" * 50)
+      0
+    end
+    assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
+  end
+
+  def test_setbyte_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:setbyte, 7000, 0)
+    assert_bit_op_chilled_string_warning(:setbyte, -7000, 0)
+  end
+
+  def assert_bit_op_chilled_string_warning(op, *args)
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = <<~STR            # chilled string
+    #{("A"*63+"\n")*128}        # 64*128 = 8192
+    STR
+    END {
+      assert_raise(IndexError) {$target.#{op}(#{args.map(&:inspect).join(", ")})}
+    }
+    {#
+      $reentered = false
+
+      module ReallocateWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated && !$reentered
+            $reentered = true
+            $target.clear
+            $target << ("B" * 1024)
+            return nil
+          end
+
+          super
+        end
+      end
+
+      Warning.extend(ReallocateWarning)
+    };
+  end
+
+  def test_modify_chilled_string_in_warning
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target[0, 2] = ""
+      assert_equal("B" * 998, $target)
+    }
+    {#
+      module ShrinkWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("B" * 1_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ShrinkWarning)
+    };
+  end
+
+  def test_concat_chilled_string_warning
+    return unless @cls == String
+
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"
+    END {
+      $target << $target
+      assert_equal("\\xff\\xfe\\xfd\\xff\\xfe\\xfd".b, $target)
+    }
+    {#
+      module ReplaceReceiverWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $target.replace("\xff\xfe\xfd".b)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(ReplaceReceiverWarning)
+    };
+  end
+
   def test_codepoints
     # Single byte optimization
     assert_equal [65, 66, 67], S("ABC").codepoints
@@ -1186,6 +1324,16 @@ CODE
     $VERBOSE = verbose
   end
 
+  def test_each_line_modified_separator
+    sep = S("x" * 1_000_000)
+    res = []
+    assert_raise_with_message(RuntimeError, /string modified/) do
+      S("a#{sep}b#{sep}c").each_line(sep) do |x|
+        sep.clear
+      end
+    end
+  end
+
   def test_each_line_chomp
     res = []
     S("hello\nworld").each_line("\n", chomp: true) {|x| res << x}
@@ -1250,6 +1398,11 @@ CODE
     assert_equal s.object_id, s.lines {|x| res << x }.object_id
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),  res[1])
+
+    s = S("AB").force_encoding(Encoding::UTF_32LE)
+    sep = S("B").force_encoding(Encoding::UTF_32LE)
+
+    assert_empty(s.lines(sep).to_a)
   end
 
   def test_empty?
@@ -1445,6 +1598,14 @@ CODE
     assert_index(nil, S("にんにちは"), ?に, 3)
   end
 
+  def test_index_truncated_char_at_end
+    s = S("a" * 2009 + "\xF0")
+    assert_nil(s.index("needle!!!"))
+    s = S("a" * 2010 + "\xE3")
+    assert_nil(s.index("needle!!!"))
+    assert_nil(s.index("needle!!\xE3"))
+  end
+
   def test_insert
     assert_equal("Xabcd", S("abcd").insert(0, 'X'))
     assert_equal("abcXd", S("abcd").insert(3, 'X'))
@@ -1470,6 +1631,9 @@ CODE
     assert_equal(S("hello      "), S("hello").ljust(11))
     assert_equal(S("ababababab"), S("").ljust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").ljust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_next
@@ -1640,6 +1804,19 @@ CODE
     assert_rindex(nil, S("こんにち"), S("こんにちは"))
     assert_rindex(nil, S("こ"), S("こんにちは"))
     assert_rindex(nil, S(""), S("こんにちは"))
+
+    assert_rindex(nil, S("A" * 1024), S("\u{3042}"))
+
+    # exact-size allocations, so a comparison past the last byte leaves them
+    assert_rindex(nil, S("A" * 1020 + "\u{3042}A"), S("\u{3042}\u{3044}"))
+    assert_rindex(nil, S("\u{3042}" + "A" * 1021), S("\u{3042}" * 1022))
+
+    WIDE_ENCODINGS.each do |enc|
+      pattern = "A".encode(enc)
+      stray = pattern.b[0]
+      assert_nil(S(stray).force_encoding(enc).rindex(pattern), enc.name)
+      assert_nil(S("B".encode(enc).b * 2 + stray).force_encoding(enc).rindex(pattern), enc.name)
+    end
   end
 
   def test_rjust
@@ -1647,6 +1824,9 @@ CODE
     assert_equal(S("      hello"), S("hello").rjust(11))
     assert_equal(S("ababababab"), S("").rjust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").rjust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_scan
@@ -1802,6 +1982,16 @@ CODE
 
     a = S("foo")
     assert_raise(ArgumentError) { a.slice! }
+  end
+
+  def test_slice_bang_string_modified
+    obj = Object.new
+    s = S("x" + "l" * 3999)
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      0
+    end
+    assert_nil(s.slice!(/l+$/, obj))
   end
 
   def test_split
@@ -2760,6 +2950,10 @@ CODE
     assert_equal(["", "", "foo"], S("foo").partition(/^=*/))
 
     assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal([s, "", ""], s.partition(sep))
   end
 
   def test_rpartition
@@ -2786,6 +2980,10 @@ CODE
     assert_equal("hello", hello, bug)
 
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal(["", "", s], s.rpartition(sep))
   end
 
   def test_rpartition_string_modified
@@ -3734,6 +3932,31 @@ CODE
     buf.append_as_bytes("def")
     assert_equal Encoding::UTF_32LE, buf.encoding
     refute_predicate buf, :valid_encoding?
+  end
+
+  def test_append_as_bytes_chilled_string_warning
+    return unless @cls == String
+    # The argument grows inside the chilled string warning: the capacity
+    # reserved for the append must match what is actually copied.
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = "abcdefghij"      # chilled string
+    $value = "x" * 200
+    END {
+      $target.append_as_bytes($value, 0x41, $value)
+      assert_equal("abcdefghij" + "w" * 100_000 + "A" + "w" * 100_000, $target)
+    }
+    {#
+      module GrowArgumentWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated
+            $value.replace("w" * 100_000)
+            return nil
+          end
+          super
+        end
+      end
+      Warning.extend(GrowArgumentWarning)
+    };
   end
 
   def test_chilled_string
