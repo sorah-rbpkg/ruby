@@ -339,6 +339,9 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "i386"
 COROUTINE_OBJ = coroutine/win32/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
+!elseif "$(ARCH)" == "arm64"
+COROUTINE_OBJ = coroutine/arm64/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
 COROUTINE_OBJ = coroutine/copy/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.c)
@@ -692,7 +695,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define _INTEGRAL_MAX_BITS 64
 #endif
 #define SIZEOF_OFF_T 8
-!if "$(ARCH)" == "x64"
+!if "$(TARGET_OS)" == "mswin64"
 #define SIZEOF_VOIDP 8
 !else
 #define SIZEOF_VOIDP 4
@@ -714,7 +717,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define NUM2CLOCKID(v) NUM2INT(v)
 #define SIZEOF_CLOCK_T 4
 #define SIZEOF_RLIM_T 0
-!if "$(ARCH)" == "x64"
+!if "$(TARGET_OS)" == "mswin64"
 #define SIZEOF_SIZE_T 8
 #define SIZEOF_PTRDIFF_T 8
 #define SIZEOF_INTPTR_T 8
@@ -813,7 +816,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_INTPTR_T 1
 #define HAVE_UINTPTR_T 1
 #define HAVE_SSIZE_T 1
-!if "$(ARCH)" == "x64"
+!if "$(TARGET_OS)" == "mswin64"
 #define ssize_t __int64
 #define PRI_PTR_PREFIX "I64"
 !else
@@ -925,9 +928,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #endif
 #define NEED_IO_SEEK_BETWEEN_RW 1
-!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
 #define STACK_GROW_DIRECTION -1
-!endif
 #define COROUTINE_H "$(COROUTINE_H)"
 #define THREAD_IMPL_H "$(THREAD_IMPL_H)"
 #define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
@@ -1292,6 +1293,9 @@ $(ruby_pc): $(RBCONFIG)
 {$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/arm64}.asm{coroutine/arm64}.obj:
+	$(ECHO) assembling $(<:\=/)
+	$(Q) $(AS) $(ASFLAGS) -o $@ $(<:\=/)
 
 {$(srcdir)/prism}.c.obj:
 	$(ECHO) compiling $(<:\=/)

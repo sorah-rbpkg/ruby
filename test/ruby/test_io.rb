@@ -10,6 +10,7 @@ require 'stringio'
 require 'timeout'
 require 'tempfile'
 require 'weakref'
+require "rbconfig/sizeof"
 
 class TestIO < Test::Unit::TestCase
   module Feature
@@ -337,6 +338,27 @@ class TestIO < Test::Unit::TestCase
     end, proc do |r|
       assert_equal("0123456789\n0", r.gets(nil, 12))
       assert_raise(TypeError) { r.gets(3,nil) }
+    end)
+  end
+
+  def test_gets_ff
+    pipe(proc do |w|
+      w.print "ab""\xff""cd".b
+      w.close
+    end, proc do |r|
+      assert_equal "ab\xFFcd", r.gets(nil, 100).b
+      assert_nil r.gets
+      r.close
+    end)
+
+    pipe(proc do |w|
+      w.print "ab\u{1f41e}cd".b
+      w.close
+    end, proc do |r|
+      r.set_encoding(Encoding::UTF_8)
+      assert_equal "ab\u{1f41e}", r.gets(nil, 3)
+      assert_equal "cd", r.gets
+      r.close
     end)
   end
 
@@ -1144,6 +1166,32 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_copy_stream_write_tries_to_modify_buffer
+    IO.pipe do |r, w|
+      buffers = Thread::Queue.new
+      chunks = []
+      dst = Object.new
+      dst.define_singleton_method(:write) do |data|
+        chunks << data.dup
+        buffers << data
+        data.bytesize
+      end
+      th = Thread.new { IO.copy_stream(r, dst) }
+      w.write("a" * 6)
+      buf = buffers.pop
+      Thread.pass until th.stop?
+      begin
+        buf.replace("c" * 100_000)
+      rescue RuntimeError
+        # buf may be STR_TMPLOCK
+      end
+      w.write("b" * 6)
+      w.close
+      assert_equal(12, th.value)
+      assert_equal("a" * 6, chunks[0])
+    end
+  end
+
   def test_copy_stream_write_in_binmode
     bug8767 = '[ruby-core:56518] [Bug #8767]'
     mkcdtmpdir {
@@ -1555,6 +1603,17 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_read_with_too_big_length
+    pipe(proc do |w|
+      w.write "foo\n" + "bar" * 100
+      w.close
+    end, proc do |r|
+      r.gets
+      max = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1) - 1
+      assert_raise(ArgumentError) {r.read(max - 1, String.new(encoding: Encoding::UTF_16LE))}
+    end)
+  end
+
   def test_readpartial_buffer_error
     with_pipe do |r, w|
       s = ""
@@ -1565,6 +1624,16 @@ class TestIO < Test::Unit::TestCase
       assert_equal("", s)
     end
   end if /cygwin/ !~ RUBY_PLATFORM
+
+  def test_read_interrupted_by_wakeup
+    with_pipe do |r, w|
+      t = Thread.new { r.read }
+      Thread.pass until t.stop?
+      100_000.times { t.wakeup; w.write("x") }
+      w.close
+      assert_equal(100_000, t.value.size)
+    end
+  end
 
   def test_read
     pipe(proc do |w|
@@ -2435,6 +2504,11 @@ class TestIO < Test::Unit::TestCase
     make_tempfile {|t|
       open(t.path) do |f|
         assert_raise(ArgumentError) { f.sysread(-1) }
+        assert_raise(ArgumentError) { f.sysread(-1, String.new) }
+        buf = +"abc"
+        assert_raise(ArgumentError) { f.pread(-1, 0) }
+        assert_raise(ArgumentError) { f.pread(-1, 0, buf) }
+        assert_equal("abc", buf)
       end
     }
   end
@@ -3055,6 +3129,8 @@ class TestIO < Test::Unit::TestCase
 
   def test_uninitialized
     assert_raise(IOError) { IO.allocate.print "" }
+    assert_raise(IOError) { IO.allocate.external_encoding }
+    assert_raise(IOError) { IO.allocate.internal_encoding }
   end
 
   def test_nofollow
