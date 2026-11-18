@@ -400,19 +400,25 @@ static OnigPosition count_num_cache_opcodes_inner(
 	}
 	GET_MEMNUM_INC(repeat_mem, p);
 	p += SIZE_RELADDR;
-	if (reg->repeat_range[repeat_mem].lower == 0) {
-	  num_cache_opcodes++;
-	}
-	result = count_num_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &p, &num_cache_opcodes);
-	if (result < 0 || num_cache_opcodes < 0) {
-	  goto fail;
-	}
-        {
+	if (reg->repeat_range[repeat_mem].lower == 0 && reg->repeat_range[repeat_mem].upper == 0) {
+	  long dummy_num_cache_opcodes = 0;
+	  result = count_num_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &p, &dummy_num_cache_opcodes);
+	  if (result < 0 || dummy_num_cache_opcodes < 0) {
+	    goto fail;
+	  }
+	} else {
+	  if (reg->repeat_range[repeat_mem].lower == 0) {
+	    num_cache_opcodes++;
+	  }
+	  result = count_num_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &p, &num_cache_opcodes);
+	  if (result < 0 || num_cache_opcodes < 0) {
+	    goto fail;
+	  }
 	  OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
 	  if (repeat_range->lower < repeat_range->upper) {
 	    num_cache_opcodes++;
 	  }
-        }
+	}
 	break;
       case OP_REPEAT_INC:
       case OP_REPEAT_INC_NG:
@@ -565,7 +571,7 @@ init_cache_opcodes_inner(
   OnigCacheOpcode *cache_opcodes = *cache_opcodes_ptr;
   OnigPosition result;
 
-# define INC_CACHE_OPCODES do {\
+# define INC_CACHE_OPCODES if (cache_opcodes != NULL) {\
     cache_opcodes->addr = pbegin;\
     cache_opcodes->cache_point = cache_point;\
     cache_opcodes->outer_repeat_mem = current_repeat_mem;\
@@ -575,7 +581,7 @@ init_cache_opcodes_inner(
     cache_opcodes->match_addr = NULL;\
     cache_point += lookaround_nesting != 0 ? 2 : 1;\
     cache_opcodes++;\
-  } while (0)
+  }
 
   while (p < pend) {
     pbegin = p;
@@ -706,27 +712,36 @@ init_cache_opcodes_inner(
       case OP_REPEAT_NG:
 	GET_MEMNUM_INC(repeat_mem, p);
 	p += SIZE_RELADDR;
-	if (reg->repeat_range[repeat_mem].lower == 0) {
-	  INC_CACHE_OPCODES;
-	}
-	{
-	  long num_cache_points_in_repeat = 0;
-          long num_cache_points_at_repeat = cache_point;
-	  OnigCacheOpcode* cache_opcodes_in_repeat = cache_opcodes;
-	  result = init_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &cache_opcodes, &p, &num_cache_points_in_repeat);
+	if (reg->repeat_range[repeat_mem].lower == 0 && reg->repeat_range[repeat_mem].upper == 0) {
+	  long dummy_num_cache_points = 0;
+	  OnigCacheOpcode* dummy_cache_opcodes = NULL;
+	  result = init_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &dummy_cache_opcodes, &p, &dummy_num_cache_points);
 	  if (result != 0) {
 	    goto fail;
 	  }
-	  OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
-	  if (repeat_range->lower < repeat_range->upper) {
+	} else {
+	  if (reg->repeat_range[repeat_mem].lower == 0) {
 	    INC_CACHE_OPCODES;
-	    cache_point -= lookaround_nesting != 0 ? 2 : 1;
 	  }
-	  int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
-	  cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1)) * repeat_bounds;
-	  for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
-	    cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
-	    cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
+	  {
+	    long num_cache_points_in_repeat = 0;
+	    long num_cache_points_at_repeat = cache_point;
+	    OnigCacheOpcode* cache_opcodes_in_repeat = cache_opcodes;
+	    result = init_cache_opcodes_inner(reg, repeat_mem, lookaround_nesting, &cache_opcodes, &p, &num_cache_points_in_repeat);
+	    if (result != 0) {
+	      goto fail;
+	    }
+	    OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
+	    if (repeat_range->lower < repeat_range->upper) {
+	      INC_CACHE_OPCODES;
+	      cache_point -= lookaround_nesting != 0 ? 2 : 1;
+	    }
+	    int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
+	    cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1)) * repeat_bounds;
+	    for (; cache_opcodes_in_repeat < cache_opcodes; cache_opcodes_in_repeat++) {
+	      cache_opcodes_in_repeat->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;
+	      cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
+	    }
 	  }
 	}
 	break;
@@ -1893,6 +1908,7 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
   s2   = *ps2;
   end1 = s1 + mblen;
   while (s1 < end1) {
+    if (s2 >= text_end) return 0;
     len1 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s1, text_end, buf1);
     len2 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s2, text_end, buf2);
     if (len1 != len2) return 0;
@@ -2735,6 +2751,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		    case_fold_flag,
 		    &s, end, lowbuf);
 	DATA_ENSURE(0);
+	if (len != enclen(encode, p, reg->p + reg->used)) goto fail;
 	q = lowbuf;
 	while (len-- > 0) {
 	  if (*p != *q) {
@@ -2824,6 +2841,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 		      case_fold_flag,
 		      &s, end, lowbuf);
 	  DATA_ENSURE(0);
+	  if (len > endp - p) goto fail;
 	  q = lowbuf;
 	  while (len-- > 0) {
 	    if (*p != *q) goto fail;
@@ -4137,7 +4155,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  msa->match_cache_status = MATCH_CACHE_STATUS_ENABLED;
 	  OnigCacheOpcode* cache_opcodes = (OnigCacheOpcode*)xmalloc(msa->num_cache_opcodes * sizeof(OnigCacheOpcode));
 	  if (cache_opcodes == NULL) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  OnigPosition r = init_cache_opcodes(reg, cache_opcodes, &msa->num_cache_points);
 	  if (r < 0) {
@@ -4162,15 +4180,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 	  /* Overflow check */
 	  if (num_match_cache_points / length != (size_t)msa->num_cache_points) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  if (num_match_cache_points >= LONG_MAX_LIMIT) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  size_t match_cache_buf_length = (num_match_cache_points >> 3) + (num_match_cache_points & 7 ? 1 : 0) + 1;
 	  uint8_t* match_cache_buf = (uint8_t*)xmalloc(match_cache_buf_length * sizeof(uint8_t));
 	  if (match_cache_buf == NULL) {
-	    return ONIGERR_MEMORY;
+	    goto memory_error;
 	  }
 	  xmemset(match_cache_buf, 0, match_cache_buf_length * sizeof(uint8_t));
 	  msa->match_cache_buf = match_cache_buf;
@@ -4220,6 +4238,13 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   STACK_SAVE;
   xfree(xmalloc_base);
   return ONIGERR_TIMEOUT;
+
+#ifdef USE_MATCH_CACHE
+ memory_error:
+  STACK_SAVE;
+  xfree(xmalloc_base);
+  return ONIGERR_MEMORY;
+#endif
 }
 
 
@@ -4273,6 +4298,7 @@ str_lower_case_match(OnigEncoding enc, int case_fold_flag,
 
   while (t < tend) {
     lowlen = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &p, end, lowbuf);
+    if (tend - t < lowlen) return 0;
     q = lowbuf;
     while (lowlen > 0) {
       if (*t++ != *q++)	return 0;
@@ -5387,7 +5413,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 	goto end_buf;
       }
     }
-    else if ((reg->anchor & ANCHOR_ANYCHAR_STAR_ML)) {
+    else if ((reg->anchor & ANCHOR_ANYCHAR_STAR_ML) && range > start) {
       goto begin_position;
     }
   }
