@@ -1073,8 +1073,9 @@ vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
     return Qnil;
 }
 
+// child_ep is the on-stack ep of a frame whose prev ep is cfp->ep, or NULL.
 static VALUE
-vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp)
+vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp, const VALUE *const child_ep)
 {
     const VALUE * const ep = cfp->ep;
     VALUE *env_body, *env_ep;
@@ -1094,8 +1095,9 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
                 VM_ASSERT(prev_cfp->ep != NULL);
             }
 
-            vm_make_env_each(ec, prev_cfp);
-            VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
+            // Updates ep[VM_ENV_DATA_INDEX_SPECVAL] to point to the heap ep of prev_cfp
+            vm_make_env_each(ec, prev_cfp, ep);
+            VM_ASSERT(VM_ENV_PREV_EP(ep) == prev_cfp->ep);
         }
     }
     else {
@@ -1162,9 +1164,29 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     env->ep = env_ep;
     env->env = env_body;
     env->env_size = env_size;
+    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+
+    // Ensure the heap ep is fully initialized before cfp->ep and child_ep point to it,
+    // as rb_profile_frames() might read it from a signal handler.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
 
     cfp->ep = env_ep;
-    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+
+    // The child frame must point to the heap ep before the on-stack ep flags are
+    // overwritten below, otherwise rb_profile_frames() called from a signal handler
+    // could walk from the child frame to the overwritten on-stack ep and crash.
+    if (child_ep) {
+        VM_FORCE_WRITE_SPECIAL_CONST(&child_ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(env_ep));
+    }
+
+    // Ensure the stores to cfp->ep and child_ep above are not reordered after the
+    // overwrite of the on-stack ep flags below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
 
 #if 0
@@ -1182,7 +1204,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 static VALUE
 vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
-    VALUE envval = vm_make_env_each(ec, cfp);
+    VALUE envval = vm_make_env_each(ec, cfp, NULL);
 
     if (PROCDEBUG) {
         check_env_value((const rb_env_t *)envval);
@@ -1923,6 +1945,7 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
             }
             if (RHASH_EMPTY_P(keyword_hash)) {
                 argc--;
+                kw_splat = 0;
             }
             else {
                 ((VALUE *)argv)[argc-1] = rb_hash_dup(keyword_hash);
@@ -3908,6 +3931,12 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
     // set cfp to NULL before clearing the stack in case `thread_profile_frames`
     // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
+
+    // Ensure the store to ec->cfp above is not reordered after the stores below.
+#if defined HAVE_DECL_ATOMIC_SIGNAL_FENCE && HAVE_DECL_ATOMIC_SIGNAL_FENCE
+    atomic_signal_fence(memory_order_seq_cst);
+#endif
+
     rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
@@ -4555,7 +4584,7 @@ Init_VM(void)
     rb_block_param_proxy = rb_obj_alloc(rb_cObject);
     rb_add_method_optimized(rb_singleton_class(rb_block_param_proxy), idCall,
                             OPTIMIZED_METHOD_TYPE_BLOCK_CALL, 0, METHOD_VISI_PUBLIC);
-    rb_obj_freeze(rb_block_param_proxy);
+    rb_ractor_make_shareable(rb_block_param_proxy);
     rb_vm_register_global_object(rb_block_param_proxy);
 
     /* vm_backtrace.c */

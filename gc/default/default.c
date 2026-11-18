@@ -3385,6 +3385,12 @@ restore_mach_bad_access_exc(void)
 }
 #endif
 
+#if defined(HAVE_PTHREAD_SIGMASK)
+# define gc_sigmask pthread_sigmask
+#else
+# define gc_sigmask sigprocmask
+#endif
+
 static void
 read_barrier_signal(int sig, siginfo_t *info, void *data)
 {
@@ -3398,7 +3404,7 @@ read_barrier_signal(int sig, siginfo_t *info, void *data)
     sigemptyset(&set);
     sigaddset(&set, SIGBUS);
     sigaddset(&set, SIGSEGV);
-    sigprocmask(SIG_UNBLOCK, &set, &prev_set);
+    gc_sigmask(SIG_UNBLOCK, &set, &prev_set);
 #ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
     disable_mach_bad_access_exc();
 #endif
@@ -3411,7 +3417,7 @@ read_barrier_signal(int sig, siginfo_t *info, void *data)
 #endif
     sigaction(SIGBUS, &prev_sigbus, NULL);
     sigaction(SIGSEGV, &prev_sigsegv, NULL);
-    sigprocmask(SIG_SETMASK, &prev_set, NULL);
+    gc_sigmask(SIG_SETMASK, &prev_set, NULL);
 }
 
 static void
@@ -4618,6 +4624,7 @@ gc_mark_set_parent_invalid(rb_objspace_t *objspace)
 static void
 mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
+    VALUE objspace_guard = (VALUE)objspace;
 #define MARK_CHECKPOINT(category) do { \
     if (categoryp) *categoryp = category; \
 } while (0)
@@ -4633,6 +4640,9 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
 
     rb_gc_save_machine_context();
     rb_gc_mark_roots(objspace, categoryp);
+    /* Keep this frame, including its saved registers, until root marking has
+     * scanned the machine stack. */
+    RB_GC_GUARD(objspace_guard);
     gc_mark_set_parent_invalid(objspace);
 }
 

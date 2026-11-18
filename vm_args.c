@@ -318,6 +318,23 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
+/* Extends cfp->sp over the keyword locals so the GC marks them. The fast
+ * paths in vm_insnhelper.c call args_setup_kw_parameters with the locals
+ * above cfp->sp, and more than VM_KW_SPECIFIED_BITS_MAX keywords allocate
+ * a set while passed values are only referenced from the locals. */
+static void
+args_setup_kw_extend_sp(rb_execution_context_t *const ec, VALUE *const end)
+{
+    VALUE *sp = ec->cfp->sp;
+    if (sp >= end) return;
+
+    CHECK_VM_STACK_OVERFLOW0(ec->cfp, sp, end - sp);
+    for (; sp < end; sp++) {
+        *sp = Qnil;
+    }
+    ec->cfp->sp = end;
+}
+
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
@@ -331,6 +348,12 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
     int i, di, found = 0;
     int unspecified_bits = 0;
     VALUE unspecified_bits_value = Qnil;
+    VALUE *orig_sp = NULL;
+
+    if (UNLIKELY(key_num > VM_KW_SPECIFIED_BITS_MAX)) {
+        orig_sp = ec->cfp->sp;
+        args_setup_kw_extend_sp(ec, locals + key_num + 1);
+    }
 
     for (i=0; i<req_key_num; i++) {
         ID key = acceptable_keywords[i];
@@ -392,6 +415,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
         unspecified_bits_value = INT2FIX(unspecified_bits);
     }
     locals[key_num] = unspecified_bits_value;
+    if (orig_sp) ec->cfp->sp = orig_sp;
 }
 
 static void
@@ -622,6 +646,13 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
      * <- ISEQ_BODY(iseq)->param.size------------>
      * ^ locals                             ^ sp
      */
+    if ((unsigned int)calling->argc < ISEQ_BODY(iseq)->param.size) {
+        /* Ensure the nil-fill below and the SP extension do not run into the
+         * control frame region, clobbering frames before the stack overflow
+         * check in vm_push_frame has a chance to raise SystemStackError. */
+        CHECK_VM_STACK_OVERFLOW0(ec->cfp, locals + calling->argc,
+                                 ISEQ_BODY(iseq)->param.size - calling->argc);
+    }
     for (i=calling->argc; i<ISEQ_BODY(iseq)->param.size; i++) {
         locals[i] = Qnil;
     }
@@ -908,17 +939,18 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 
     if (ISEQ_BODY(iseq)->param.flags.has_rest) {
         if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_rest && args->argc == 0 && !args->rest && !ISEQ_BODY(iseq)->param.flags.has_post)) {
-           *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
-           args->rest_index = 0;
+            *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
+            args->rest_index = 0;
         }
         else {
             args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);
             VALUE ary = *(locals + ISEQ_BODY(iseq)->param.rest_start);
-            VALUE index = RARRAY_LEN(ary) - 1;
+            long index = RARRAY_LEN(ary);
             if (splat_flagged_keyword_hash &&
                 !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
                 !ISEQ_BODY(iseq)->param.flags.has_kw &&
                 !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+                index-- > 0 &&
                 RARRAY_AREF(ary, index) == splat_flagged_keyword_hash) {
                 ((struct RHash *)rest_last)->basic.flags &= ~RHASH_PASS_AS_KEYWORDS;
                 RARRAY_ASET(ary, index, rest_last);

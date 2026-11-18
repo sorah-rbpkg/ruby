@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name = "pstore".freeze
-  s.version = "0.2.1"
+  s.version = "0.2.1".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "homepage_uri" => "https://github.com/ruby/pstore", "source_code_uri" => "https://github.com/ruby/pstore" } if s.respond_to? :metadata=
@@ -16,6 +16,6 @@ Gem::Specification.new do |s|
   s.files = [".document".freeze, ".github/dependabot.yml".freeze, ".github/workflows/push_gem.yml".freeze, ".github/workflows/test.yml".freeze, ".gitignore".freeze, "BSDL".freeze, "COPYING".freeze, "Gemfile".freeze, "README.md".freeze, "Rakefile".freeze, "bin/console".freeze, "bin/setup".freeze, "lib/pstore.rb".freeze, "pstore.gemspec".freeze]
   s.homepage = "https://github.com/ruby/pstore".freeze
   s.licenses = ["Ruby".freeze, "BSD-2-Clause".freeze]
-  s.rubygems_version = "3.4.20".freeze
+  s.rubygems_version = "3.6.9".freeze
   s.summary = "Transactional File Storage for Ruby Objects".freeze
 end
