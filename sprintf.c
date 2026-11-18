@@ -77,6 +77,11 @@ sign_bits(int base, const char *p)
     buf = RSTRING_PTR(result);\
 } while (0)
 
+#define CHECK_WIDTH(l, w) do { \
+    if ((l) > INT_MAX - (w)) rb_raise(rb_eArgError, "width too big");\
+    CHECK((l)+(w));\
+} while (0)
+
 #define PUSH(s, l) do { \
     CHECK(l);\
     PUSH_(s, l);\
@@ -222,6 +227,18 @@ rb_f_sprintf(int argc, const VALUE *argv)
     return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
 }
 
+static char *
+reassoc_enc(VALUE result, rb_encoding *enc)
+{
+    return RSTRING_PTR(rb_enc_associate(result, enc));
+}
+
+static char *
+reassoc_enc_index(VALUE result, int encidx)
+{
+    return RSTRING_PTR(rb_enc_associate_index(result, encidx));
+}
+
 VALUE
 rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
 {
@@ -283,8 +300,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
-    rb_enc_associate(result, enc);
-    buf = RSTRING_PTR(result);
+    buf = reassoc_enc(result, enc);
     memset(buf, 0, bsiz);
     ENC_CODERANGE_SET(result, coderange);
 
@@ -418,8 +434,8 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
             GETASTER(width);
             if (width < 0) {
                 flags |= FMINUS;
+                if (width == INT_MIN) rb_raise(rb_eArgError, "width too big");
                 width = -width;
-                if (width < 0) rb_raise(rb_eArgError, "width too big");
             }
             p++;
             goto retry;
@@ -456,7 +472,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                 VALUE val = GETARG();
                 VALUE tmp;
                 unsigned int c;
-                int n;
+                int n, encidx;
 
                 tmp = rb_check_string_type(val);
                 if (!NIL_P(tmp)) {
@@ -466,14 +482,16 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                     goto format_s1;
                 }
                 n = NUM2INT(val);
-                if (n >= 0) n = rb_enc_codelen((c = n), enc);
+                if (n >= 0) {
+                    n = rb_enc_codelen((c = n), enc);
+                    encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
+                }
                 if (n <= 0) {
                     rb_raise(rb_eArgError, "invalid character");
                 }
-                int encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
                 if (encidx >= 0 && encidx != rb_enc_to_index(enc)) {
                     /* special case */
-                    rb_enc_associate_index(result, encidx);
+                    buf = reassoc_enc_index(result, encidx);
                     enc = rb_enc_from_index(encidx);
                     coderange = ENC_CODERANGE_VALID;
                 }
@@ -482,19 +500,13 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
                 }
-                else if ((flags & FMINUS)) {
-                    --width;
-                    CHECK(n + (width > 0 ? width : 0));
-                    rb_enc_mbcput(c, &buf[blen], enc);
-                    blen += n;
-                    if (width > 0) FILL_(' ', width);
-                }
                 else {
                     --width;
-                    CHECK(n + (width > 0 ? width : 0));
-                    if (width > 0) FILL_(' ', width);
+                    CHECK_WIDTH(n, (width > 0 ? width : 0));
+                    if (!(flags & FMINUS) && (width > 0)) FILL_(' ', width);
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
+                    if ((flags & FMINUS) && (width > 0)) FILL_(' ', width);
                 }
             }
             break;
@@ -531,7 +543,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                     /* need to adjust multi-byte string pos */
                     if ((flags&FWIDTH) && (width > slen)) {
                         width -= (int)slen;
-                        CHECK(len + width);
+                        CHECK_WIDTH(len, width);
                         if (!(flags&FMINUS)) {
                             FILL_(' ', width);
                             width = 0;
@@ -542,13 +554,13 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                         if (flags&FMINUS) {
                             FILL_(' ', width);
                         }
-                        rb_enc_associate(result, enc);
+                        buf = reassoc_enc(result, enc);
                         break;
                     }
                 }
                 PUSH(RSTRING_PTR(str), len);
                 RB_GC_GUARD(str);
-                rb_enc_associate(result, enc);
+                buf = reassoc_enc(result, enc);
             }
             break;
 
@@ -845,7 +857,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                 if (sign || (flags&FSPACE)) ++len;
                 if (prec > 0) ++len; /* period */
                 fill = width > len ? width - len : 0;
-                CHECK(fill + len);
+                CHECK(fill + len); /* max(width, len) */
                 if (fill && !(flags&(FMINUS|FZERO))) {
                     FILL_(' ', fill);
                 }

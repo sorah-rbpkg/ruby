@@ -2712,6 +2712,7 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
     if (has_any) {
         wakeup_mutex = rb_mutex_new();
         RBASIC_CLEAR_CLASS(wakeup_mutex); /* hide from ObjectSpace */
+        rb_mutex_allow_trap(wakeup_mutex, 1);
     }
     busy->wakeup_mutex = wakeup_mutex;
 
@@ -3515,7 +3516,8 @@ rb_thread_setname(VALUE thread, VALUE name)
         name = rb_str_new_frozen(name);
     }
     target_th->name = name;
-    if (threadptr_initialized(target_th) && target_th->has_dedicated_nt) {
+    if (threadptr_initialized(target_th) && target_th->has_dedicated_nt &&
+        target_th->status != THREAD_KILLED) {
         native_set_another_thread_name(target_th->nt->thread_id, name);
     }
     return name;
@@ -5973,7 +5975,7 @@ rb_internal_thread_specific_key_create(void)
     if (specific_key_count == 0 && vm->ractor.cnt > 1) {
         rb_raise(rb_eThreadError, "The first rb_internal_thread_specific_key_create() is called with multiple ractors");
     }
-    else if (specific_key_count > RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
+    else if (specific_key_count >= RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
         rb_raise(rb_eThreadError, "rb_internal_thread_specific_key_create() is called more than %d times", RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
     }
     else {
