@@ -72,6 +72,11 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_comment_in_char_class
+    re = EnvUtil.suppress_warning { Regexp.new('(?:[](?#\x{7FFFFFFF})])') }
+    assert_equal('(?-mix:[](?#\x{7FFFFFFF})])', EnvUtil.suppress_warning { re.to_s })
+  end
+
   def test_to_s_under_gc_compact_stress
     omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
@@ -615,6 +620,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(IndexError) { m[:foo] }
     assert_raise(TypeError) { m[nil] }
     assert_equal(["baz", nil], m[-2, 3])
+
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1) - 1
+    assert_equal(["foo", "bar", "baz", nil], m[1..max])
   end
 
   def test_match_values_at
@@ -1237,6 +1246,72 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('(?#')
   end
 
+  def test_invalid_raw_byte_escape_in_utf16
+    {"UTF-16LE" => ['\x00\xD8', '\x00\xD8\x00\xDC'],
+     "UTF-16BE" => ['\xD8\x00', '\xD8\x00\xDC\x00']}.each do |enc, (lone, pair)|
+      assert_raise(RegexpError) { Regexp.new(lone.encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("(?i)#{lone}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[#{lone}]".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[#{lone}a]".encode(enc)) }
+      s = "\u{10000}".encode(enc)
+      assert_match(Regexp.new(pair.encode(enc)), s)
+      assert_match(Regexp.new("[#{pair}]".encode(enc)), s)
+    end
+  end
+
+  def test_comment_separates_tokens
+    assert_raise(RegexpError) { Regexp.new('\3(?#)43') }
+    assert_raise(RegexpError) { Regexp.new("\\3#c\n43", Regexp::EXTENDED) }
+    assert_raise(RegexpError) { Regexp.new("(?x:\\3#c\n43)") }
+    re = Regexp.new('(a)(b)(c)\3(?#)43')
+    assert_match(re, "abcc43")
+    assert_not_match(re, "abc\u00e3")
+    re = Regexp.new("(a)(b)(c)\\3#c\n43", Regexp::EXTENDED)
+    assert_match(re, "abcc43")
+    assert_not_match(re, "abc\u00e3")
+    assert_match(/a(?#x)+b/, "aaab")
+    assert_match(/a #x
+                 +b/x, "aaab")
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise(RegexpError) {
+        Regexp.new('(?~.*\3(?#)43.|(?i:\u{3380}))').match?("a\u3042")
+      }
+      assert_raise(RegexpError) {
+        Regexp.new("(?~.*(?x:\\3#c\n43).|(?i:\\u{3380}))").match?("a\u3042")
+      }
+    end;
+  end
+
+  def test_emacs_mule_case_fold_at_mid_character
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      %w[Emacs-Mule stateless-ISO-2022-JP stateless-ISO-2022-JP-KDDI].each do |name|
+        enc = Encoding.find(name)
+        re = Regexp.new("(?i)(?!x)\x81\xa1{2}".b.force_encoding(enc))
+        assert_nil(re.match("\x81\xa1\x9c\xf0\xa1\xa1".b.force_encoding(enc)))
+        assert_equal(0, re =~ "\x81\xa1\x81\xa1".b.force_encoding(enc))
+        assert_equal(1, re =~ "\x81\xa2\x81\xa1\x81\xa1".b.force_encoding(enc))
+        re = Regexp.new("(?i)\x81\xa1".b.force_encoding(enc))
+        assert_equal(1, re =~ "\x9c\xf0\xa1\xa1\x81\xa1".b.force_encoding(enc))
+      end
+    end;
+  end
+
+  def test_invalid_code_point_escape_in_utf16
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      assert_raise(RegexpError) { Regexp.new("\\x{D801}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("a\\x{D801}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("a\\x{110000}".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("[\\x{D801}]".encode(enc)) }
+      assert_raise(RegexpError) { Regexp.new("\\x{110000}".encode(enc)) }
+      s = "\u{1F600}".encode(enc)
+      assert_match(Regexp.new("\\x{1F600}".encode(enc)), s)
+      assert_match(Regexp.new("[\\x{1F600}]".encode(enc)), s)
+    end
+  end
+
   def test_char_type
     check(/\u3042\d/, ["\u30421", "\u30422"])
 
@@ -1303,6 +1378,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/\A[[:space:]]+\z/, "\r\n\v\f\r\s\u0085")
     assert_match(/\A[[:ascii:]]+\z/, "\x00\x7F")
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
+  end
+
+  def test_too_many_multibyte_ranges_in_intersection
+    chars = (0...9999).map {|i| (0x4e00 + 2 * i).chr("UTF-8") }.join
+    cc = "[[:^ascii:][^#{chars}]&&[^\u9fff]&&x]"
+    assert_raise(RegexpError) { Regexp.new(cc, Regexp::IGNORECASE) }
+    assert_raise(RegexpError) { Regexp.new("[x&&#{cc}]", Regexp::IGNORECASE) }
+    assert_raise(RegexpError) { Regexp.new(cc.encode("UTF-16LE"), Regexp::IGNORECASE) }
+  end
+
+  def test_char_class_intersection_error_no_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true, samples: 2..100)
+      chars = (0...3000).map {|i| (0x4e00 + 2 * i).chr("UTF-8") }.join
+      pat = "[x&&[^#{chars}]\\p{Foo}]"
+      code = proc do
+        Regexp.new(pat) rescue nil
+      end
+
+    begin;
+      20.times(&code)
+    end;
   end
 
   def test_cclass_R
@@ -1402,6 +1498,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/^\u00df$/i, "ss")
     #assert_match(/^(\u00df)\1$/i, "\u00dfss") # this must be bug...
     assert_match(/^\u00df{2}$/i, "\u00dfss")
+    assert_no_match(/s/i, "\u00df")
+    assert_no_match(/is/i, "i\u00df")
+    assert_no_match(/f/i, "\ufb03")
+    assert_match(/ss/i, "\u00df")
     assert_match(/^\u00c5$/i, "\u00c5")
     assert_match(/^\u00c5$/i, "\u00e5")
     assert_match(/^\u00c5$/i, "\u212b")
@@ -1420,6 +1520,39 @@ class TestRegexp < Test::Unit::TestCase
     #assert_match(/^(\ufb05)\1\1$/i, "\ufb05\ufb06st") # this must be bug...
     assert_match(/^\ufb05{3}$/i, "\ufb05\ufb06st")
     assert_match(/^\u03b9\u0308\u0301$/i, "\u0390")
+  end
+
+  def test_ignorecase_fold_longer_than_operand
+    %w[UTF-16LE UTF-16BE UTF-32LE UTF-32BE].each do |enc|
+      tail = "\u0103\u3042\u3044"
+      s = ("x" * 16 + "\u1E98" + "y" * 8).encode(enc)
+      re = Regexp.new(("x" * 16 + "(?i:w)" + tail).encode(enc))
+      assert_match(re, ("x" * 16 + "W" + tail).encode(enc))
+      assert_no_match(re, s)
+      re = Regexp.new(("(?i:" + "x" * 16 + "w)" + tail).encode(enc))
+      assert_match(re, ("x" * 16 + "W" + tail).encode(enc))
+      assert_no_match(re, s)
+      re = Regexp.new("(?-i:xyz)t(?-i:\u0103)".encode(enc), Regexp::IGNORECASE)
+      assert_match(re, "xyzT\u0103".encode(enc))
+      assert_no_match(re, "xyz\u1E97".encode(enc))
+    end
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      enc = Encoding::UTF_16LE
+      re = Regexp.new("(?i:w)\u6203AB".encode(enc))
+      assert_match(re, "W\u6203AB".encode(enc))
+      assert_no_match(re, "\u1E98\u6203AB".encode(enc))
+      re = Regexp.new("(?i:xw)\u6203AB".encode(enc))
+      assert_match(re, "xW\u6203AB".encode(enc))
+      assert_no_match(re, "x\u1E98\u6203AB".encode(enc))
+    end;
+  end
+
+  def test_backref_ignorecase_at_end_of_string
+    assert_no_match(/(k\0)\1/i, "k\0\u212a")
+    assert_match(/(k)\1/i, "k\u212a")
+    assert_match(/(k\0)\1/i, "k\0\u212a\0")
   end
 
   def test_unicode_age
@@ -1781,6 +1914,15 @@ class TestRegexp < Test::Unit::TestCase
         Regexp.new("((?(1)x|x|)x)+")
       end
     end;
+  end
+
+  def test_invalid_condition_in_alternation_and_call
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(x)|(?(1)x|x|)")
+    end
+    assert_raise_with_message(RegexpError, /invalid conditional pattern/) do
+      Regexp.new("(?<b>x)(?<a>(?(<b>)x|x|))\\g<a>")
+    end
   end
 
   def test_too_big_number_for_repeat_range
@@ -2180,5 +2322,12 @@ class TestRegexp < Test::Unit::TestCase
         assert_nil(re.match("x" * 10), src)
       end
     end;
+  end
+
+  def test_too_big_compiled_program_length
+    k, rest = (2**32 - 217).divmod(100_001)
+    assert_raise_with_message(RegexpError, /too big compiled program/) do
+      Regexp.new("(?:#{'.{100000,}' * k}.{#{rest - 1},})?")
+    end
   end
 end

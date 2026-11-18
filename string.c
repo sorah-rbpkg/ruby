@@ -148,7 +148,7 @@ str_enc_fastpath(VALUE str)
         if (str_embed_capa(str) < capacity + termlen) {\
             char *const tmp = ALLOC_N(char, (size_t)(capacity) + (termlen));\
             const long tlen = RSTRING_LEN(str);\
-            memcpy(tmp, RSTRING_PTR(str), tlen);\
+            memcpy(tmp, RSTRING_PTR(str), str_embed_capa(str));\
             RSTRING(str)->as.heap.ptr = tmp;\
             RSTRING(str)->len = tlen;\
             STR_SET_NOEMBED(str);\
@@ -714,6 +714,9 @@ str_enc_copy(VALUE str1, VALUE str2)
 static inline void
 str_enc_copy_direct(VALUE str1, VALUE str2)
 {
+    RUBY_ASSERT(TERM_LEN(str2) <= TERM_LEN(str1) || str_dependent_p(str1) ||
+                (STR_EMBED_P(str1) &&
+                 str_embed_capa(str1) >= RSTRING_LEN(str1) + TERM_LEN(str2)));
     int inlined_encoding = RB_ENCODING_GET_INLINED(str2);
     if (inlined_encoding == ENCODING_INLINE_MAX) {
         rb_enc_set_index(str1, rb_enc_get_index(str2));
@@ -1365,7 +1368,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
      * allocated. If the string is shared then the shared root must be
      * embedded, so we want to create a copy. If the string is a shared root
      * then it must be embedded, so we want to create a copy. */
-    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT)) {
+    if (STR_EMBED_P(orig) || FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
         RSTRING(str)->as.heap.ptr = rb_xmalloc_mul_add_mul(sizeof(char), capa, sizeof(char), TERM_LEN(orig));
         memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), capa);
     }
@@ -1379,7 +1382,7 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     }
 
     RSTRING(str)->len = RSTRING(orig)->len;
-    RSTRING(str)->as.heap.aux.capa = capa;
+    RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
 }
@@ -2409,7 +2412,7 @@ rb_str_format_m(VALUE str, VALUE arg)
     VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
-        VALUE result = rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
+        VALUE result = rb_str_format_ary(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str, tmp);
         RB_GC_GUARD(tmp);
         return result;
     }
@@ -2500,7 +2503,7 @@ rb_str_modify_expand(VALUE str, long expand)
     if (expand < 0) {
         rb_raise(rb_eArgError, "negative expanding string size");
     }
-    if (expand >= LONG_MAX - len) {
+    if (expand > LONG_MAX - termlen - len) {
         rb_raise(rb_eArgError, "string size too big");
     }
 
@@ -2859,7 +2862,7 @@ str_subseq(VALUE str, long beg, long len)
 
     const int termlen = TERM_LEN(str);
     if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
-        str2 = rb_str_new(RSTRING_PTR(str) + beg, len);
+        str2 = rb_enc_str_new(RSTRING_PTR(str) + beg, len, STR_ENC_GET(str));
         RB_GC_GUARD(str);
         return str2;
     }
@@ -2905,7 +2908,7 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
     char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
     if (len < 0) return 0;
-    if (beg < 0 && -beg < 0) return 0;
+    if (beg == LONG_MIN) return 0;
     if (!blen) {
         len = 0;
     }
@@ -3147,6 +3150,9 @@ rb_str_resize(VALUE str, long len)
 
     int independent = str_independent(str);
     long slen = RSTRING_LEN(str);
+    if (len > LONG_MAX - TERM_LEN(str)) {
+        rb_raise(rb_eArgError, "string size too big");
+    }
 
     if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
         ENC_CODERANGE_CLEAR(str);
@@ -3435,7 +3441,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
     for (i = 0; i < num; ++i) { len += RSTRING_LEN(strary[i]); }
     str = rb_str_buf_new(len);
-    str_enc_copy_direct(str, strary[0]);
+    rb_enc_associate_index(str, ENCODING_GET(strary[0]));
 
     for (i = s; i < num; ++i) {
         const VALUE v = strary[i];
@@ -3444,7 +3450,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
         rb_str_buf_append(str, v);
         if (encidx != ENCINDEX_US_ASCII) {
             if (ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)
-                rb_enc_set_index(str, encidx);
+                rb_enc_associate_index(str, encidx);
         }
     }
     return str;
@@ -4139,8 +4145,8 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-        long slen = RSTRING_LEN(str);
         pos = NUM2LONG(initpos);
+        long slen = RSTRING_LEN(str);
         if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -4195,7 +4201,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
             searchlen = adjusted - sbeg;
             continue;
         }
-        if (memcmp(hit, t, slen) == 0)
+        if (hit + slen <= e && memcmp(hit, t, slen) == 0)
             return hit - sbeg;
         searchlen = adjusted - sbeg;
     } while (searchlen > 0);
@@ -4215,7 +4221,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
     slen = RSTRING_LEN(sub);
 
     while (s) {
-        if (memcmp(s, t, slen) == 0) {
+        if (s + slen <= e && memcmp(s, t, slen) == 0) {
             return s - sbeg;
         }
         if (s <= sbeg) break;
@@ -4243,16 +4249,20 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
     /* substring longer than string */
     if (len < slen) return -1;
+    /* character counts, so the byte tail can still be shorter than sub */
     if (len - pos < slen) pos = len - slen;
     if (len == 0) return pos;
 
     sbeg = RSTRING_PTR(str);
 
     if (pos == 0) {
-        if (memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0)
+        if (RSTRING_LEN(sub) <= RSTRING_LEN(str) &&
+            memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0) {
             return 0;
-        else
+        }
+        else {
             return -1;
+        }
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
@@ -4457,10 +4467,11 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE initpos;
-    long pos, len = RSTRING_LEN(str);
+    long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
         pos = NUM2LONG(initpos);
+        long len = RSTRING_LEN(str);
         if (pos < 0 && (pos += len) < 0) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -4470,7 +4481,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
         if (pos > len) pos = len;
     }
     else {
-        pos = len;
+        pos = RSTRING_LEN(str);
     }
 
     str_ensure_byte_pos(str, pos);
@@ -4868,7 +4879,7 @@ VALUE
 rb_str_succ(VALUE orig)
 {
     VALUE str;
-    str = rb_str_new(RSTRING_PTR(orig), RSTRING_LEN(orig));
+    str = rb_enc_str_new(RSTRING_PTR(orig), RSTRING_LEN(orig), STR_ENC_GET(orig));
     rb_enc_cr_str_copy_for_substr(str, orig);
     return str_succ(str);
 }
@@ -5428,8 +5439,8 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     }
     match = rb_backref_get();
     nth = rb_reg_backref_number(match, backref);
-    regs = RMATCH_REGS(match);
-    if ((nth >= regs->num_regs) || ((nth < 0) && (-nth >= regs->num_regs))) {
+    regs = RMATCH_REGS(match); /* 1 <= regs->num_regs <= ONIG_MAX_CAPTURE_GROUP_NUM (= 32767) */
+    if (nth >= regs->num_regs || nth + regs->num_regs <= 0) {
         rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
@@ -5442,7 +5453,12 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     }
     end = END(nth);
     len = end - start;
+
     StringValue(val);
+    if (start + len > RSTRING_LEN(str)) {
+        rb_raise(rb_eRuntimeError, "string modified");
+    }
+
     enc = rb_enc_check_str(str, val);
     rb_str_update_0(str, start, len, val);
     rb_enc_associate(str, enc);
@@ -5606,6 +5622,9 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
         else if (nth >= regs->num_regs) return Qnil;
         beg = BEG(nth);
         len = END(nth) - beg;
+        /* Converting the backref may have modified the string. */
+        if (beg > RSTRING_LEN(str)) return Qnil;
+        if (len > RSTRING_LEN(str) - beg) len = RSTRING_LEN(str) - beg;
         goto subseq;
     }
     else if (argc == 2) {
@@ -5647,7 +5666,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     beg = p - RSTRING_PTR(str);
 
   subseq:
-    result = rb_str_new(RSTRING_PTR(str)+beg, len);
+    result = rb_enc_str_new(RSTRING_PTR(str)+beg, len, STR_ENC_GET(str));
     rb_enc_cr_str_copy_for_substr(result, str);
 
   squash:
@@ -6166,19 +6185,19 @@ static VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 {
     long pos = NUM2LONG(index);
-    long len = RSTRING_LEN(str);
     char *ptr, *head, *left = 0;
     rb_encoding *enc;
     int cr = ENC_CODERANGE_UNKNOWN, width, nlen;
 
+    VALUE v = rb_to_int(value);
+    VALUE w = rb_int_and(v, INT2FIX(0xff));
+    char byte = (char)(NUM2INT(w) & 0xFF);
+
+    long len = RSTRING_LEN(str);
     if (pos < -len || len <= pos)
         rb_raise(rb_eIndexError, "index %ld out of string", pos);
     if (pos < 0)
         pos += len;
-
-    VALUE v = rb_to_int(value);
-    VALUE w = rb_int_and(v, INT2FIX(0xff));
-    char byte = (char)(NUM2INT(w) & 0xFF);
 
     if (!str_independent(str))
         str_make_independent(str);
@@ -6461,7 +6480,7 @@ rb_str_reverse(VALUE str)
 
     if (RSTRING_LEN(str) <= 1) return str_duplicate(rb_cString, str);
     enc = STR_ENC_GET(str);
-    rev = rb_str_new(0, RSTRING_LEN(str));
+    rev = rb_enc_str_new(0, RSTRING_LEN(str), enc);
     s = RSTRING_PTR(str); e = RSTRING_END(str);
     p = RSTRING_END(rev);
     cr = ENC_CODERANGE(str);
@@ -6495,7 +6514,6 @@ rb_str_reverse(VALUE str)
         }
     }
     STR_SET_LEN(rev, RSTRING_LEN(str));
-    str_enc_copy_direct(rev, str);
     ENC_CODERANGE_SET(rev, cr);
 
     return rev;
@@ -7370,7 +7388,7 @@ mapping_buffer_free(void *p)
     while (current_buffer) {
         previous_buffer = current_buffer;
         current_buffer  = current_buffer->next;
-        ruby_sized_xfree(previous_buffer, previous_buffer->capa);
+        ruby_sized_xfree(previous_buffer, offsetof(mapping_buffer, space) + previous_buffer->capa);
     }
 }
 
@@ -7386,7 +7404,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     VALUE target;
 
     const OnigUChar *source_current, *source_end;
-    int target_length = 0;
+    long target_length = 0;
     VALUE buffer_anchor;
     mapping_buffer *current_buffer = 0;
     mapping_buffer **pre_buffer;
@@ -7394,6 +7412,8 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     int buffer_length_or_invalid;
 
     if (RSTRING_LEN(source) == 0) return str_duplicate(rb_cString, source);
+    if (RSTRING_LEN(source) > INT_MAX - CASE_MAPPING_ADDITIONAL_LENGTH)
+        rb_raise(rb_eArgError, "string size too big");
 
     source_current = (OnigUChar*)RSTRING_PTR(source);
     source_end = (OnigUChar*)RSTRING_END(source);
@@ -7402,7 +7422,11 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     pre_buffer = (mapping_buffer **)&DATA_PTR(buffer_anchor);
     while (source_current < source_end) {
         /* increase multiplier using buffer count to converge quickly */
-        size_t capa = (size_t)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
+        size_t capa = (size_t)(source_end-source_current);
+        if (capa > (INT_MAX - CASE_MAPPING_ADDITIONAL_LENGTH) / ++buffer_count)
+            capa = INT_MAX;
+        else
+            capa = capa * buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
         if (CASEMAP_DEBUG) {
             fprintf(stderr, "Buffer allocation, capa is %"PRIuSIZE"\n", capa); /* for tuning */
         }
@@ -7416,11 +7440,13 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
                                    current_buffer->space,
                                    current_buffer->space+current_buffer->capa,
                                    enc);
-        if (buffer_length_or_invalid < 0) {
+        if (buffer_length_or_invalid < 0 || buffer_length_or_invalid > LONG_MAX - target_length) {
             current_buffer = DATA_PTR(buffer_anchor);
             DATA_PTR(buffer_anchor) = 0;
             mapping_buffer_free(current_buffer);
-            rb_raise(rb_eArgError, "input string invalid");
+            if (buffer_length_or_invalid < 0)
+                rb_raise(rb_eArgError, "input string invalid");
+            rb_raise(rb_eArgError, "string size too big");
         }
         target_length  += current_buffer->used = buffer_length_or_invalid;
     }
@@ -7429,12 +7455,12 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     }
 
     if (buffer_count==1) {
-        target = rb_str_new((const char*)current_buffer->space, target_length);
+        target = rb_enc_str_new((const char*)current_buffer->space, target_length, enc);
     }
     else {
         char *target_current;
 
-        target = rb_str_new(0, target_length);
+        target = rb_enc_str_new(0, target_length, enc);
         target_current = RSTRING_PTR(target);
         current_buffer = DATA_PTR(buffer_anchor);
         while (current_buffer) {
@@ -7449,8 +7475,6 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     RB_GC_GUARD(buffer_anchor);
 
-    /* TODO: check about string terminator character */
-    str_enc_copy_direct(target, source);
     /*ENC_CODERANGE_SET(mapped, cr);*/
 
     return target;
@@ -7489,7 +7513,7 @@ rb_str_ascii_casemap(VALUE source, VALUE target, OnigCaseFoldType *flags, rb_enc
                  "; old_length=%ld, new_length=%d\n", old_length, length_or_invalid);
     }
 
-    str_enc_copy(target, source);
+    rb_enc_associate_index(target, ENCODING_GET(source));
 
     return target;
 }
@@ -9147,11 +9171,12 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
         line = rb_str_subseq(str, subptr - ptr, subend - subptr);
         if (ENUM_ELEM(ary, line)) {
             str_mod_check(str, ptr, len);
+            str_mod_check(rs, rsptr, rslen);
         }
         subptr = hit;
     }
 
-    if (subptr != pend) {
+    if (subptr < pend) {
         if (chomp) {
             if (rsnewline) {
                 pend = chomp_newline(subptr, pend, enc);
@@ -9620,6 +9645,8 @@ smart_chomp(VALUE str, const char *e, const char *p)
 {
     rb_encoding *enc = rb_enc_get(str);
     if (rb_enc_mbminlen(enc) > 1) {
+        /* a receiver shorter than one character has nothing to chomp */
+        if (e - p < rb_enc_mbminlen(enc)) return e - p;
         const char *pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
         if (rb_enc_is_newline(pp, e, enc)) {
             e = pp;
@@ -9667,7 +9694,7 @@ chompped_length(VALUE str, VALUE rs)
     RSTRING_GETMEM(rs, rsptr, rslen);
     if (rslen == 0) {
         if (rb_enc_mbminlen(enc) > 1) {
-            while (e > p) {
+            while (e - p >= rb_enc_mbminlen(enc)) {
                 pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
                 if (!rb_enc_is_newline(pp, e, enc)) break;
                 e = pp;
@@ -10436,7 +10463,6 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 
     rb_scan_args(argc, argv, "11", &w, &pad);
     enc = STR_ENC_GET(str);
-    termlen = rb_enc_mbminlen(enc);
     width = NUM2LONG(w);
     if (argc == 2) {
         StringValue(pad);
@@ -10449,6 +10475,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
             rb_raise(rb_eArgError, "zero width padding");
         }
     }
+    termlen = rb_enc_mbminlen(enc);
     len = str_strlen(str, enc); /* rb_enc_check */
     if (width < 0 || len >= width) return str_duplicate(rb_cString, str);
     n = width - len;
@@ -10590,10 +10617,12 @@ rb_str_partition(VALUE str, VALUE sep)
         pos = rb_str_index(str, sep, 0);
         if (pos < 0) goto failed;
     }
+
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                             RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
 
   failed:
     return rb_ary_new3(3, str_duplicate(rb_cString, str), str_new_empty_String(str), str_new_empty_String(str));
@@ -10610,10 +10639,11 @@ rb_str_partition(VALUE str, VALUE sep)
 static VALUE
 rb_str_rpartition(VALUE str, VALUE sep)
 {
-    long pos = RSTRING_LEN(str);
+    long pos;
 
     sep = get_pat_quoted(sep, 0);
     if (RB_TYPE_P(sep, T_REGEXP)) {
+        pos = RSTRING_LEN(str);
         if (rb_reg_search(sep, str, pos, 1) < 0) {
             goto failed;
         }
@@ -10624,17 +10654,19 @@ rb_str_rpartition(VALUE str, VALUE sep)
         sep = rb_str_subseq(str, pos, END(0) - pos);
     }
     else {
-        pos = rb_str_sublen(str, pos);
+        /* str may have been modified by #to_str above */
+        pos = rb_str_sublen(str, RSTRING_LEN(str));
         pos = rb_str_rindex(str, sep, pos);
         if (pos < 0) {
             goto failed;
         }
     }
 
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                        RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
   failed:
     return rb_ary_new3(3, str_new_empty_String(str), str_new_empty_String(str), str_duplicate(rb_cString, str));
 }
@@ -11338,7 +11370,8 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
         }
         cr = ENC_CODERANGE_VALID;
     }
-    ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
+    rb_enc_associate(buf, enc);
+    ENC_CODERANGE_SET(buf, cr);
     return buf;
 }
 

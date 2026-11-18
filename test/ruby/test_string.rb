@@ -174,6 +174,27 @@ CODE
     assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
   end
 
+  def test_range_with_len_max_end
+    require "rbconfig/sizeof"
+    max = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1) - 1
+
+    assert_equal(S("ab"), S("ab")[0..max])
+    assert_equal(S("b"), S("ab")[1..max])
+    assert_equal(S("ab"), S("ab").byteslice(0..max))
+
+    s = S("ab")
+    assert_equal(S("ab"), s.slice!(0..max))
+    assert_equal(S(""), s)
+
+    s = S("ab")
+    s[0..max] = S("x")
+    assert_equal(S("x"), s)
+
+    s = S("ab")
+    s.bytesplice(0..max, S("x"))
+    assert_equal(S("x"), s)
+  end
+
   def test_AREF_invalid_encoding
     assert_equal(S("\x80"), S("A"*39+"\x80")[-1, 1])
   end
@@ -232,6 +253,8 @@ CODE
       s[/([A-Z]..)([A-Z]..)/, -2] = S("Bar")
       assert_equal(S("BarFoo"), s)
       assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, -3] = "None" }
+      assert_raise(IndexError) { s[/([A-Z]..)([A-Z]..)/, RbConfig::LIMITS["INT_MIN"]] = "None" }
+      assert_equal(S("BarFoo"), s)
     end
 
     s = S("FooBar")
@@ -251,6 +274,16 @@ CODE
     assert_raise(ArgumentError) { "foo"[1, 2, 3] = "" }
 
     assert_raise(IndexError) {"foo"[RbConfig::LIMITS["LONG_MIN"]] = "l"}
+  end
+
+  def test_ASET_string_modified_during_conversion
+    str = S("hello" * 100)
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace("")
+      "x"
+    end
+    assert_raise(RuntimeError) { str[/h.l/] = obj }
   end
 
   def test_CMP # '<=>'
@@ -416,6 +449,9 @@ CODE
     assert_equal(S("   hello   "), S("hello").center(11))
     assert_equal(S("ababaababa"), S("").center(10, "ab"), Bug2463)
     assert_equal(S("ababaababab"), S("").center(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_chomp
@@ -484,6 +520,19 @@ CODE
     assert_equal("foo", s.chomp("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp("\n"))
+
+    # capacity forces a heap buffer, so a read before the receiver leaves it
+    WIDE_ENCODINGS.each do |enc|
+      ["A", "AB", "ABC"].each do |bytes|
+        s = S(capacity: 4096)
+        s << bytes
+        s.force_encoding(enc)
+        label = "#{enc.name} #{bytes.bytesize}"
+        assert_equal(bytes.b, s.chomp.b, label)
+        assert_equal(bytes.b, s.chomp("").b, label)
+        assert_nil(s.chomp!, label)
+      end
+    end
   ensure
     $/ = save
     $VERBOSE = verbose
@@ -1020,6 +1069,17 @@ CODE
     assert_equal 0x3042, s.each_codepoint.next
   end
 
+  def test_setbyte_shrink_during_conversion
+    s = S('a' * 10_000_000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      s.concat("x" * 50)
+      0
+    end
+    assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
+  end
+
   def test_codepoints
     # Single byte optimization
     assert_equal [65, 66, 67], S("ABC").codepoints
@@ -1191,6 +1251,16 @@ CODE
     $VERBOSE = verbose
   end
 
+  def test_each_line_modified_separator
+    sep = S("x" * 1_000_000)
+    res = []
+    assert_raise_with_message(RuntimeError, /string modified/) do
+      S("a#{sep}b#{sep}c").each_line(sep) do |x|
+        sep.clear
+      end
+    end
+  end
+
   def test_each_line_chomp
     res = []
     S("hello\nworld").each_line("\n", chomp: true) {|x| res << x}
@@ -1255,6 +1325,11 @@ CODE
     assert_equal s.object_id, s.lines {|x| res << x }.object_id
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),  res[1])
+
+    s = S("AB").force_encoding(Encoding::UTF_32LE)
+    sep = S("B").force_encoding(Encoding::UTF_32LE)
+
+    assert_empty(s.lines(sep).to_a)
   end
 
   def test_empty?
@@ -1450,6 +1525,14 @@ CODE
     assert_index(nil, S("にんにちは"), ?に, 3)
   end
 
+  def test_index_truncated_char_at_end
+    s = S("a" * 2009 + "\xF0")
+    assert_nil(s.index("needle!!!"))
+    s = S("a" * 2010 + "\xE3")
+    assert_nil(s.index("needle!!!"))
+    assert_nil(s.index("needle!!\xE3"))
+  end
+
   def test_insert
     assert_equal("Xabcd", S("abcd").insert(0, 'X'))
     assert_equal("abcXd", S("abcd").insert(3, 'X'))
@@ -1475,6 +1558,9 @@ CODE
     assert_equal(S("hello      "), S("hello").ljust(11))
     assert_equal(S("ababababab"), S("").ljust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").ljust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_next
@@ -1645,6 +1731,19 @@ CODE
     assert_rindex(nil, S("こんにち"), S("こんにちは"))
     assert_rindex(nil, S("こ"), S("こんにちは"))
     assert_rindex(nil, S(""), S("こんにちは"))
+
+    assert_rindex(nil, S("A" * 1024), S("\u{3042}"))
+
+    # exact-size allocations, so a comparison past the last byte leaves them
+    assert_rindex(nil, S("A" * 1020 + "\u{3042}A"), S("\u{3042}\u{3044}"))
+    assert_rindex(nil, S("\u{3042}" + "A" * 1021), S("\u{3042}" * 1022))
+
+    WIDE_ENCODINGS.each do |enc|
+      pattern = "A".encode(enc)
+      stray = pattern.b[0]
+      assert_nil(S(stray).force_encoding(enc).rindex(pattern), enc.name)
+      assert_nil(S("B".encode(enc).b * 2 + stray).force_encoding(enc).rindex(pattern), enc.name)
+    end
   end
 
   def test_rjust
@@ -1652,6 +1751,9 @@ CODE
     assert_equal(S("      hello"), S("hello").rjust(11))
     assert_equal(S("ababababab"), S("").rjust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").rjust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_scan
@@ -1840,6 +1942,16 @@ CODE
 
     a = S("foo")
     assert_raise(ArgumentError) { a.slice! }
+  end
+
+  def test_slice_bang_string_modified
+    obj = Object.new
+    s = S("x" + "l" * 3999)
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      0
+    end
+    assert_nil(s.slice!(/l+$/, obj))
   end
 
   def test_split
@@ -2798,6 +2910,10 @@ CODE
     assert_equal(["", "", "foo"], S("foo").partition(/^=*/))
 
     assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal([s, "", ""], s.partition(sep))
   end
 
   def test_rpartition
@@ -2824,6 +2940,21 @@ CODE
     assert_equal("hello", hello, bug)
 
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal(["", "", s], s.rpartition(sep))
+  end
+
+  def test_rpartition_string_modified
+    str = S("héllo" * 1000)
+    replacement = S("hé")
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace(replacement)
+      "-"
+    end
+    assert_equal([S(""), S(""), replacement], str.rpartition(obj))
   end
 
   def test_fs_setter
@@ -3473,6 +3604,15 @@ CODE
     assert_equal(false, str.frozen?)
   end
 
+  def test_uminus_no_embed_gc
+    pad = "a"*2048
+    ("aa".."zz").each do |c|
+      fstr = -(c + pad).freeze
+      File.open(IO::NULL, "w").write(fstr)
+    end
+    GC.start
+  end
+
   def test_ord
     assert_equal(97, S("a").ord)
     assert_equal(97, S("abc").ord)
@@ -3550,6 +3690,16 @@ CODE
     assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
+  def test_byteindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byteindex("l", obj))
+  end
+
   def test_byterindex
     assert_byterindex(3, S("hello"), ?l)
     assert_byterindex(6, S("ell, hello"), S("ell"))
@@ -3602,6 +3752,16 @@ CODE
     assert_byterindex(nil, S("こんにち"), S("こんにちは"))
     assert_byterindex(nil, S("こ"), S("こんにちは"))
     assert_byterindex(nil, S(""), S("こんにちは"))
+  end
+
+  def test_byterindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byterindex("l", obj))
   end
 
   def test_bytesplice
