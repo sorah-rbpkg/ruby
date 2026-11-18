@@ -1001,10 +1001,10 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 {
-    VALUE *original_code;
+    VALUE *original_code = RUBY_ATOMIC_PTR_LOAD(ISEQ_BODY(iseq)->variable.original_iseq);
 
-    if (ISEQ_ORIGINAL_ISEQ(iseq)) return ISEQ_ORIGINAL_ISEQ(iseq);
-    original_code = ISEQ_ORIGINAL_ISEQ_ALLOC(iseq, ISEQ_BODY(iseq)->iseq_size);
+    if (original_code) return original_code;
+    original_code = ALLOC_N(VALUE, ISEQ_BODY(iseq)->iseq_size);
     MEMCPY(original_code, ISEQ_BODY(iseq)->iseq_encoded, VALUE, ISEQ_BODY(iseq)->iseq_size);
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
@@ -1020,6 +1020,15 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
         }
     }
 #endif
+
+    /* Concurrent callers can each build a copy; publish only fully
+     * translated code and keep the first one. */
+    VALUE *prev = ATOMIC_PTR_CAS(ISEQ_BODY(iseq)->variable.original_iseq,
+                                 NULL, original_code);
+    if (prev) {
+        ruby_xfree(original_code);
+        return prev;
+    }
     return original_code;
 }
 
@@ -2871,7 +2880,7 @@ static int
 iseq_set_exception_table(rb_iseq_t *iseq)
 {
     const VALUE *tptr, *ptr;
-    unsigned int tlen, i;
+    unsigned int tlen, i, table_size = 0;
     struct iseq_catch_table_entry *entry;
 
     ISEQ_BODY(iseq)->catch_table = NULL;
@@ -2886,24 +2895,30 @@ iseq_set_exception_table(rb_iseq_t *iseq)
         table->size = tlen;
 
         for (i = 0; i < table->size; i++) {
-            int pos;
             ptr = RARRAY_CONST_PTR(tptr[i]);
-            entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
+            int start = label_get_position((LABEL *)(ptr[1] & ~1));
+            int end = label_get_position((LABEL *)(ptr[2] & ~1));
+            int cont = 0;
+            int sp = 0;
+            if (start < 0 || end < 0) continue;
+            if (ptr[4]) {
+                LABEL *lobj = (LABEL *)(ptr[4] & ~1);
+                cont = label_get_position(lobj);
+                if (cont < 0) continue;
+                sp = label_get_sp(lobj);
+            }
+
+            entry = UNALIGNED_MEMBER_PTR(table, entries[table_size++]);
             entry->type = (enum rb_catch_type)(ptr[0] & 0xffff);
-            pos = label_get_position((LABEL *)(ptr[1] & ~1));
-            RUBY_ASSERT(pos >= 0);
-            entry->start = (unsigned int)pos;
-            pos = label_get_position((LABEL *)(ptr[2] & ~1));
-            RUBY_ASSERT(pos >= 0);
-            entry->end = (unsigned int)pos;
+            entry->start = (unsigned int)start;
+            entry->end = (unsigned int)end;
             entry->iseq = (rb_iseq_t *)ptr[3];
             RB_OBJ_WRITTEN(iseq, Qundef, entry->iseq);
 
             /* stack depth */
             if (ptr[4]) {
-                LABEL *lobj = (LABEL *)(ptr[4] & ~1);
-                entry->cont = label_get_position(lobj);
-                entry->sp = label_get_sp(lobj);
+                entry->cont = (unsigned int)cont;
+                entry->sp = sp;
 
                 /* TODO: Dirty Hack!  Fix me */
                 if (entry->type == CATCH_TYPE_RESCUE ||
@@ -2916,6 +2931,14 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             else {
                 entry->cont = 0;
             }
+        }
+        table->size = table_size;
+        if (table_size == 0) {
+            ruby_xfree(table);
+            table = NULL;
+        }
+        else if (table_size < tlen) {
+            table = ruby_xrealloc(table, iseq_catch_table_bytes(table_size));
         }
         ISEQ_BODY(iseq)->catch_table = table;
         RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
@@ -5639,7 +5662,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
                 ci = ci_flag_set(iseq, ci, VM_CALL_ARGS_SPLAT_MUT);
             }
             OPERAND_AT(iobj, 0) = (VALUE)ci;
-            RB_OBJ_WRITTEN(iseq, Qundef, iobj);
+            RB_OBJ_WRITTEN(iseq, Qundef, ci);
 
             /* Given: h[*a], h[*b, 1] = ary
              *  h[*a] uses splatarray false and does not set VM_CALL_ARGS_SPLAT_MUT,
@@ -12420,7 +12443,7 @@ pinned_list_fetch(VALUE list, long offset)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
@@ -12434,7 +12457,7 @@ pinned_list_store(VALUE list, long offset, VALUE object)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
@@ -12725,7 +12748,8 @@ ibf_load_builtin(const struct ibf_load *load, ibf_offset_t *offset)
     const struct rb_builtin_function *table = GET_VM()->builtin_function_table;
     if (table == NULL) rb_raise(rb_eArgError, "builtin function table is not provided");
     if (strncmp(table[i].name, name, len) != 0) {
-        rb_raise(rb_eArgError, "builtin function index (%d) mismatch (expect %s but %s)", i, name, table[i].name);
+        rb_raise(rb_eArgError, "builtin function index (%d) mismatch (expect %.*s but %s)",
+                 i, len, name, table[i].name);
     }
     // fprintf(stderr, "load-builtin: name:%s(%d)\n", table[i].name, table[i].argc);
 
@@ -14631,7 +14655,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
             fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", (void *)iseq);
 #endif
             FL_SET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
-            iseq->aux.loader.obj = load->loader_obj;
+            RB_OBJ_WRITE((VALUE)iseq, &iseq->aux.loader.obj, load->loader_obj);
             iseq->aux.loader.index = iseq_index;
 #if IBF_ISEQ_DEBUG
             fprintf(stderr, "ibf_load_iseq: iseq=%p loader_obj=%p index=%d\n",

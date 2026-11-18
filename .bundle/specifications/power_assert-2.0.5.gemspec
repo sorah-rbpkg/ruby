@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name = "power_assert".freeze
-  s.version = "2.0.5"
+  s.version = "2.0.5".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
@@ -17,6 +17,6 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/ruby/power_assert".freeze
   s.licenses = ["BSD-2-Clause".freeze, "Ruby".freeze]
   s.rdoc_options = ["--main".freeze, "README.md".freeze]
-  s.rubygems_version = "3.4.20".freeze
+  s.rubygems_version = "3.5.3".freeze
   s.summary = "Power Assert for Ruby".freeze
 end
