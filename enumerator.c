@@ -1213,6 +1213,7 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
             rb_str_buf_cat2(str, ")");
         }
     }
+    RB_GC_GUARD(eargs);
 
     return str;
 }
@@ -2269,6 +2270,8 @@ lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long mem
 
     if (!RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
+    /* entry is embedded in proc_entry, which only the procs array references */
+    RB_GC_GUARD(proc_entry);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
 
@@ -2316,6 +2319,7 @@ lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long m
 
     if (RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
+    RB_GC_GUARD(proc_entry);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
 
@@ -3579,9 +3583,9 @@ enum_product_enum_size(VALUE obj, VALUE args, VALUE eobj)
 struct product_state {
     VALUE  obj;
     VALUE  block;
+    int    index;
     int    argc;
     VALUE *argv;
-    int    index;
 };
 
 static VALUE product_each(VALUE, struct product_state *);
@@ -3620,15 +3624,23 @@ enum_product_run(VALUE obj, VALUE block)
 {
     struct enum_product *ptr = enum_product_ptr(obj);
     int argc = RARRAY_LENINT(ptr->enums);
+    if (argc == 0) { /* no need to allocate state.argv */
+        rb_funcall(block, id_call, 1, rb_ary_new());
+        return obj;
+    }
+
+    VALUE argsbuf = 0;
     struct product_state state = {
         .obj = obj,
         .block = block,
         .index = 0,
         .argc = argc,
-        .argv = ALLOCA_N(VALUE, argc),
+        .argv = ALLOCV_N(VALUE, argsbuf, argc),
     };
 
-    return product_each(obj, &state);
+    VALUE ret = product_each(obj, &state);
+    ALLOCV_END(argsbuf);
+    return ret;
 }
 
 /*
@@ -4237,6 +4249,7 @@ arith_seq_inspect(VALUE self)
             rb_str_buf_cat2(str, ")");
         }
     }
+    RB_GC_GUARD(eargs);
 
     rb_str_buf_cat2(str, ")");
 

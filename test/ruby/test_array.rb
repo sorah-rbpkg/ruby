@@ -1315,6 +1315,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
+  def test_pop_frozen_in_to_int
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.pop(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[1, 2, 3, 4, 5]
+    n = Object.new
+    n.define_singleton_method(:to_int) { a.freeze; 2 }
+    assert_raise(FrozenError) { a.shift(n) }
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+  end
+
   def test_prepend
     a = @cls[]
     assert_equal(@cls['cat'], a.prepend('cat'))
@@ -1700,6 +1714,33 @@ class TestArray < Test::Unit::TestCase
     assert_equal @cls[], a.slice(10..7)
 
     assert_equal([100], a.slice(-1, 1_000_000_000))
+  end
+
+  def test_range_with_len_max_end
+    max = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1) - 1
+
+    a = @cls[1, 2]
+    assert_equal(@cls[1, 2], a[0..max])
+    assert_equal(@cls[2], a[1..max])
+    assert_equal(@cls[2], a[-1..max])
+    assert_equal(@cls[1, 2], a[(0..max) % 1])
+    assert_raise(RangeError) { a[(0..max) % 2] }
+
+    a = @cls[1, 2]
+    assert_equal(@cls[1, 2], a.slice!(0..max))
+    assert_equal(@cls[], a)
+
+    a = @cls[1, 2]
+    assert_equal(@cls[2], a.slice!(1..max))
+    assert_equal(@cls[1], a)
+
+    a = @cls[1, 2]
+    a[0..max] = 9
+    assert_equal(@cls[9], a)
+
+    # Same as with 0...max
+    assert_raise(ArgumentError) { @cls[1, 2].fill(0, 0..max) }
+    assert_raise(IndexError) { @cls[1, 2].values_at(0..max) }
   end
 
   def test_slice_gc_compact_stress
@@ -2472,6 +2513,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
   end
 
+  def test_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 2], [2, 1]], ary.permutation(obj).to_a)
+  end
+
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
@@ -2513,6 +2565,17 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+  end
+
+  def test_repeated_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 1], [1, 2], [2, 1], [2, 2]], ary.repeated_permutation(obj).to_a)
   end
 
   def test_repeated_permutation_stack_error
@@ -2619,6 +2682,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 1, 1], Array.new(3, 1))
     assert_equal([1, 1, 1], Array.new(3) { 1 })
     assert_equal([1, 1, 1], assert_warning(/block supersedes default value argument/) {Array.new(3, 1) { 1 }})
+    assert_equal([], [1].instance_eval { initialize(0) })
   end
 
   def test_aset_error
