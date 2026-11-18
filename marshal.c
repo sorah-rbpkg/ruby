@@ -310,6 +310,21 @@ w_bytes(const char *s, long n, struct dump_arg *arg)
     w_nbyte(s, n, arg);
 }
 
+/* Like w_bytes, but for a Ruby String. Flushing the dump buffer in w_long
+ * can run arbitrary Ruby code through the destination IO's write method,
+ * which can modify the string, so re-validate it before using the pointer. */
+static void
+w_str_bytes(VALUE str, struct dump_arg *arg)
+{
+    long len = RSTRING_LEN(str);
+    const char *ptr = RSTRING_PTR(str);
+    w_long(len, arg);
+    if (RSTRING_PTR(str) != ptr || RSTRING_LEN(str) != len) {
+        rb_raise(rb_eRuntimeError, "string modified during dump");
+    }
+    w_nbyte(ptr, len, arg);
+}
+
 #define w_cstr(s, arg) w_bytes((s), strlen(s), (arg))
 
 static void
@@ -937,7 +952,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             }
             if (hasiv) w_byte(TYPE_IVAR, arg);
             w_class(TYPE_USERDEF, obj, arg, FALSE);
-            w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
+            w_str_bytes(v, arg);
             if (hasiv) {
                 st_data_t userdefs = (st_data_t)obj;
                 if (!arg->userdefs) {
@@ -1040,7 +1055,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
           case T_STRING:
             w_uclass(obj, rb_cString, arg);
             w_byte(TYPE_STRING, arg);
-            w_bytes(RSTRING_PTR(obj), RSTRING_LEN(obj), arg);
+            w_str_bytes(obj, arg);
             break;
 
           case T_REGEXP:
@@ -1267,6 +1282,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 struct load_arg {
     VALUE src;
     char *buf;
+    long bufsize;
     long buflen;
     long readable;
     long offset;
@@ -1298,6 +1314,8 @@ mark_load_arg(void *ptr)
     struct load_arg *p = ptr;
     if (!p->symbols)
         return;
+    rb_gc_mark(p->src);
+    rb_gc_mark(p->proc);
     rb_mark_tbl(p->symbols);
     rb_mark_tbl(p->data);
     rb_mark_tbl(p->partial_objects);
@@ -1352,15 +1370,23 @@ static unsigned char
 r_byte1_buffered(struct load_arg *arg)
 {
     if (arg->buflen == 0) {
-        long readable = arg->readable < BUFSIZ ? arg->readable : BUFSIZ;
+        long readable = arg->readable < arg->bufsize ? arg->readable : arg->bufsize;
+        long read_len;
         VALUE str, n = LONG2NUM(readable);
 
         str = load_funcall(arg, arg->src, s_read, 1, &n);
         if (NIL_P(str)) too_short();
         StringValue(str);
-        memcpy(arg->buf, RSTRING_PTR(str), RSTRING_LEN(str));
+        read_len = RSTRING_LEN(str);
+        if (UNLIKELY(read_len < readable)) too_short();
+        if (UNLIKELY(read_len > arg->bufsize)) {
+            arg->buf = ruby_sized_realloc_n(arg->buf, read_len, 1, arg->bufsize);
+            arg->bufsize = read_len;
+        }
+        memcpy(arg->buf, RSTRING_PTR(str), read_len);
         arg->offset = 0;
-        arg->buflen = RSTRING_LEN(str);
+        arg->buflen = read_len;
+        RB_GC_GUARD(str);
     }
     arg->buflen--;
     return arg->buf[arg->offset++];
@@ -1447,6 +1473,18 @@ ruby_marshal_read_long(const char **buf, long len)
     return x;
 }
 
+static long
+r_keep_readable(struct load_arg *arg, long len, size_t size)
+{
+    if (UNLIKELY(len < 0)) {
+        rb_raise(rb_eArgError, "negative length");
+    }
+    if (UNLIKELY((unsigned long)len > SIZE_MAX / size || arg->readable >= LONG_MAX - len)) {
+        rb_raise(rb_eArgError, "marshaled data too big");
+    }
+    return len;
+}
+
 static VALUE
 r_bytes1(long len, struct load_arg *arg)
 {
@@ -1476,7 +1514,7 @@ r_bytes1_buffered(long len, struct load_arg *arg)
         long tmp_len, read_len, need_len = len - buflen;
         VALUE tmp, n;
 
-        readable = readable < BUFSIZ ? readable : BUFSIZ;
+        readable = readable < arg->bufsize ? readable : arg->bufsize;
         read_len = need_len > readable ? need_len : readable;
         n = LONG2NUM(read_len);
         tmp = load_funcall(arg, arg->src, s_read, 1, &n);
@@ -1492,6 +1530,10 @@ r_bytes1_buffered(long len, struct load_arg *arg)
 
         if (tmp_len > need_len) {
             buflen = tmp_len - need_len;
+            if (UNLIKELY(buflen > arg->bufsize)) {
+                arg->buf = ruby_sized_realloc_n(arg->buf, buflen, 1, arg->bufsize);
+                arg->bufsize = buflen;
+            }
             memcpy(arg->buf, RSTRING_PTR(tmp)+need_len, buflen);
             arg->buflen = buflen;
         }
@@ -1955,6 +1997,11 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
 
                 if (TYPE(v) != TYPE(tmp)) goto format_error;
             }
+            if (RB_TYPE_P(v, T_STRUCT) &&
+                RSTRUCT_LEN(v) != RARRAY_LEN(rb_struct_s_members(c))) {
+                rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (struct size differs)",
+                         rb_class_name(c));
+            }
             RBASIC_SET_CLASS(v, c);
         }
         break;
@@ -2018,7 +2065,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             int sign;
 
             sign = r_byte(arg);
-            len = r_long(arg);
+            len = r_keep_readable(arg, r_long(arg), 2);
 
             if (SIZEOF_VALUE >= 8 && len <= 4) {
                 // Representable within uintptr, likely FIXNUM
@@ -2093,7 +2140,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
 
       case TYPE_ARRAY:
         {
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 1);
 
             v = rb_ary_new2(len);
             v = r_entry(v, arg);
@@ -2111,7 +2158,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
       case TYPE_HASH_DEF:
       type_hash:
         {
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 2);
 
             v = hash_new_with_size(len);
             v = r_entry(v, arg);
@@ -2137,7 +2184,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             VALUE slot;
             st_index_t idx = r_prepare(arg);
             VALUE klass = path2class(r_unique(arg));
-            long len = r_long(arg);
+            long len = r_keep_readable(arg, r_long(arg), 2);
 
             v = rb_obj_alloc(klass);
             if (!RB_TYPE_P(v, T_STRUCT)) {
@@ -2358,6 +2405,7 @@ clear_load_arg(struct load_arg *arg)
         xfree(arg->buf);
         arg->buf = 0;
     }
+    arg->bufsize = 0;
     arg->buflen = 0;
     arg->offset = 0;
     arg->readable = 0;
@@ -2403,10 +2451,14 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->readable = 0;
     arg->freeze = freeze;
 
-    if (NIL_P(v))
+    if (NIL_P(v)) {
+        arg->bufsize = BUFSIZ;
         arg->buf = xmalloc(BUFSIZ);
-    else
+    }
+    else {
+        arg->bufsize = 0;
         arg->buf = 0;
+    }
 
     major = r_byte(arg);
     minor = r_byte(arg);
