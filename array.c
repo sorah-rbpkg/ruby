@@ -382,13 +382,14 @@ rb_ary_make_embedded(VALUE ary)
     if (!ARY_EMBED_P(ary)) {
         const VALUE *buf = ARY_HEAP_PTR(ary);
         long len = ARY_HEAP_LEN(ary);
+        long capa = ARY_HEAP_CAPA(ary);
 
         FL_SET_EMBED(ary);
         ARY_SET_EMBED_LEN(ary, len);
 
         MEMCPY((void *)ARY_EMBED_PTR(ary), (void *)buf, VALUE, len);
 
-        ary_heap_free_ptr(ary, buf, len * sizeof(VALUE));
+        ary_heap_free_ptr(ary, buf, capa * sizeof(VALUE));
     }
 }
 
@@ -423,7 +424,7 @@ ary_resize_capa(VALUE ary, long capacity)
 
             if (len > capacity) len = capacity;
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
-            ary_heap_free_ptr(ary, ptr, old_capa);
+            ary_heap_free_ptr(ary, ptr, old_capa * sizeof(VALUE));
 
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
@@ -1116,6 +1117,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     }
     /* recheck after argument conversion */
     rb_ary_modify(ary);
+    ARY_SET_LEN(ary, 0);
     ary_resize_capa(ary, len);
     if (rb_block_given_p()) {
         long i;
@@ -1444,6 +1446,7 @@ rb_ary_pop_m(int argc, VALUE *argv, VALUE ary)
 
     rb_ary_modify_check(ary);
     result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_LAST);
+    rb_ary_modify_check(ary);
     ARY_INCREASE_LEN(ary, -RARRAY_LEN(result));
     ary_verify(ary);
     return result;
@@ -3086,6 +3089,7 @@ rb_ary_reverse_m(VALUE ary)
         const VALUE *p1 = RARRAY_CONST_PTR(ary);
         VALUE *p2 = (VALUE *)RARRAY_CONST_PTR(dup) + len - 1;
         do *p2-- = *p1++; while (--len > 0);
+        rb_gc_writebarrier_remember(dup);
     }
     ARY_SET_LEN(dup, RARRAY_LEN(ary));
     return dup;
@@ -5171,8 +5175,8 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
-VALUE
-rb_ary_hash_values(long len, const VALUE *elements)
+static VALUE
+ary_hash_values(long len, const VALUE *elements, const VALUE ary)
 {
     long i;
     st_index_t h;
@@ -5183,9 +5187,19 @@ rb_ary_hash_values(long len, const VALUE *elements)
     for (i=0; i<len; i++) {
         n = rb_hash(elements[i]);
         h = rb_hash_uint(h, NUM2LONG(n));
+        if (ary) {
+            len = RARRAY_LEN(ary);
+            elements = RARRAY_CONST_PTR(ary);
+        }
     }
     h = rb_hash_end(h);
     return ST2FIX(h);
+}
+
+VALUE
+rb_ary_hash_values(long len, const VALUE *elements)
+{
+    return ary_hash_values(len, elements, 0);
 }
 
 /*
@@ -5204,7 +5218,8 @@ rb_ary_hash_values(long len, const VALUE *elements)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    return rb_ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
+    RBIMPL_ASSERT_OR_ASSUME(ary);
+    return ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), ary);
 }
 
 /*
@@ -6543,6 +6558,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     n = NUM2LONG(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
     if (n > len) n = len;
+    if (n <= 0) return rb_ary_new_capa(0);
     if (n <= numberof(idx)) {
         for (i = 0; i < n; ++i) {
             rnds[i] = RAND_UPTO(len - i);
@@ -6931,13 +6947,17 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 static VALUE
 rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 {
-    long r, n, i;
+    long r, i;
 
-    n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_permutation_size);   /* Return enumerator if no block */
-    r = n;
-    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0]))
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
         r = NUM2LONG(argv[0]);            /* Permutation size from argument */
+    }
+    else {
+        r = RARRAY_LEN(ary);
+    }
+
+    long n = RARRAY_LEN(ary);
 
     if (r < 0 || n < r) {
         /* no permutations: yield nothing */
@@ -7200,11 +7220,9 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 static VALUE
 rb_ary_repeated_permutation(VALUE ary, VALUE num)
 {
-    long r, n, i;
-
-    n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, 1, &num, rb_ary_repeated_permutation_size);      /* Return Enumerator if no block */
-    r = NUM2LONG(num);                    /* Permutation size from argument */
+    long r = NUM2LONG(num);                    /* Permutation size from argument */
+    long n = RARRAY_LEN(ary);
 
     if (r < 0) {
         /* no permutations: yield nothing */
@@ -7213,7 +7231,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
         rb_yield(rb_ary_new2(0));
     }
     else if (r == 1) { /* this is a special, easy case */
-        for (i = 0; i < RARRAY_LEN(ary); i++) {
+        for (long i = 0; i < RARRAY_LEN(ary); i++) {
             rb_yield(rb_ary_new3(1, RARRAY_AREF(ary, i)));
         }
     }

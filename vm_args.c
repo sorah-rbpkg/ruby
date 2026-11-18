@@ -508,6 +508,13 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
      * <- ISEQ_BODY(iseq)->param.size------------>
      * ^ locals                             ^ sp
      */
+    if ((unsigned int)calling->argc < ISEQ_BODY(iseq)->param.size) {
+        /* Ensure the nil-fill below and the SP extension do not run into the
+         * control frame region, clobbering frames before the stack overflow
+         * check in vm_push_frame has a chance to raise SystemStackError. */
+        CHECK_VM_STACK_OVERFLOW0(ec->cfp, locals + calling->argc,
+                                 ISEQ_BODY(iseq)->param.size - calling->argc);
+    }
     for (i=calling->argc; i<ISEQ_BODY(iseq)->param.size; i++) {
         locals[i] = Qnil;
     }
@@ -710,11 +717,12 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     if (ISEQ_BODY(iseq)->param.flags.has_rest) {
         args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);
         VALUE ary = *(locals + ISEQ_BODY(iseq)->param.rest_start);
-        VALUE index = RARRAY_LEN(ary) - 1;
+        long index = RARRAY_LEN(ary);
         if (splat_flagged_keyword_hash &&
             !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
             !ISEQ_BODY(iseq)->param.flags.has_kw &&
             !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+            index-- > 0 &&
             RARRAY_AREF(ary, index) == splat_flagged_keyword_hash) {
             ((struct RHash *)rest_last)->basic.flags &= ~RHASH_PASS_AS_KEYWORDS;
             RARRAY_ASET(ary, index, rest_last);
