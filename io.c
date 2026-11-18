@@ -931,7 +931,7 @@ rb_io_set_timeout(VALUE self, VALUE timeout)
 
     rb_io_t *fptr = rb_io_get_fptr(self);
 
-    fptr->timeout = timeout;
+    RB_OBJ_WRITE(self, &fptr->timeout, timeout);
 
     return self;
 }
@@ -3249,6 +3249,11 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
         fptr->cbuf.len += (int)(dp - ds);
 
         putbackable = rb_econv_putbackable(fptr->readconv);
+        /* The converter can hold readagain bytes it received in an earlier
+         * fill (a character split across reads). Only bytes still in rbuf
+         * can be put back there; the rest stay in the converter. */
+        if (putbackable > fptr->rbuf.off)
+            putbackable = fptr->rbuf.off;
         if (putbackable) {
             rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf.ptr + fptr->rbuf.off - putbackable, putbackable);
             fptr->rbuf.off -= putbackable;
@@ -3887,6 +3892,7 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 static const char *
 search_delim(const char *p, long len, int delim, rb_encoding *enc)
 {
+    if (delim < 0) return NULL;
     if (rb_enc_mbminlen(enc) == 1) {
         p = memchr(p, delim, len);
         if (p) return p + 1;
@@ -6159,7 +6165,9 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LONG(len);
-
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
     shrinkable = io_setstrbuf(&str, ilen);
     if (ilen == 0) return str;
 
@@ -6260,13 +6268,18 @@ static VALUE
 rb_io_pread(int argc, VALUE *argv, VALUE io)
 {
     VALUE len, offset, str;
+    long ilen;
     rb_io_t *fptr;
     ssize_t n;
     struct prdwr_internal_arg arg = {.io = io};
     int shrinkable;
 
     rb_scan_args(argc, argv, "21", &len, &offset, &str);
-    arg.count = NUM2SIZET(len);
+    ilen = NUM2LONG(len);
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+    arg.count = (size_t)ilen;
     arg.offset = NUM2OFFT(offset);
 
     shrinkable = io_setstrbuf(&str, (long)arg.count);
@@ -13141,6 +13154,21 @@ nogvl_copy_stream_func(void *arg)
     return 0;
 }
 
+struct copy_stream_fallback_read_arg {
+    struct copy_stream_struct *stp;
+    VALUE buf;
+    long len;
+    rb_off_t offset;
+};
+
+static VALUE
+copy_stream_fallback_read(VALUE arg)
+{
+    struct copy_stream_fallback_read_arg *p = (void *)arg;
+    return (VALUE)maygvl_copy_stream_read(1, p->stp, RSTRING_PTR(p->buf),
+                                          p->len, p->offset);
+}
+
 static VALUE
 copy_stream_fallback_body(VALUE arg)
 {
@@ -13179,9 +13207,11 @@ copy_stream_fallback_body(VALUE arg)
                 break;
         }
         else {
-            ssize_t ss;
             rb_str_resize(buf, buflen);
-            ss = maygvl_copy_stream_read(1, stp, RSTRING_PTR(buf), l, off);
+            struct copy_stream_fallback_read_arg read_arg = {stp, buf, l, off};
+            ssize_t ss =
+                (ssize_t)rb_str_locktmp_ensure(buf, copy_stream_fallback_read,
+                                               (VALUE)&read_arg);
             rb_str_resize(buf, ss > 0 ? ss : 0);
             if (ss < 0)
                 return Qnil;
@@ -13463,7 +13493,7 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_external_encoding(VALUE io)
 {
-    rb_io_t *fptr = RFILE(rb_io_taint_check(io))->fptr;
+    rb_io_t *fptr = rb_io_get_fptr(rb_io_taint_check(io));
 
     if (fptr->encs.enc2) {
         return rb_enc_from_encoding(fptr->encs.enc2);
@@ -13491,7 +13521,7 @@ rb_io_external_encoding(VALUE io)
 static VALUE
 rb_io_internal_encoding(VALUE io)
 {
-    rb_io_t *fptr = RFILE(rb_io_taint_check(io))->fptr;
+    rb_io_t *fptr = rb_io_get_fptr(rb_io_taint_check(io));
 
     if (!fptr->encs.enc2) return Qnil;
     return rb_enc_from_encoding(io_read_encoding(fptr));
