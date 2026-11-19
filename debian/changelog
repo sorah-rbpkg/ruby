@@ -1,6 +1,7 @@
 ruby4.0 (4.0.10-0nkmi1~dist) unstable; urgency=medium
 
   * 4.0.10
+  * Drop early backports of ruby/ruby#17147, #17148, released in 4.0.10
 
  -- Sorah Fukumori <her@sorah.jp>  Thu, 19 Nov 2026 08:42:44 +0900
 
