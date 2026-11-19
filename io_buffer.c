@@ -39,6 +39,7 @@ size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
 enum {
     RB_IO_BUFFER_HEXDUMP_DEFAULT_WIDTH = 16,
+    RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH = 1024,
 
     RB_IO_BUFFER_INSPECT_HEXDUMP_MAXIMUM_SIZE = 256,
     RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH = 16,
@@ -384,7 +385,7 @@ io_buffer_extract_size(VALUE argument)
 }
 
 // Extract a width argument, which must be a non-negative integer, and must be
-// at least the given minimum.
+// at least the given minimum and at most RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH.
 static inline size_t
 io_buffer_extract_width(VALUE argument, size_t minimum)
 {
@@ -396,6 +397,10 @@ io_buffer_extract_width(VALUE argument, size_t minimum)
 
     if (width < minimum) {
         rb_raise(rb_eArgError, "Width must be at least %" PRIuSIZE "!", minimum);
+    }
+
+    if (width > RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH) {
+        rb_raise(rb_eArgError, "Width must be at most %" PRIuSIZE "!", (size_t)RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH);
     }
 
     return width;
@@ -2368,6 +2373,10 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
 
     size_t offset, count;
     io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc, argv, &offset, &count);
+
+    if (size_sum_is_bigger_than(offset, count, size)) {
+        rb_raise(rb_eArgError, "Specified offset+count is bigger than the buffer size!");
+    }
 
     for (size_t i = 0; i < count; i++) {
         unsigned char *value = (unsigned char *)base + i + offset;

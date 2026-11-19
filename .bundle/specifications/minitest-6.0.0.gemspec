@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name = "minitest".freeze
-  s.version = "6.0.0"
+  s.version = "6.0.0".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "bug_tracker_uri" => "https://github.com/minitest/minitest/issues", "changelog_uri" => "https://github.com/minitest/minitest/blob/master/History.rdoc", "homepage_uri" => "https://minite.st/", "source_code_uri" => "https://github.com/minitest/minitest" } if s.respond_to? :metadata=
@@ -20,13 +20,13 @@ Gem::Specification.new do |s|
   s.licenses = ["MIT".freeze]
   s.rdoc_options = ["--main".freeze, "README.rdoc".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 3.2".freeze)
-  s.rubygems_version = "3.4.20".freeze
+  s.rubygems_version = "3.7.2".freeze
   s.summary = "minitest provides a complete suite of testing facilities supporting TDD, BDD, and benchmarking".freeze
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<prism>.freeze, ["~> 1.5"])
-  s.add_development_dependency(%q<rdoc>.freeze, [">= 4.0", "< 7"])
-  s.add_development_dependency(%q<simplecov>.freeze, ["~> 0.21"])
-  s.add_development_dependency(%q<hoe>.freeze, ["~> 4.3"])
+  s.add_runtime_dependency(%q<prism>.freeze, ["~> 1.5".freeze])
+  s.add_development_dependency(%q<rdoc>.freeze, [">= 4.0".freeze, "< 7".freeze])
+  s.add_development_dependency(%q<simplecov>.freeze, ["~> 0.21".freeze])
+  s.add_development_dependency(%q<hoe>.freeze, ["~> 4.3".freeze])
 end
