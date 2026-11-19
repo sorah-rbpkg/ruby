@@ -118,6 +118,7 @@ typedef union {
 #define MAX_INTEGER_PACK_SIZE 8
 
 static const char toofew[] = "too few arguments";
+static const char intoitself[] = "cannot pack buffer object into itself";
 
 static void encodes(VALUE,const char*,long,int,int);
 static void qpencode(VALUE,VALUE,long);
@@ -212,16 +213,16 @@ skip_to_eol(const char *p, const char *pend)
     (ISSPACE(type) || (type == '#' && (p = skip_to_eol(p, pend), 1)))
 
 #ifndef NATINT_PACK
-# define pack_modifiers(p, t, n, e) pack_modifiers(p, t, e)
+# define pack_modifiers(p, pe, t, n, e) pack_modifiers(p, pe, t, e)
 #endif
 static char *
-pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
+pack_modifiers(const char *p, const char *pend, char type, int *natint, int *explicit_endian)
 {
-     while (1) {
-         switch (*p) {
-           case '_':
-           case '!':
-             if (strchr(natstr, type)) {
+    while (p < pend) {
+        switch (*p) {
+          case '_':
+          case '!':
+            if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
                  *natint = 1;
 #endif
@@ -246,6 +247,7 @@ pack_modifiers(const char *p, char type, int *natint, int *explicit_endian)
              return (char *)p;
          }
     }
+    return (char *)p;
 }
 
 static VALUE
@@ -279,9 +281,12 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 #define MORE_ITEM (idx < RARRAY_LEN(ary))
 #define THISFROM (MORE_ITEM ? RARRAY_AREF(ary, idx) : TOO_FEW)
 #define NEXTFROM (MORE_ITEM ? RARRAY_AREF(ary, idx++) : TOO_FEW)
+#define NOT_BUFFER(val) (((val) == res) ? rb_raise(rb_eArgError, intoitself) : (void)0)
+#define STR_FROM(val) NOT_BUFFER(StringValue(val))
 
     while (p < pend) {
         int explicit_endian = 0;
+        bool star = false;
         if (RSTRING_END(fmt) != pend) {
             rb_raise(rb_eRuntimeError, "format string modified");
         }
@@ -291,9 +296,10 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 #endif
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (*p == '*') {	/* set data length */
+            star = true;
             len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
                 : RARRAY_LEN(ary) - idx;
@@ -333,12 +339,14 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 plen = 0;
             }
             else {
-                StringValue(from);
+                STR_FROM(from);
                 ptr = RSTRING_PTR(from);
                 plen = RSTRING_LEN(from);
             }
 
-            if (p[-1] == '*')
+            /* The conversion of from with #to_str may have modified fmt,
+             * so p may be a dangling pointer; use star instead of p[-1]. */
+            if (star)
                 len = plen;
 
             switch (type) {
@@ -347,7 +355,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'Z':         /* null terminated string  */
                 if (plen >= len) {
                     rb_str_buf_cat(res, ptr, len);
-                    if (p[-1] == '*' && type == 'Z')
+                    if (star && type == 'Z')
                         rb_str_buf_cat(res, "", 1);
                 }
                 else {
@@ -670,7 +678,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'u':		/* uuencoded string */
           case 'm':		/* base64 encoded string */
             from = NEXTFROM;
-            StringValue(from);
+            STR_FROM(from);
             ptr = RSTRING_PTR(from);
             plen = RSTRING_LEN(from);
 
@@ -700,6 +708,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
           case 'M':		/* quoted-printable encoded string */
             from = rb_obj_as_string(NEXTFROM);
+            NOT_BUFFER(from);
             if (len <= 1)
                 len = 72;
             qpencode(res, from, len);
@@ -708,7 +717,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'P':		/* pointer to packed byte string */
             from = THISFROM;
             if (!NIL_P(from)) {
-                StringValue(from);
+                STR_FROM(from);
                 if (RSTRING_LEN(from) < len) {
                     rb_raise(rb_eArgError, "too short buffer for P(%ld for %ld)",
                              RSTRING_LEN(from), len);
@@ -718,13 +727,11 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             /* FALL THROUGH */
           case 'p':		/* pointer to string */
             while (len-- > 0) {
-                char *t;
+                char *t = 0;
                 from = NEXTFROM;
-                if (NIL_P(from)) {
-                    t = 0;
-                }
-                else {
-                    t = StringValuePtr(from);
+                if (!NIL_P(from)) {
+                    STR_FROM(from);
+                    t = RSTRING_PTR(from);
                 }
                 if (!associates) {
                     associates = rb_ary_new();
@@ -958,6 +965,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
     int signed_p, integer_size, bigendian_p;
     const char *sptr;
     long slen;
+    const char *fptr;
+    long flen;
 #define UNPACK_PUSH(item) do {\
         VALUE item_val = (item);\
         if ((mode) == UNPACK_BLOCK) {\
@@ -965,6 +974,10 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
             /* The block may have modified str and invalidated s */ \
             if (RSTRING_PTR(str) != sptr || RSTRING_LEN(str) != slen) {\
                 rb_raise(rb_eRuntimeError, "string modified");\
+            }\
+            /* The block may have also modified fmt and invalidated p */ \
+            if (RSTRING_PTR(fmt) != fptr || RSTRING_LEN(fmt) != flen) {\
+                rb_raise(rb_eRuntimeError, "format string modified");\
             }\
         }\
         else if ((mode) == UNPACK_ARRAY) {\
@@ -991,6 +1004,8 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
+    fptr = p;
+    flen = RSTRING_LEN(fmt);
 
 #define UNPACK_FETCH(var, type) (memcpy((var), s, sizeof(type)), s += sizeof(type))
 
@@ -1004,7 +1019,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
         int star = 0;
 
         if (skip_blank(p, type)) continue;
-        p = pack_modifiers(p, type, &natint, &explicit_endian);
+        p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (p >= pend)
             len = 1;
@@ -1398,7 +1413,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
           case 'm':
             {
-                VALUE buf = rb_str_new(0, (send - s + 3)*3/4); /* +3 is for skipping paddings */
+                VALUE buf = rb_str_new(0, (send - s + 3) / 4 * 3); /* +3 is for skipping paddings */
                 char *ptr = RSTRING_PTR(buf);
                 int a = -1,b = -1,c = 0,d = 0;
                 static signed char b64_xtable[256];

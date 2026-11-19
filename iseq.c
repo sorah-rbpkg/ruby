@@ -245,11 +245,16 @@ iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original
 
     while (bits) {
         offset = ntz_intptr(bits);
-        VALUE op = code[page_offset + offset];
-        rb_gc_mark_and_move(&code[page_offset + offset]);
-        VALUE newop = code[page_offset + offset];
-        if (original_iseq && newop != op) {
-            original_iseq[page_offset + offset] = newop;
+        if (original_iseq) {
+            VALUE op = original_iseq[page_offset + offset];
+            rb_gc_mark_and_move(&code[page_offset + offset]);
+            VALUE newop = code[page_offset + offset];
+            if (op != newop) {
+                original_iseq[page_offset + offset] = newop;
+            }
+        }
+        else {
+            rb_gc_mark_and_move(&code[page_offset + offset]);
         }
         bits &= bits - 1; // Reset Lowest Set Bit (BLSR)
     }
@@ -2671,6 +2676,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
                 CALL_FLAG(KW_SPLAT);
                 CALL_FLAG(KW_SPLAT_MUT);
                 CALL_FLAG(FORWARDING);
+                CALL_FLAG(IGNORE_REFINEMENTS);
                 CALL_FLAG(OPT_SEND); /* maybe not reachable */
                 rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
             }
@@ -3370,6 +3376,7 @@ iseq_type_id(enum rb_iseq_type type)
 static VALUE
 iseq_data_to_ary(const rb_iseq_t *iseq)
 {
+    VALUE iseq_value = (VALUE)iseq;
     unsigned int i;
     long l;
     const struct rb_iseq_constant_body *const iseq_body = ISEQ_BODY(iseq);
@@ -3702,6 +3709,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, params);
     rb_ary_push(val, exception);
     rb_ary_push(val, body);
+
+    RB_GC_GUARD(iseq_value);
+
     return val;
 }
 

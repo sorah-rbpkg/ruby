@@ -297,6 +297,21 @@ w_bytes(const char *s, long n, struct dump_arg *arg)
     w_nbyte(s, n, arg);
 }
 
+/* Like w_bytes, but for a Ruby String. Flushing the dump buffer in w_long
+ * can run arbitrary Ruby code through the destination IO's write method,
+ * which can modify the string, so re-validate it before using the pointer. */
+static void
+w_str_bytes(VALUE str, struct dump_arg *arg)
+{
+    long len = RSTRING_LEN(str);
+    const char *ptr = RSTRING_PTR(str);
+    w_long(len, arg);
+    if (RSTRING_PTR(str) != ptr || RSTRING_LEN(str) != len) {
+        rb_raise(rb_eRuntimeError, "string modified during dump");
+    }
+    w_nbyte(ptr, len, arg);
+}
+
 #define w_cstr(s, arg) w_bytes((s), strlen(s), (arg))
 
 static void
@@ -910,7 +925,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             }
             if (hasiv) w_byte(TYPE_IVAR, arg);
             w_class(TYPE_USERDEF, obj, arg, FALSE);
-            w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
+            w_str_bytes(v, arg);
             if (hasiv) {
                 st_data_t userdefs = (st_data_t)obj;
                 if (!arg->userdefs) {
@@ -1013,7 +1028,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
           case T_STRING:
             w_uclass(obj, rb_cString, arg);
             w_byte(TYPE_STRING, arg);
-            w_bytes(RSTRING_PTR(obj), RSTRING_LEN(obj), arg);
+            w_str_bytes(obj, arg);
             break;
 
           case T_REGEXP:
@@ -1272,6 +1287,8 @@ mark_load_arg(void *ptr)
     struct load_arg *p = ptr;
     if (!p->symbols)
         return;
+    rb_gc_mark(p->src);
+    rb_gc_mark(p->proc);
     rb_mark_tbl(p->symbols);
     rb_mark_tbl(p->data);
     rb_mark_tbl(p->partial_objects);
@@ -1486,6 +1503,10 @@ r_bytes1_buffered(long len, struct load_arg *arg)
 
         if (tmp_len > need_len) {
             buflen = tmp_len - need_len;
+            if (UNLIKELY(buflen > arg->bufsize)) {
+                arg->buf = ruby_sized_realloc_n(arg->buf, buflen, 1, arg->bufsize);
+                arg->bufsize = buflen;
+            }
             memcpy(arg->buf, RSTRING_PTR(tmp)+need_len, buflen);
             arg->buflen = buflen;
         }
@@ -1957,6 +1978,11 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 VALUE tmp = rb_obj_alloc(c);
 
                 if (TYPE(v) != TYPE(tmp)) goto format_error;
+            }
+            if (RB_TYPE_P(v, T_STRUCT) &&
+                RSTRUCT_LEN(v) != RARRAY_LEN(rb_struct_s_members(c))) {
+                rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (struct size differs)",
+                         rb_class_name(c));
             }
             RBASIC_SET_CLASS(v, c);
         }

@@ -4,7 +4,7 @@
 
 Gem::Specification.new do |s|
   s.name = "fiddle".freeze
-  s.version = "1.1.8"
+  s.version = "1.1.8".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "changelog_uri" => "https://github.com/ruby/fiddle/releases", "msys2_mingw_dependencies" => "libffi" } if s.respond_to? :metadata=
@@ -18,6 +18,6 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/ruby/fiddle".freeze
   s.licenses = ["Ruby".freeze, "BSD-2-Clause".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.5.0".freeze)
-  s.rubygems_version = "3.4.20".freeze
+  s.rubygems_version = "3.6.7".freeze
   s.summary = "A libffi wrapper for Ruby.".freeze
 end

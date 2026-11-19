@@ -3795,7 +3795,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
         LABEL_REF(not_basic_new);
         // optimized path
-        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL | VM_CALL_IGNORE_REFINEMENTS), kw_arg);
         PUSH_INSNL(ret, location, jump, not_basic_new_finish);
 
         PUSH_LABEL(ret, not_basic_new);
@@ -5846,7 +5846,7 @@ pm_compile_constant_and_write_node(rb_iseq_t *iseq, const pm_constant_and_write_
     if (!popped) PUSH_INSN(ret, location, pop);
 
     if (shareability != 0) {
-        pm_compile_shareable_constant_value(iseq, node->value, shareability, name, ret, scope_node, true);
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, rb_sym2str(name), ret, scope_node, true);
     }
     else {
         PM_COMPILE_NOT_POPPED(node->value);
@@ -5883,7 +5883,7 @@ pm_compile_constant_or_write_node(rb_iseq_t *iseq, const pm_constant_or_write_no
     PUSH_LABEL(ret, set_label);
 
     if (shareability != 0) {
-        pm_compile_shareable_constant_value(iseq, node->value, shareability, name, ret, scope_node, true);
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, rb_sym2str(name), ret, scope_node, true);
     }
     else {
         PM_COMPILE_NOT_POPPED(node->value);
@@ -5910,7 +5910,7 @@ pm_compile_constant_operator_write_node(rb_iseq_t *iseq, const pm_constant_opera
     pm_compile_constant_read(iseq, name, &node->name_loc, location.node_id, ret, scope_node);
 
     if (shareability != 0) {
-        pm_compile_shareable_constant_value(iseq, node->value, shareability, name, ret, scope_node, true);
+        pm_compile_shareable_constant_value(iseq, node->value, shareability, rb_sym2str(name), ret, scope_node, true);
     }
     else {
         PM_COMPILE_NOT_POPPED(node->value);

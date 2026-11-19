@@ -2243,6 +2243,8 @@ more_output_buffer(
         unsigned char **out_stop_ptr)
 {
     size_t len = (*out_pos - *out_start_ptr);
+    if (len > (size_t)(LONG_MAX / 2 - max_output))
+        rb_raise(rb_eArgError, "string size too big");
     size_t new_len = (len + max_output) * 2;
     *out_start_ptr = resize_destination(destination, len, new_len);
     *out_pos = *out_start_ptr + len;
@@ -2450,6 +2452,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (!UNDEF_P(rep) && !NIL_P(rep)) {
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
                     RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
+            RB_GC_GUARD(rep); // insert_output may GC while reading rep's bytes
             if ((int)ret == -1) {
                 rb_econv_close(ec);
                 rb_raise(rb_eArgError, "too big fallback string");
@@ -3870,6 +3873,9 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(input))
         StringValue(input);
     rb_str_modify(output);
+    if (input == output) {
+        rb_raise(rb_eArgError, "cannot convert into the source string");
+    }
 
     if (NIL_P(output_bytesize_v)) {
         output_bytesize = rb_str_capacity(output);
