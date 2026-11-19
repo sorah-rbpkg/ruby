@@ -4,7 +4,7 @@
 
 Gem::Specification.new do |s|
   s.name = "rbs".freeze
-  s.version = "3.10.0"
+  s.version = "3.10.0".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "changelog_uri" => "https://github.com/ruby/rbs/blob/master/CHANGELOG.md", "homepage_uri" => "https://github.com/ruby/rbs", "source_code_uri" => "https://github.com/ruby/rbs.git" } if s.respond_to? :metadata=
@@ -20,10 +20,10 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/ruby/rbs".freeze
   s.licenses = ["BSD-2-Clause".freeze, "Ruby".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 3.1".freeze)
-  s.rubygems_version = "3.4.20".freeze
+  s.rubygems_version = "4.0.2".freeze
   s.summary = "Type signature for Ruby.".freeze
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<logger>.freeze, [">= 0"])
+  s.add_runtime_dependency(%q<logger>.freeze, [">= 0".freeze])
 end

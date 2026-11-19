@@ -503,7 +503,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
         if (GetSystemWindowsDirectoryW(path, len)) return 0;
     }
     p = translate_wchar(path, L'\\', L'/');
-    if (*(p - 1) != L'/') *p++ = L'/';
+    if (p == path || *(p - 1) != L'/') *p++ = L'/';
     if ((UINT)(p - path + numberof(temp)) >= len) return 0;
     memcpy(p, temp, sizeof(temp));
     return (UINT)(p - path + numberof(temp) - 1);
@@ -657,8 +657,16 @@ static st_table *conlist = NULL;
          exclusive_for_##obj; \
          exclusive_for_##obj = (LeaveCriticalSection(&obj##_mutex), false))
 
-static CRITICAL_SECTION uenvarea_mutex;
-static char *uenvarea;
+/* The string w32_getenv returned last in each thread, or in each Win32
+ * fiber, valid until the next call in the same thread or fiber. */
+static DWORD uenvarea_key;
+
+/* License: Ruby's */
+static void WINAPI
+free_uenvarea(void *uenvarea)
+{
+    free(uenvarea);
+}
 
 /* License: Ruby's */
 struct constat {
@@ -699,13 +707,7 @@ exit_handler(void)
     DeleteCriticalSection(&select_mutex);
     DeleteCriticalSection(&socklist_mutex);
     DeleteCriticalSection(&conlist_mutex);
-    thread_exclusive(uenvarea) {
-        if (uenvarea) {
-            free(uenvarea);
-            uenvarea = NULL;
-        }
-    }
-    DeleteCriticalSection(&uenvarea_mutex);
+    FlsFree(uenvarea_key);
 }
 
 /* License: Ruby's */
@@ -866,7 +868,8 @@ rb_w32_sysinit(int *argc, char ***argv)
 
     tzset();
 
-    InitializeCriticalSection(&uenvarea_mutex);
+    if ((uenvarea_key = FlsAlloc(free_uenvarea)) == FLS_OUT_OF_INDEXES)
+        rb_bug("FlsAlloc() for uenvarea_key fails");
     init_env();
 
     init_stdhandle();
@@ -1955,7 +1958,10 @@ get_handle_pathname(HANDLE fh, WCHAR **pathptr, DWORD add)
     WCHAR *path = malloc((len + add + 1) * sizeof(WCHAR));
     if (!(*pathptr = path)) return 0;
     len = GetFinalPathNameByHandleW(fh, path, len + 1, 0);
-    if (!len) free(path);
+    if (!len) {
+        free(path);
+        *pathptr = NULL;
+    }
     return len;
 }
 
@@ -3980,17 +3986,18 @@ rb_w32_getservbyport(int port, const char *proto)
 
 /* License: Ruby's */
 static size_t
-socketpair_unix_path(struct sockaddr_un *sock_un)
+socketpair_unix_path(struct sockaddr_un *sock_un, WCHAR *wpath, const int maxpath)
 {
     SOCKET listener;
-    WCHAR wpath[sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path)] = L"";
 
     /* AF_UNIX/SOCK_STREAM became available in Windows 10
      * See https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows
      */
     listener = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (listener == INVALID_SOCKET)
+    if (listener == INVALID_SOCKET) {
+        errno = EAFNOSUPPORT;
         return 0;
+    }
 
     memset(sock_un, 0, sizeof(*sock_un));
     sock_un->sun_family = AF_UNIX;
@@ -4005,38 +4012,49 @@ socketpair_unix_path(struct sockaddr_un *sock_un)
      */
     for (int try = 0; ; try++) {
         LARGE_INTEGER ticks;
-        size_t path_len = 0;
-        const size_t maxpath = sizeof(sock_un->sun_path)/sizeof(*sock_un->sun_path);
+        int path_len = 0;
+        static const WCHAR FALLBACK_TEMP[] = L"C:/Temp/"; // always C: exists?
+        static const int FALLBACK_TEMP_SIZE = numberof(FALLBACK_TEMP) - 1;
 
         switch (try) {
-        case 0:
+          case 0:
             /* user temp dir from TMP or TEMP env var, it ends with a backslash */
             path_len = GetTempPathW(maxpath, wpath);
+            if (path_len == 0 || path_len >= maxpath) {
+                /* The env var path did not fit in wpath (GetTempPathW then
+                 * returns the required length and leaves wpath unfilled), or
+                 * the call failed.  Skip to the next candidate directory
+                 * instead of reading past wpath in WideCharToMultiByte. */
+                continue;
+            }
             break;
-        case 1:
-            wcsncpy(wpath, L"C:/Temp/", maxpath);
-            path_len = lstrlenW(wpath);
+          case 1:
+            if (FALLBACK_TEMP_SIZE >= maxpath) continue;
+            wcsncpy(wpath, FALLBACK_TEMP, maxpath);
+            path_len = FALLBACK_TEMP_SIZE;
             break;
-        case 2:
+          case 2:
             /* Current directory */
             path_len = 0;
             break;
-        case 3:
+          case 3:
             closesocket(listener);
+            errno = EADDRNOTAVAIL;
             return 0;
         }
 
         /* Windows UNIXSocket implementation expects UTF-8 instead of UTF16 */
-        path_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
+        int un_len = WideCharToMultiByte(CP_UTF8, 0, wpath, path_len, sock_un->sun_path, maxpath, NULL, NULL);
         QueryPerformanceCounter(&ticks);
-        path_len += snprintf(sock_un->sun_path + path_len,
-                 maxpath - path_len,
+        int base_len = snprintf(sock_un->sun_path + un_len,
+                 maxpath - un_len,
                  "%lld-%ld.($)",
                  ticks.QuadPart,
                  GetCurrentProcessId());
+        if (un_len + base_len >= maxpath) continue;
 
         /* Convert to UTF16 for DeleteFileW */
-        MultiByteToWideChar(CP_UTF8, 0, sock_un->sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
+        MultiByteToWideChar(CP_UTF8, 0, sock_un->sun_path + un_len, base_len + 1, wpath + path_len, maxpath - path_len);
 
         if (bind(listener, (struct sockaddr *)sock_un, sizeof(*sock_un)) != SOCKET_ERROR)
             break;
@@ -4090,11 +4108,9 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 #ifdef HAVE_AFUNIX_H
       case AF_UNIX:
         addr = (struct sockaddr *)&sock_un;
-        len = socketpair_unix_path(&sock_un);
-        MultiByteToWideChar(CP_UTF8, 0, sock_un.sun_path, -1, wpath, sizeof(wpath)/sizeof(*wpath));
-        if (len)
-            break;
-        /* fall through */
+        len = socketpair_unix_path(&sock_un, wpath, numberof(wpath));
+        if (!len) return -1;
+        break;
 #endif
       default:
         errno = EAFNOSUPPORT;
@@ -5358,39 +5374,36 @@ w32_getenv(const char *name, UINT cp)
 {
     WCHAR *wenvarea, *wenv;
     int len = strlen(name);
-    char *env, *found = NULL;
+    char *uenvarea, *env, *found = NULL;
     int wlen;
 
     if (len == 0) return NULL;
 
     if (!NTLoginName) {
-        /* initialized in init_env, uenvarea_mutex should have been
-         * initialized before it */
+        /* initialized in init_env, uenvarea_key should have been
+         * allocated before it */
         return getenv(name);
     }
 
-    thread_exclusive(uenvarea) {
-        if (uenvarea) {
-            free(uenvarea);
-            uenvarea = NULL;
-        }
-        wenvarea = GetEnvironmentStringsW();
-        if (!wenvarea) {
-            map_errno(GetLastError());
-            continue;
-        }
-        for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
-            wlen += lstrlenW(wenv) + 1;
-        uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
-        FreeEnvironmentStringsW(wenvarea);
-        if (!uenvarea)
-            continue;
+    free(FlsGetValue(uenvarea_key));
+    FlsSetValue(uenvarea_key, NULL);
+    wenvarea = GetEnvironmentStringsW();
+    if (!wenvarea) {
+        map_errno(GetLastError());
+        return NULL;
+    }
+    for (wenv = wenvarea, wlen = 1; *wenv; wenv += lstrlenW(wenv) + 1)
+        wlen += lstrlenW(wenv) + 1;
+    uenvarea = wstr_to_mbstr(cp, wenvarea, wlen, NULL);
+    FreeEnvironmentStringsW(wenvarea);
+    if (!uenvarea)
+        return NULL;
+    FlsSetValue(uenvarea_key, uenvarea);
 
-        for (env = uenvarea; *env; env += strlen(env) + 1) {
-            if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
-                found = env + len + 1;
-                break;
-            }
+    for (env = uenvarea; *env; env += strlen(env) + 1) {
+        if (strncasecmp(env, name, len) == 0 && *(env + len) == '=') {
+            found = env + len + 1;
+            break;
         }
     }
 
@@ -7294,13 +7307,17 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return -1;
+            /* the read may have completed before the cancel, and the kernel
+             * writes ol and buf until it ends either way */
+            GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE);
+            if (!read) {
+                CloseHandle(ol.hEvent);
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
         }
-
-        if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
+        else if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
             (err = GetLastError()) != ERROR_HANDLE_EOF) {
             int ret = 0;
             if (err != ERROR_BROKEN_PIPE) {
@@ -7404,13 +7421,15 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));
-            rb_acrt_lowio_unlock_fh(fd);
-            return -1;
+            GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE);
+            if (!written) {
+                CloseHandle(ol.hEvent);
+                rb_acrt_lowio_unlock_fh(fd);
+                return -1;
+            }
         }
-
-        if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
+        else if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
             errno = map_errno(GetLastError());
             CloseHandle(ol.hEvent);
             CancelIo((HANDLE)_osfhnd(fd));

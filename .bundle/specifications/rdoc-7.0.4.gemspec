@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name = "rdoc".freeze
-  s.version = "7.0.4"
+  s.version = "7.0.4".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "changelog_uri" => "https://github.com/ruby/rdoc/releases", "homepage_uri" => "https://ruby.github.io/rdoc", "source_code_uri" => "https://github.com/ruby/rdoc" } if s.respond_to? :metadata=
@@ -20,11 +20,11 @@ Gem::Specification.new do |s|
   s.licenses = ["Ruby".freeze]
   s.rdoc_options = ["--main".freeze, "README.md".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.6.0".freeze)
-  s.rubygems_version = "3.4.20".freeze
+  s.rubygems_version = "3.6.9".freeze
   s.summary = "RDoc produces HTML and command-line documentation for Ruby projects".freeze
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<erb>.freeze, [">= 0"])
-  s.add_runtime_dependency(%q<tsort>.freeze, [">= 0"])
+  s.add_runtime_dependency(%q<erb>.freeze, [">= 0".freeze])
+  s.add_runtime_dependency(%q<tsort>.freeze, [">= 0".freeze])
 end

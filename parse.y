@@ -35,7 +35,6 @@
 
 #ifdef RIPPER
 #define STATIC_ID2SYM p->config->static_id2sym
-#define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 #endif
 
 #else
@@ -382,9 +381,19 @@ RBIMPL_WARNING_POP()
     rb_parser_set_location(p, &(Current))
 #define RUBY_INIT_YYLLOC() \
     { \
-        {p->ruby_sourceline, (int)(p->lex.ptok - p->lex.pbeg)}, \
-        {p->ruby_sourceline, (int)(p->lex.pcur - p->lex.pbeg)}, \
+        {p->ruby_sourceline, parser_column(p->lex.ptok - p->lex.pbeg)}, \
+        {p->ruby_sourceline, parser_column(p->lex.pcur - p->lex.pbeg)}, \
     }
+
+/* Saturate instead of wrapping to a column before the line. */
+static inline int
+parser_column(long pos)
+{
+#if SIZEOF_INT < SIZEOF_LONG
+    if (pos > INT_MAX) return INT_MAX;
+#endif
+    return (int)pos;
+}
 
 #define IS_lex_state_for(x, ls)	((x) & (ls))
 #define IS_lex_state_all_for(x, ls) (((x) & (ls)) == (ls))
@@ -2391,6 +2400,7 @@ rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, c
 
     if (len < 0) {
         compile_error(p, "negative string size (or size too big)");
+        return 0;
     }
     parser_str_cat(str, ptr, len);
     PARSER_ENCODING_CODERANGE_SET(str, res_enc, res_cr);
@@ -2399,8 +2409,7 @@ rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, c
   incompatible:
     compile_error(p, "incompatible character encodings: %s and %s",
                   rb_enc_name(str_enc), rb_enc_name(ptr_enc));
-    UNREACHABLE_RETURN(0);
-
+    return 0;
 }
 
 static rb_parser_string_t *
@@ -3630,20 +3639,23 @@ command		: fcall command_args       %prec tLOWEST
                         fixpos($$, $2);
                     /*% ripper: yield!($:2) %*/
                     }
-                | k_return call_args
+                | k_return_arg call_args
                     {
+                        CMDARG_POP();
                         $$ = NEW_RETURN(ret_args(p, $2), &@$, &@1);
                     /*% ripper: return!($:2) %*/
                     }
-                | keyword_break call_args
+                | k_break_arg call_args
                     {
+                        CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
                         $$ = add_block_exit(p, NEW_BREAK(args, &@$, &@1));
                     /*% ripper: break!($:2) %*/
                     }
-                | keyword_next call_args
+                | k_next_arg call_args
                     {
+                        CMDARG_POP();
                         NODE *args = 0;
                         args = ret_args(p, $2);
                         $$ = add_block_exit(p, NEW_NEXT(args, &@$, &@1));
@@ -4529,7 +4541,7 @@ primary		: inline_primary
               case_body
               k_end
                 {
-                    if (p->case_labels) st_free_table(p->case_labels);
+                    if (CASE_LABELS_ENABLED_P(p->case_labels)) st_free_table(p->case_labels);
                     p->case_labels = $3;
                     $$ = NEW_CASE2($4, &@$, &@1, &@5);
                 /*% ripper: case!(Qnil, $:4) %*/
@@ -4607,6 +4619,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_class.in_class;
                     p->ctxt.cant_return = $k_class.cant_return;
                     p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_class.in_rescue;
                 }
             | k_class tLSHFT expr_value
                 {
@@ -4626,6 +4639,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_class.in_class;
                     p->ctxt.cant_return = $k_class.cant_return;
                     p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_class.in_rescue;
                 }
             | k_module cpath
                 {
@@ -4643,6 +4657,7 @@ primary		: inline_primary
                     p->ctxt.in_class = $k_module.in_class;
                     p->ctxt.cant_return = $k_module.cant_return;
                     p->ctxt.shareable_constant_value = $k_module.shareable_constant_value;
+                    p->ctxt.in_rescue = $k_module.in_rescue;
                 }
             | defn_head[head]
               f_arglist[args]
@@ -4868,6 +4883,24 @@ k_return	: keyword_return
                     {
                         if (p->ctxt.cant_return && !dyna_in_block(p))
                             yyerror1(&@1, "Invalid return in class/module body");
+                    }
+                ;
+
+k_return_arg	: k_return
+                    {
+                        CMDARG_PUSH(0);
+                    }
+                ;
+
+k_break_arg	: keyword_break
+                    {
+                        CMDARG_PUSH(0);
+                    }
+                ;
+
+k_next_arg	: keyword_next
+                    {
+                        CMDARG_PUSH(0);
                     }
                 ;
 
@@ -7765,7 +7798,7 @@ tokspace(struct parser_params *p, int n)
     p->tokidx += n;
 
     if (p->tokidx >= p->toksiz) {
-        do {p->toksiz *= 2;} while (p->toksiz < p->tokidx);
+        do {p->toksiz *= 2;} while (p->toksiz <= p->tokidx);
         REALLOC_N(p->tokenbuf, char, p->toksiz);
     }
     return &p->tokenbuf[p->tokidx-n];
@@ -10376,7 +10409,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
     if (peek_end_expect_token_locations(p)) {
         const rb_code_position_t *end_pos;
         int lineno, column;
-        int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
+        int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
 
         end_pos = peek_end_expect_token_locations(p)->pos;
         lineno = end_pos->lineno;
@@ -10591,10 +10624,10 @@ parser_yylex(struct parser_params *p)
                 if (peek_word_at(p, "r", 1, 0)) goto leading_logical;
                 goto bol;
               case '|':
-                if (peek(p, '|')) goto leading_logical;
+                if (peek(p, '|') && !peek_n(p, '=', 1)) goto leading_logical;
                 goto bol;
               case '&':
-                if (peek(p, '&')) {
+                if (peek(p, '&') && !peek_n(p, '=', 1)) {
                   leading_logical:
                     pushback(p, c);
                     dispatch_delayed_token(p, tIGNORED_NL);
@@ -10974,6 +11007,7 @@ parser_yylex(struct parser_params *p)
             else {
                 yyerror0("no .<digit> floating literal anymore; put 0 before dot");
             }
+            set_yylval_id(idNULL);
             SET_LEX_STATE(EXPR_END);
             p->lex.ptok = p->lex.pcur;
             goto retry;
@@ -13451,9 +13485,9 @@ YYLTYPE *
 rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
 {
     int sourceline = here->sourceline;
-    int beg_pos = (int)here->offset - here->quote
-        - (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT));
-    int end_pos = (int)here->offset + here->length + here->quote;
+    int beg_pos = parser_column(here->offset - here->quote
+        - (rb_strlen_lit("<<-") - !(here->func & STR_FUNC_INDENT)));
+    int end_pos = parser_column(here->offset + here->length + here->quote);
 
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
@@ -13473,8 +13507,8 @@ YYLTYPE *
 rb_parser_set_location_of_heredoc_end(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    int end_pos = (int)(p->lex.pend - p->lex.pbeg);
+    int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
+    int end_pos = parser_column(p->lex.pend - p->lex.pbeg);
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 
@@ -13490,8 +13524,8 @@ YYLTYPE *
 rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    int end_pos = (int)(p->lex.ptok - p->lex.pbeg);
+    int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
+    int end_pos = parser_column(p->lex.ptok - p->lex.pbeg);
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 
@@ -13499,8 +13533,8 @@ YYLTYPE *
 rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 {
     int sourceline = p->ruby_sourceline;
-    int beg_pos = (int)(p->lex.ptok - p->lex.pbeg);
-    int end_pos = (int)(p->lex.pcur - p->lex.pbeg);
+    int beg_pos = parser_column(p->lex.ptok - p->lex.pbeg);
+    int end_pos = parser_column(p->lex.pcur - p->lex.pbeg);
     return rb_parser_set_pos(yylloc, sourceline, beg_pos, end_pos);
 }
 #endif /* !RIPPER */
@@ -15417,6 +15451,13 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     NODE *node, *succ;
 
     if (!len) return ST_CONTINUE;
+
+    if (UNLIKELY(p->enc != enc)) {
+        int cr = ENC_CODERANGE_7BIT;
+        rb_str_coderange_scan_restartable(s, s + len, rb_ascii8bit_encoding(), &cr);
+        if (UNLIKELY(cr != ENC_CODERANGE_7BIT)) return ST_CONTINUE;
+    }
+
     if (!VALID_SYMNAME_P(s, len, enc, ID_LOCAL))
         return ST_CONTINUE;
 
