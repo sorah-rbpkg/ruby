@@ -1003,10 +1003,10 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 {
-    VALUE *original_code;
+    VALUE *original_code = RUBY_ATOMIC_PTR_LOAD(ISEQ_BODY(iseq)->variable.original_iseq);
 
-    if (ISEQ_ORIGINAL_ISEQ(iseq)) return ISEQ_ORIGINAL_ISEQ(iseq);
-    original_code = ISEQ_ORIGINAL_ISEQ_ALLOC(iseq, ISEQ_BODY(iseq)->iseq_size);
+    if (original_code) return original_code;
+    original_code = ALLOC_N(VALUE, ISEQ_BODY(iseq)->iseq_size);
     MEMCPY(original_code, ISEQ_BODY(iseq)->iseq_encoded, VALUE, ISEQ_BODY(iseq)->iseq_size);
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
@@ -1022,6 +1022,15 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
         }
     }
 #endif
+
+    /* Concurrent callers can each build a copy; publish only fully
+     * translated code and keep the first one. */
+    VALUE *prev = ATOMIC_PTR_CAS(ISEQ_BODY(iseq)->variable.original_iseq,
+                                 NULL, original_code);
+    if (prev) {
+        ruby_xfree(original_code);
+        return prev;
+    }
     return original_code;
 }
 
@@ -5812,7 +5821,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
                 ci = ci_flag_set(iseq, ci, VM_CALL_ARGS_SPLAT_MUT);
             }
             OPERAND_AT(iobj, 0) = (VALUE)ci;
-            RB_OBJ_WRITTEN(iseq, Qundef, iobj);
+            RB_OBJ_WRITTEN(iseq, Qundef, ci);
 
             /* Given: h[*a], h[*b, 1] = ary
              *  h[*a] uses splatarray false and does not set VM_CALL_ARGS_SPLAT_MUT,
@@ -9625,7 +9634,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         LABEL_REF(not_basic_new);
 
         // optimized path
-        ADD_SEND_R(ret, line_node, rb_intern("initialize"), argc, parent_block, INT2FIX(flag | VM_CALL_FCALL), keywords);
+        ADD_SEND_R(ret, line_node, rb_intern("initialize"), argc, parent_block, INT2FIX(flag | VM_CALL_FCALL | VM_CALL_IGNORE_REFINEMENTS), keywords);
         ADD_INSNL(ret, line_node, jump, not_basic_new_finish);
 
         ADD_LABEL(ret, not_basic_new);
@@ -12618,7 +12627,7 @@ pinned_list_fetch(VALUE list, long offset)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
@@ -12632,7 +12641,7 @@ pinned_list_store(VALUE list, long offset, VALUE object)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
@@ -12928,7 +12937,8 @@ ibf_load_builtin(const struct ibf_load *load, ibf_offset_t *offset)
     const struct rb_builtin_function *table = GET_VM()->builtin_function_table;
     if (table == NULL) rb_raise(rb_eArgError, "builtin function table is not provided");
     if (strncmp(table[i].name, name, len) != 0) {
-        rb_raise(rb_eArgError, "builtin function index (%d) mismatch (expect %s but %s)", i, name, table[i].name);
+        rb_raise(rb_eArgError, "builtin function index (%d) mismatch (expect %.*s but %s)",
+                 i, len, name, table[i].name);
     }
     // fprintf(stderr, "load-builtin: name:%s(%d)\n", table[i].name, table[i].argc);
 
@@ -13014,24 +13024,23 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     VALUE iseqv = (VALUE)iseq;
     unsigned int code_index;
     ibf_offset_t reading_pos = bytecode_offset;
-    VALUE *code = ALLOC_N(VALUE, iseq_size);
+    VALUE *code = ZALLOC_N(VALUE, iseq_size);
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
     struct rb_call_data *cd_entries = load_body->call_data;
     int ic_index = 0;
 
     load_body->iseq_encoded = code;
-    load_body->iseq_size = 0;
+    load_body->iseq_size = iseq_size;
 
     iseq_bits_t * mark_offset_bits;
-
-    iseq_bits_t tmp[1] = {0};
-
     if (ISEQ_MBITS_BUFLEN(iseq_size) == 1) {
-        mark_offset_bits = tmp;
+        load_body->mark_bits.single = 0;
+        mark_offset_bits = &load_body->mark_bits.single;
     }
     else {
-        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
+        load_body->mark_bits.list = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
+        mark_offset_bits = load_body->mark_bits.list;
     }
     bool needs_bitmap = false;
 
@@ -13154,19 +13163,9 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
     }
 
-    load_body->iseq_size = code_index;
-
-    if (ISEQ_MBITS_BUFLEN(load_body->iseq_size) == 1) {
-        load_body->mark_bits.single = mark_offset_bits[0];
-    }
-    else {
-        if (needs_bitmap) {
-            load_body->mark_bits.list = mark_offset_bits;
-        }
-        else {
-            load_body->mark_bits.list = 0;
-            ruby_xfree(mark_offset_bits);
-        }
+    if (!needs_bitmap) {
+        ruby_xfree(load_body->mark_bits.list);
+        load_body->mark_bits.list = NULL;
     }
 
     RUBY_ASSERT(code_index == iseq_size);
@@ -14885,7 +14884,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
             fprintf(stderr, "ibf_load_iseq: new iseq=%p\n", (void *)iseq);
 #endif
             FL_SET((VALUE)iseq, ISEQ_NOT_LOADED_YET);
-            iseq->aux.loader.obj = load->loader_obj;
+            RB_OBJ_WRITE((VALUE)iseq, &iseq->aux.loader.obj, load->loader_obj);
             iseq->aux.loader.index = iseq_index;
 #if IBF_ISEQ_DEBUG
             fprintf(stderr, "ibf_load_iseq: iseq=%p loader_obj=%p index=%d\n",

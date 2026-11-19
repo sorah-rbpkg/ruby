@@ -77,6 +77,11 @@ sign_bits(int base, const char *p)
     buf = RSTRING_PTR(result);\
 } while (0)
 
+#define CHECK_WIDTH(l, w) do { \
+    if ((l) > INT_MAX - (w)) rb_raise(rb_eArgError, "width too big");\
+    CHECK((l)+(w));\
+} while (0)
+
 #define PUSH(s, l) do { \
     CHECK(l);\
     PUSH_(s, l);\
@@ -98,15 +103,26 @@ sign_bits(int base, const char *p)
     blen += (l);\
 } while (0)
 
+static void
+format_args_check(VALUE ary, int argc, const VALUE *argv)
+{
+    if (!RTEST(ary)) return;
+    if (RARRAY_LEN(ary) != argc || RARRAY_CONST_PTR(ary) != argv) {
+        rb_raise(rb_eRuntimeError, "array modified during formatting");
+    }
+}
+
 #define GETARG() (!UNDEF_P(nextvalue) ? nextvalue : \
                   GETNEXTARG())
 
 #define GETNEXTARG() ( \
     check_next_arg(posarg, nextarg), \
+    (RTEST(ary) ? (format_args_check(ary, argc0, argv0), 0) : 0), \
     (posarg = nextarg++, GETNTHARG(posarg)))
 
 #define GETPOSARG(n) ( \
     check_pos_arg(posarg, (n)), \
+    (RTEST(ary) ? (format_args_check(ary, argc0, argv0), 0) : 0), \
     (posarg = -1, GETNTHARG(n)))
 
 #define GETNTHARG(nth) \
@@ -211,8 +227,20 @@ rb_f_sprintf(int argc, const VALUE *argv)
     return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
 }
 
+static char *
+reassoc_enc(VALUE result, rb_encoding *enc)
+{
+    return RSTRING_PTR(rb_enc_associate(result, enc));
+}
+
+static char *
+reassoc_enc_index(VALUE result, int encidx)
+{
+    return RSTRING_PTR(rb_enc_associate_index(result, encidx));
+}
+
 VALUE
-rb_str_format(int argc, const VALUE *argv, VALUE fmt)
+rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
 {
     enum {default_float_precision = 6};
     rb_encoding *enc;
@@ -256,6 +284,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                                ENC_CODERANGE_BROKEN : (coderange = cr))); \
         } \
     } while (0)
+
+    const int argc0 = argc;
+    const VALUE *argv0 = argv;
+
     ++argc;
     --argv;
     StringValue(fmt);
@@ -268,8 +300,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     blen = 0;
     bsiz = 120;
     result = rb_str_buf_new(bsiz);
-    rb_enc_associate(result, enc);
-    buf = RSTRING_PTR(result);
+    buf = reassoc_enc(result, enc);
     memset(buf, 0, bsiz);
     ENC_CODERANGE_SET(result, coderange);
 
@@ -403,8 +434,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
             GETASTER(width);
             if (width < 0) {
                 flags |= FMINUS;
+                if (width == INT_MIN) rb_raise(rb_eArgError, "width too big");
                 width = -width;
-                if (width < 0) rb_raise(rb_eArgError, "width too big");
             }
             p++;
             goto retry;
@@ -441,7 +472,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 VALUE val = GETARG();
                 VALUE tmp;
                 unsigned int c;
-                int n;
+                int n, encidx;
 
                 tmp = rb_check_string_type(val);
                 if (!NIL_P(tmp)) {
@@ -451,14 +482,16 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     goto format_s1;
                 }
                 n = NUM2INT(val);
-                if (n >= 0) n = rb_enc_codelen((c = n), enc);
+                if (n >= 0) {
+                    n = rb_enc_codelen((c = n), enc);
+                    encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
+                }
                 if (n <= 0) {
                     rb_raise(rb_eArgError, "invalid character");
                 }
-                int encidx = rb_ascii8bit_appendable_encoding_index(enc, c);
                 if (encidx >= 0 && encidx != rb_enc_to_index(enc)) {
                     /* special case */
-                    rb_enc_associate_index(result, encidx);
+                    buf = reassoc_enc_index(result, encidx);
                     enc = rb_enc_from_index(encidx);
                     coderange = ENC_CODERANGE_VALID;
                 }
@@ -467,19 +500,13 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
                 }
-                else if ((flags & FMINUS)) {
-                    --width;
-                    CHECK(n + (width > 0 ? width : 0));
-                    rb_enc_mbcput(c, &buf[blen], enc);
-                    blen += n;
-                    if (width > 0) FILL_(' ', width);
-                }
                 else {
                     --width;
-                    CHECK(n + (width > 0 ? width : 0));
-                    if (width > 0) FILL_(' ', width);
+                    CHECK_WIDTH(n, (width > 0 ? width : 0));
+                    if (!(flags & FMINUS) && (width > 0)) FILL_(' ', width);
                     rb_enc_mbcput(c, &buf[blen], enc);
                     blen += n;
+                    if ((flags & FMINUS) && (width > 0)) FILL_(' ', width);
                 }
             }
             break;
@@ -516,7 +543,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                     /* need to adjust multi-byte string pos */
                     if ((flags&FWIDTH) && (width > slen)) {
                         width -= (int)slen;
-                        CHECK(len + width);
+                        CHECK_WIDTH(len, width);
                         if (!(flags&FMINUS)) {
                             FILL_(' ', width);
                             width = 0;
@@ -527,13 +554,13 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                         if (flags&FMINUS) {
                             FILL_(' ', width);
                         }
-                        rb_enc_associate(result, enc);
+                        buf = reassoc_enc(result, enc);
                         break;
                     }
                 }
                 PUSH(RSTRING_PTR(str), len);
                 RB_GC_GUARD(str);
-                rb_enc_associate(result, enc);
+                buf = reassoc_enc(result, enc);
             }
             break;
 
@@ -830,7 +857,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 if (sign || (flags&FSPACE)) ++len;
                 if (prec > 0) ++len; /* period */
                 fill = width > len ? width - len : 0;
-                CHECK(fill + len);
+                CHECK(fill + len); /* max(width, len) */
                 if (fill && !(flags&(FMINUS|FZERO))) {
                     FILL_(' ', fill);
                 }
@@ -937,6 +964,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
+    format_args_check(ary, argc0, argv0);
     if (posarg >= 0 && nextarg < argc && !(argc == 2 && RB_TYPE_P(argv[1], T_HASH))) {
         const char *mesg = "too many arguments for format string";
         if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
@@ -945,6 +973,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_resize(result, blen);
 
     return result;
+}
+
+VALUE
+rb_str_format(int argc, const VALUE *argv, VALUE fmt)
+{
+    return rb_str_format_ary(argc, argv, fmt, Qfalse);
 }
 
 static char *

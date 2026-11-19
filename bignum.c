@@ -41,6 +41,7 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
+#include "ruby/atomic.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
@@ -4189,7 +4190,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
             base = 10;
         }
     }
-    else if (len == 1 || !(flags & RB_INT_PARSE_PREFIX)) {
+    else if (len == 0 || len == 1 || !(flags & RB_INT_PARSE_PREFIX)) {
         /* no prefix */
     }
     else if (base == 2) {
@@ -4220,20 +4221,24 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     if (*str == '0' && len != 1) { /* squeeze preceding 0s */
         int us = 0;
         const char *end = len < 0 ? NULL : str + len;
-        ++num_digits;
-        while ((c = *++str) == '0' ||
-               ((flags & RB_INT_PARSE_UNDERSCORE) && c == '_')) {
-            if (c == '_') {
-                if (++us >= 2)
+        while (str != end) {
+            const char *next = str + 1;
+            c = *str;
+            if (c == '0') {
+                if (next == end || !*next || ISSPACE(*next))
                     break;
-            }
-            else {
                 ++num_digits;
                 us = 0;
             }
-            if (str == end) break;
+            else if ((flags & RB_INT_PARSE_UNDERSCORE) && c == '_') {
+                if (++us >= 2 || next == end || !*next || ISSPACE(*next))
+                    break;
+            }
+            else {
+                break;
+            }
+            str = next;
         }
-        if (!c || ISSPACE(c)) --str;
         if (end) len = end - str;
     }
     c = *str;
@@ -4757,7 +4762,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     if (MAX_BASE36_POWER_TABLE_ENTRIES <= power_level)
         rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
 
-    VALUE power = base36_power_cache[base - 2][power_level];
+    VALUE power = rbimpl_atomic_value_load(&base36_power_cache[base - 2][power_level], RBIMPL_ATOMIC_ACQUIRE);
     if (!power) {
         size_t numdigits;
         if (power_level == 0) {
@@ -4772,9 +4777,16 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             numdigits *= 2;
         }
         rb_obj_hide(power);
-        base36_power_cache[base - 2][power_level] = power;
-        base36_numdigits_cache[base - 2][power_level] = numdigits;
-        rb_vm_register_global_object(power);
+        base36_numdigits_cache[base - 2][power_level] = numdigits; // benign race
+        /* Ractors can race this fill */
+        VALUE old = rbimpl_atomic_value_cas(&base36_power_cache[base - 2][power_level], 0, power,
+                                            RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_ACQUIRE);
+        if (old) {
+            power = old;
+        }
+        else {
+            rb_vm_register_global_object(power);
+        }
     }
     if (numdigits_ret)
         *numdigits_ret = base36_numdigits_cache[base - 2][power_level];

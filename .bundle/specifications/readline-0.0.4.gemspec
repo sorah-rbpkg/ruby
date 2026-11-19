@@ -3,7 +3,7 @@
 
 Gem::Specification.new do |s|
   s.name = "readline".freeze
-  s.version = "0.0.4"
+  s.version = "0.0.4".freeze
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
@@ -15,10 +15,10 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/ruby/readline".freeze
   s.licenses = ["Ruby".freeze]
   s.post_install_message = "+---------------------------------------------------------------------------+\n| This is just a loader for \"readline\". If Ruby has the \"readline-ext\" gem  |\n| that is a native extension, this gem will load it. If Ruby does not have  |\n| the \"readline-ext\" gem this gem will load \"reline\", a library that is     |\n| compatible with the \"readline-ext\" gem and implemented in pure Ruby.      |\n|                                                                           |\n| If you intend to use GNU Readline by `require 'readline'`, please install |\n| the \"readline-ext\" gem.                                                   |\n+---------------------------------------------------------------------------+\n".freeze
-  s.rubygems_version = "3.4.20".freeze
+  s.rubygems_version = "3.5.0.dev".freeze
   s.summary = "Loader for \"readline\".".freeze
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<reline>.freeze, [">= 0"])
+  s.add_runtime_dependency(%q<reline>.freeze, [">= 0".freeze])
 end
